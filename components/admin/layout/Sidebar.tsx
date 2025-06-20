@@ -53,10 +53,10 @@ export function Sidebar({
   };
 
   return (
-    <aside className="sticky top-0 left- 0 hidden lg:flex lg:flex-col lg:w-80 bg-white/90 backdrop-blur-sm border-r shadow-sm">
+    <aside className="sticky top-0 left-0 hidden lg:flex lg:flex-col w-80 bg-white/90 backdrop-blur-sm border-r shadow-sm">
       {/* Header */}
       <div className="p-6 border-b">
-        <div className="flex items-center mb-4">
+        <div className="flex flex-col xl:flex-row items-start xl:items-center gap-4 xl:gap-0 mb-4">
           <div
             className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center mr-4 shadow-lg cursor-pointer hover:scale-105 transition-transform duration-200"
             onClick={handleIconClick}

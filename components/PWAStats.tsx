@@ -111,8 +111,8 @@ export function PWAStats() {
       {/* Управление кешем */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
+          <div className="flex flex-col md:flex-row items-start gap-4 md:gap-0 md:items-center justify-between">
+            <div className='grid gap-2 md:gap-0'>
               <CardTitle>Управление кешем</CardTitle>
               <CardDescription>
                 Очистка кешированных данных
