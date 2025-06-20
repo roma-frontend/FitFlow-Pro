@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { useUnifiedData } from "@/contexts/UnifiedDataContext";
 import { useRoleTexts, getContextualHints } from "@/lib/roleTexts";
@@ -31,7 +31,8 @@ import { GlobalNotifications } from "@/components/admin/layout/GlobalNotificatio
 import { PersonalizedTooltips } from "@/components/admin/layout/PersonalizedTooltips";
 
 function AdminLayoutContent({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth();
+  const { user, loading: authLoading, refreshUser } = useAuth();
+  const router = useRouter();
   const userRole = user?.role;
   const roleTexts = useRoleTexts(userRole);
 
@@ -46,9 +47,46 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   } = useUnifiedData();
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   // Получаем контекстные подсказки
   const hints = getContextualHints(userRole);
+
+  // Проверка авторизации и загрузка данных пользователя
+  useEffect(() => {
+    const initializeAuth = async () => {
+      console.log('🔍 AdminLayout: Инициализация авторизации...');
+
+      // Сначала проверяем localStorage
+      const storedUser = localStorage.getItem('auth_user');
+      const storedToken = localStorage.getItem('auth_token');
+
+      if (!storedUser || !storedToken) {
+        console.log('❌ AdminLayout: Нет сохраненных данных авторизации');
+        router.push('/staff-login');
+        return;
+      }
+
+      // Если user еще не загружен, но есть данные в localStorage
+      if (!user && !authLoading) {
+        console.log('🔄 AdminLayout: Обновляем данные пользователя...');
+        await refreshUser();
+      }
+
+      // Проверка прав доступа
+      if (user) {
+        const adminRoles = ['admin', 'super-admin', 'manager', 'trainer'];
+        if (!adminRoles.includes(user.role)) {
+          console.log('❌ AdminLayout: Недостаточно прав доступа');
+          router.push('/unauthorized');
+          return;
+        }
+        setIsInitialized(true);
+      }
+    };
+
+    initializeAuth();
+  }, [user, authLoading, refreshUser, router]);
 
   // Функция проверки прав доступа
   const hasPermission = (resource: string, action: string) => {
@@ -167,10 +205,10 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     const completionRate =
       events.length > 0
         ? Math.round(
-            (events.filter((e) => e.status === "completed").length /
-              events.length) *
-              100
-          )
+          (events.filter((e) => e.status === "completed").length /
+            events.length) *
+          100
+        )
         : 0;
 
     return {
@@ -214,26 +252,46 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     };
   }, [scheduleError, isOnline, userRole, roleTexts]);
 
-  // Если пользователь не авторизован
-  if (!user || !userRole) {
+  // Показываем загрузку пока идет проверка авторизации
+  if (authLoading || (!isInitialized && !user)) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
+        <div className="text-center p-8 bg-white rounded-lg shadow-lg">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Загрузка...</p>
+          <p className="text-gray-600 font-medium">Загрузка панели администратора...</p>
+          <p className="text-sm text-gray-500 mt-2">Проверка авторизации</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Если пользователь не авторизован после загрузки
+  if (!authLoading && !user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
+        <div className="text-center p-8 bg-white rounded-lg shadow-lg">
+          <AlertTriangle className="h-12 w-12 text-yellow-600 mx-auto mb-4" />
+          <p className="text-gray-700 font-medium">Требуется авторизация</p>
+          <p className="text-sm text-gray-500 mt-2">Перенаправление на страницу входа...</p>
         </div>
       </div>
     );
   }
 
   // Если нет навигационных элементов, показываем ошибку
-  if (navigationItems.length === 0) {
+  if (isInitialized && navigationItems.length === 0) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <AlertTriangle className="h-12 w-12 text-red-600 mx-auto" />
-          <p className="text-gray-600">Ошибка загрузки навигации</p>
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
+        <div className="text-center p-8 bg-white rounded-lg shadow-lg">
+          <AlertTriangle className="h-12 w-12 text-red-600 mx-auto mb-4" />
+          <p className="text-gray-700 font-medium">Ошибка загрузки навигации</p>
           <p className="text-sm text-gray-500 mt-2">Роль: {userRole}</p>
+          <button
+            onClick={() => refreshUser()}
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+          >
+            Обновить
+          </button>
         </div>
       </div>
     );
@@ -246,7 +304,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
         roleTexts={roleTexts}
         onMenuOpen={() => setSidebarOpen(true)}
       />
-  
+
       <div className="flex">
         {/* Мобильное меню */}
         <MobileMenu
@@ -254,7 +312,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
           onClose={() => setSidebarOpen(false)}
           navigationItems={navigationItems}
         />
-  
+
         {/* Сайдбар */}
         <Sidebar
           user={user}
@@ -270,7 +328,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
           syncAllData={syncAllData}
           hints={hints}
         />
-  
+
         {/* Основной контент */}
         <main className="flex-1 min-h-screen">
           <div className="max-w-7xl mx-auto p-4 lg:p-6">
@@ -278,8 +336,6 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
           </div>
         </main>
       </div>
-  
-  
 
       {/* Глобальные уведомления */}
       <GlobalNotifications
@@ -290,7 +346,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
       />
 
       {/* Персонализированные всплывающие подсказки */}
-      <PersonalizedTooltips userRole={userRole} />
+      <PersonalizedTooltips userRole={userRole ?? ''} />
     </div>
   );
 }
@@ -303,8 +359,6 @@ export default function AdminLayout({
   return (
     <SuperAdminProvider>
       <QueryProvider>
-        {" "}
-        {/* Добавляем QueryProvider */}
         <AdminLayoutContent>{children}</AdminLayoutContent>
       </QueryProvider>
     </SuperAdminProvider>
