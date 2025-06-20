@@ -41,11 +41,7 @@ export default function TrainerDebugSection({
   };
 
   return (
-    <motion.div 
-      className="space-y-3"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
+    <div
     >
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-medium text-white/70 uppercase tracking-wide flex items-center gap-2">
@@ -77,9 +73,7 @@ export default function TrainerDebugSection({
 
       {/* Ошибка */}
       {error && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
+        <div
           className="p-3 bg-red-500/20 border border-red-400/20 rounded-lg"
         >
           <div className="flex items-start gap-2">
@@ -115,15 +109,12 @@ export default function TrainerDebugSection({
               Подробнее
             </Button>
           </div>
-        </motion.div>
+        </div>
       )}
 
       {/* Панель отладки */}
       {showDebug && (
-        <motion.div
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: "auto" }}
-          exit={{ opacity: 0, height: 0 }}
+        <div
           className="p-3 bg-yellow-500/10 border border-yellow-400/20 rounded-lg"
         >
           <div className="flex items-center justify-between mb-2">
@@ -189,8 +180,8 @@ export default function TrainerDebugSection({
               Отправить отчет
             </Button>
           </div>
-        </motion.div>
+        </div>
       )}
-    </motion.div>
+    </div>
   );
 }

@@ -1,6 +1,7 @@
 // components/trainer/mobile-menu/sections/TrainerStatsSection.tsx
 "use client";
 
+import { memo, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -8,47 +9,118 @@ import {
   Calendar,
   MessageSquare,
   BarChart3,
-  Clock,
   CheckCircle,
-  AlertCircle,
-  TrendingUp,
-  Activity,
   Star,
+  Activity,
 } from "lucide-react";
-import type { MessageStats, WorkoutStats, SystemStats } from "@/types/trainer"; // ✅ Правильные типы
+import type { MessageStats, WorkoutStats, SystemStats } from "@/types/trainer";
 
 interface TrainerStatsSectionProps {
   messageStats: MessageStats;
   workoutStats: WorkoutStats;
-  stats: SystemStats; // ✅ Добавляем stats
+  stats: SystemStats;
   isLoading: boolean;
   loadingStep: string;
 }
 
-export default function TrainerStatsSection({
+// ✅ Мемоизированный компонент для статистики
+const StatCard = memo(({ 
+  icon: IconComponent, 
+  label, 
+  value, 
+  description, 
+  color, 
+  bgColor, 
+  index 
+}: {
+  icon: any;
+  label: string;
+  value: number | string;
+  description: string;
+  color: string;
+  bgColor: string;
+  index: number;
+}) => (
+  <div
+    className={`p-3 ${bgColor} backdrop-blur-sm rounded-lg border border-white/20 hover:border-white/30 transition-all duration-150`}
+  >
+    <div className="flex items-center gap-2 mb-2">
+      <IconComponent className={`h-4 w-4 ${color}`} />
+      <span className="text-xs font-medium text-white/90">{label}</span>
+    </div>
+    <div className="text-lg font-bold text-white">{value}</div>
+    <div className="text-xs text-white/60">{description}</div>
+  </div>
+));
+
+StatCard.displayName = 'StatCard';
+
+// ✅ Мемоизированный компонент для недельной статистики
+const WeeklyStatRow = memo(({ 
+  icon: IconComponent, 
+  label, 
+  value, 
+  color, 
+}: {
+  icon: any;
+  label: string;
+  value: number | string;
+  color: string;
+}) => (
+  <div
+    className="flex items-center justify-between p-2 bg-white/5 rounded-lg border border-white/10 hover:border-white/20 transition-all duration-150"
+  >
+    <div className="flex items-center gap-2">
+      <IconComponent className={`h-3 w-3 ${color}`} />
+      <span className="text-sm text-white/90">{label}</span>
+    </div>
+    <span className="text-sm font-semibold text-white">{value}</span>
+  </div>
+));
+
+WeeklyStatRow.displayName = 'WeeklyStatRow';
+
+// ✅ Мемоизированный индикатор прогресса
+const ProgressIndicator = memo(({ 
+  currentValue, 
+  maxValue = 6 
+}: {
+  currentValue: number;
+  maxValue?: number;
+}) => {
+
+  return (
+    <div
+      className="p-3 bg-gradient-to-r from-green-500/20 to-blue-500/20 rounded-lg border border-white/20"
+    >
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-sm font-medium text-white/90">Прогресс дня</span>
+        <span className="text-xs text-white/70">
+          {currentValue} из {maxValue} тренировок
+        </span>
+      </div>
+      <div className="w-full bg-white/20 rounded-full h-2">
+        <div
+          className="bg-gradient-to-r from-green-400 to-blue-400 h-2 rounded-full"
+        />
+      </div>
+    </div>
+  );
+});
+
+ProgressIndicator.displayName = 'ProgressIndicator';
+
+// ✅ Основной компонент с мемоизацией
+export default memo(function TrainerStatsSection({
   messageStats,
   workoutStats,
-  stats, // ✅ Получаем stats
+  stats,
   isLoading,
   loadingStep,
 }: TrainerStatsSectionProps) {
   
-  if (isLoading) {
-    return (
-      <div className="space-y-3">
-        <h3 className="text-sm font-medium text-white/70 uppercase tracking-wide">
-          Статистика
-        </h3>
-        <div className="flex items-center gap-2 p-3 bg-white/10 rounded-lg">
-          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white/50"></div>
-          <span className="text-sm text-white/80">{loadingStep}</span>
-        </div>
-      </div>
-    );
-  }
-
-  // ✅ Используем правильные поля из ваших типов
-  const statsItems = [
+  // ✅ Мемоизируем данные статистики для предотвращения пересчетов
+  const statsItems = useMemo(() => [
     {
       icon: Calendar,
       label: "Сегодня",
@@ -68,7 +140,7 @@ export default function TrainerStatsSection({
     {
       icon: Users,
       label: "Клиенты",
-      value: stats?.activeClients || 0, // ✅ Используем stats.activeClients
+      value: stats?.activeClients || 0,
       description: "активных",
       color: "text-purple-400",
       bgColor: "bg-purple-500/20",
@@ -81,19 +153,19 @@ export default function TrainerStatsSection({
       color: "text-orange-400",
       bgColor: "bg-orange-500/20",
     },
-  ];
+  ], [messageStats, workoutStats, stats]);
 
-  const weeklyStats = [
+  const weeklyStats = useMemo(() => [
     {
       icon: BarChart3,
       label: "На этой неделе",
-      value: workoutStats?.thisWeekWorkouts || 0, // ✅ Правильное поле
+      value: workoutStats?.thisWeekWorkouts || 0,
       color: "text-cyan-400",
     },
     {
       icon: Star,
       label: "Средний рейтинг",
-      value: stats?.avgRating?.toFixed(1) || "4.5", // ✅ Используем stats.avgRating
+      value: stats?.avgRating?.toFixed(1) || "4.5",
       color: "text-yellow-400",
     },
     {
@@ -102,7 +174,21 @@ export default function TrainerStatsSection({
       value: workoutStats?.totalWorkouts || 0,
       color: "text-pink-400",
     },
-  ];
+  ], [workoutStats, stats]);
+
+  if (isLoading) {
+    return (
+      <div className="space-y-3">
+        <h3 className="text-sm font-medium text-white/70 uppercase tracking-wide">
+          Статистика
+        </h3>
+        <div className="flex items-center gap-2 p-3 bg-white/10 rounded-lg">
+          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white/50"></div>
+          <span className="text-sm text-white/80">{loadingStep}</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -117,77 +203,38 @@ export default function TrainerStatsSection({
 
       {/* Основная статистика */}
       <div className="grid grid-cols-2 gap-3">
-        {statsItems.map((stat, index) => {
-          const IconComponent = stat.icon;
-          
-          return (
-            <motion.div
-              key={stat.label}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: index * 0.1, duration: 0.3 }}
-              whileHover={{ scale: 1.02 }}
-              className={`p-3 ${stat.bgColor} backdrop-blur-sm rounded-lg border border-white/20 hover:border-white/30 transition-all duration-200`}
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <IconComponent className={`h-4 w-4 ${stat.color}`} />
-                <span className="text-xs font-medium text-white/90">{stat.label}</span>
-              </div>
-              <div className="text-lg font-bold text-white">{stat.value}</div>
-              <div className="text-xs text-white/60">{stat.description}</div>
-            </motion.div>
-          );
-        })}
+        {statsItems.map((stat, index) => (
+          <StatCard
+            key={stat.label}
+            icon={stat.icon}
+            label={stat.label}
+            value={stat.value}
+            description={stat.description}
+            color={stat.color}
+            bgColor={stat.bgColor}
+            index={index}
+          />
+        ))}
       </div>
 
       {/* Дополнительная статистика */}
       <div className="space-y-2">
-        {weeklyStats.map((stat, index) => {
-          const IconComponent = stat.icon;
-          
-          return (
-            <motion.div
-              key={stat.label}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: (index + 4) * 0.1, duration: 0.3 }}
-              whileHover={{ scale: 1.02 }}
-              className="flex items-center justify-between p-2 bg-white/5 rounded-lg border border-white/10 hover:border-white/20 transition-all duration-200"
-            >
-              <div className="flex items-center gap-2">
-                <IconComponent className={`h-3 w-3 ${stat.color}`} />
-                <span className="text-sm text-white/90">{stat.label}</span>
-              </div>
-              <span className="text-sm font-semibold text-white">{stat.value}</span>
-            </motion.div>
-          );
-        })}
+        {weeklyStats.map((stat, index) => (
+          <WeeklyStatRow
+            key={stat.label}
+            icon={stat.icon}
+            label={stat.label}
+            value={stat.value}
+            color={stat.color}
+          />
+        ))}
       </div>
 
       {/* Индикатор прогресса */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.7, duration: 0.5 }}
-        className="p-3 bg-gradient-to-r from-green-500/20 to-blue-500/20 rounded-lg border border-white/20"
-      >
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium text-white/90">Прогресс дня</span>
-          <span className="text-xs text-white/70">
-            {workoutStats?.todayWorkouts || 0} из 6 тренировок
-          </span>
-        </div>
-        <div className="w-full bg-white/20 rounded-full h-2">
-          <motion.div
-            className="bg-gradient-to-r from-green-400 to-blue-400 h-2 rounded-full"
-            initial={{ width: 0 }}
-            animate={{ 
-              width: `${Math.min(((workoutStats?.todayWorkouts || 0) / 6) * 100, 100)}%` 
-            }}
-            transition={{ delay: 1, duration: 1, ease: "easeOut" }}
-          />
-        </div>
-      </motion.div>
+      <ProgressIndicator 
+        currentValue={workoutStats?.todayWorkouts || 0}
+        maxValue={6}
+      />
     </div>
   );
-}
+});

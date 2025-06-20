@@ -30,13 +30,7 @@ export default function ManagerNavigationSection({
           const IconComponent = item.icon;
 
           return (
-            <motion.div
-              key={item.href}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: index * 0.1, duration: 0.3 }}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+            <div
             >
               <Button
                 variant="ghost"
@@ -55,7 +49,7 @@ export default function ManagerNavigationSection({
                   </Badge>
                 )}
               </Button>
-            </motion.div>
+            </div>
           );
         })}
       </div>

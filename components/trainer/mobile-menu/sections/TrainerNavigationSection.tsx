@@ -62,11 +62,7 @@ export default function TrainerNavigationSection({
           const hasNotifications = badgeValue && parseInt(badgeValue) > 0;
 
           return (
-            <motion.div
-              key={item.href}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: index * 0.1, duration: 0.3 }}
+            <div
             >
               <Button
                 variant="ghost"
@@ -111,7 +107,7 @@ export default function TrainerNavigationSection({
                   </div>
                 </div>
               </Button>
-            </motion.div>
+            </div>
           );
         })}
       </div>

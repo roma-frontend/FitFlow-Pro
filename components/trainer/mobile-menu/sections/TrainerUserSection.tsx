@@ -1,6 +1,7 @@
-// components/trainer/mobile-menu/sections/TrainerUserSection.tsx
+// components/trainer/mobile-menu/sections/TrainerUserSection.tsx - ОПТИМИЗИРОВАННАЯ ВЕРСИЯ
 "use client";
 
+import { memo } from "react";
 import { motion } from "framer-motion";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -12,19 +13,16 @@ interface TrainerUserSectionProps {
   loadingStep: string;
 }
 
-export default function TrainerUserSection({
+const TrainerUserSection = memo<TrainerUserSectionProps>(({
   user,
   isLoading,
   loadingStep,
-}: TrainerUserSectionProps) {
+}) => {
   
   if (isLoading) {
     return (
-      <motion.div 
+      <div 
         className="space-y-3"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
       >
         <div className="flex items-center gap-3 p-3 bg-white/10 rounded-lg">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white/50"></div>
@@ -33,17 +31,14 @@ export default function TrainerUserSection({
             <div className="text-xs text-white/60">{loadingStep}</div>
           </div>
         </div>
-      </motion.div>
+      </div>
     );
   }
 
   if (!user) {
     return (
-      <motion.div 
+      <div 
         className="space-y-3"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
       >
         <div className="flex items-center gap-3 p-3 bg-red-500/20 rounded-lg border border-red-400/20">
           <User className="h-8 w-8 text-red-400" />
@@ -52,21 +47,22 @@ export default function TrainerUserSection({
             <div className="text-xs text-white/60">Попробуйте войти заново</div>
           </div>
         </div>
-      </motion.div>
+      </div>
     );
   }
 
   return (
-    <motion.div 
+    <div 
       className="space-y-3"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
     >
       {/* Профиль пользователя */}
       <div className="flex items-center gap-3 p-3 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20">
         <Avatar className="h-12 w-12 border-2 border-white/20">
-          <AvatarImage src={user.avatar} alt={user.name} />
+          <AvatarImage 
+            src={user.avatar} 
+            alt={user.name}
+            className="object-cover"
+          />
           <AvatarFallback className="bg-white/20 text-white font-semibold">
             {user.name?.charAt(0)?.toUpperCase() || 'T'}
           </AvatarFallback>
@@ -106,7 +102,7 @@ export default function TrainerUserSection({
       <div className="grid grid-cols-2 gap-2">
         <div className="p-2 bg-white/5 rounded-lg border border-white/10">
           <div className="text-xs text-white/60 mb-1">Специализация</div>
-          <div className="text-sm text-white/90 font-medium">
+          <div className="text-sm text-white/90 font-medium truncate">
             {user.specialization?.join(', ') || 'Фитнес-тренер'}
           </div>
         </div>
@@ -114,11 +110,15 @@ export default function TrainerUserSection({
         <div className="p-2 bg-white/5 rounded-lg border border-white/10">
           <div className="text-xs text-white/60 mb-1">Опыт</div>
           <div className="text-sm text-white/90 font-medium flex items-center gap-1">
-            <Clock className="h-3 w-3" />
-            {user.experience || 5} лет
+            <Clock className="h-3 w-3 flex-shrink-0" />
+            <span className="truncate">{user.experience || 5} лет</span>
           </div>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
-}
+});
+
+TrainerUserSection.displayName = 'TrainerUserSection';
+
+export default TrainerUserSection;

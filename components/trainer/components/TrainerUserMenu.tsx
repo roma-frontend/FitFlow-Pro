@@ -320,22 +320,6 @@ const TrainerUserMenu = memo(({
                   </div>
                 </div>
               </div>
-              
-              {/* Дополнительная информация */}
-              <div className="mt-3 pt-3 border-t border-gray-200">
-                <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
-                  <div>
-                    <span className="font-medium">ID:</span> {user?.id || 'N/A'}
-                  </div>
-                  <div>
-                    <span className="font-medium">Создан:</span> {
-                      user?.createdAt ? 
-                      new Date(user.createdAt).toLocaleDateString('ru-RU') : 
-                      'N/A'
-                    }
-                  </div>
-                </div>
-              </div>
             </DropdownMenuLabel>
 
             <DropdownMenuSeparator className="border-gray-200" />

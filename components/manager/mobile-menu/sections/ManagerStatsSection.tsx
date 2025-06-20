@@ -2,15 +2,15 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { 
-  Users, 
-  Calendar, 
-  DollarSign, 
+import {
+  Users,
+  Calendar,
+  DollarSign,
   TrendingUp,
   Building2,
   Activity,
   Star,
-  Clock
+  Clock,
 } from "lucide-react";
 import { ManagerStats } from "@/contexts/ManagerContext";
 
@@ -18,7 +18,9 @@ interface ManagerStatsSectionProps {
   stats: ManagerStats;
 }
 
-export default function ManagerStatsSection({ stats }: ManagerStatsSectionProps) {
+export default function ManagerStatsSection({
+  stats,
+}: ManagerStatsSectionProps) {
   // ✅ Статистика для мобильного меню менеджера (используем только доступные поля)
   const mobileStats = [
     {
@@ -70,12 +72,8 @@ export default function ManagerStatsSection({ stats }: ManagerStatsSectionProps)
           const IconComponent = stat.icon;
 
           return (
-            <motion.div
-              key={stat.label}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: index * 0.1, duration: 0.3 }}
-              whileHover={{ scale: 1.02 }}
+            <div
+              key={index}
               className={`p-3 rounded-xl border ${stat.bgColor} ${stat.borderColor} backdrop-blur-sm`}
             >
               <div className="flex items-center gap-2 mb-2">
@@ -88,7 +86,7 @@ export default function ManagerStatsSection({ stats }: ManagerStatsSectionProps)
                   </div>
                 </div>
               </div>
-              
+
               <div className="space-y-1">
                 <div className="text-xs font-medium text-white/90 truncate">
                   {stat.label}
@@ -97,7 +95,7 @@ export default function ManagerStatsSection({ stats }: ManagerStatsSectionProps)
                   {stat.subValue}
                 </div>
               </div>
-            </motion.div>
+            </div>
           );
         })}
       </div>
@@ -107,17 +105,21 @@ export default function ManagerStatsSection({ stats }: ManagerStatsSectionProps)
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Star className="h-4 w-4 text-yellow-400" />
-            <span className="text-sm font-medium text-white/90">Средний рейтинг</span>
+            <span className="text-sm font-medium text-white/90">
+              Средний рейтинг
+            </span>
           </div>
           <span className="text-sm font-bold text-yellow-400">
             {(stats?.averageRating || 0).toFixed(1)}
           </span>
         </div>
-        
+
         <div className="flex items-center justify-between mt-2">
           <div className="flex items-center gap-2">
             <Activity className="h-4 w-4 text-green-400" />
-            <span className="text-sm font-medium text-white/90">Завершено сессий</span>
+            <span className="text-sm font-medium text-white/90">
+              Завершено сессий
+            </span>
           </div>
           <span className="text-sm font-bold text-green-400">
             {stats?.completedSessions || 0}
@@ -127,7 +129,9 @@ export default function ManagerStatsSection({ stats }: ManagerStatsSectionProps)
         <div className="flex items-center justify-between mt-2">
           <div className="flex items-center gap-2">
             <Building2 className="h-4 w-4 text-blue-400" />
-            <span className="text-sm font-medium text-white/90">Всего клиентов</span>
+            <span className="text-sm font-medium text-white/90">
+              Всего клиентов
+            </span>
           </div>
           <span className="text-sm font-bold text-blue-400">
             {stats?.totalClients || 0}

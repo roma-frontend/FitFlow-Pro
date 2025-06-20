@@ -96,13 +96,7 @@ export default function ManagerActionsSection({
             const IconComponent = action.icon;
             
             return (
-              <motion.div
-                key={action.href}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: index * 0.1, duration: 0.3 }}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+              <div
               >
                 <Button
                   onClick={() => handleAction(action.href)}
@@ -115,7 +109,7 @@ export default function ManagerActionsSection({
                     {action.label}
                   </span>
                 </Button>
-              </motion.div>
+              </div>
             );
           })}
         </div>
@@ -132,13 +126,7 @@ export default function ManagerActionsSection({
             const IconComponent = action.icon;
             
             return (
-              <motion.div
-                key={action.href}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.1, duration: 0.3 }}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+              <div
               >
                 <Button
                   variant="ghost"
@@ -152,17 +140,12 @@ export default function ManagerActionsSection({
                     <div className="text-xs text-white/60">{action.description}</div>
                   </div>
                 </Button>
-              </motion.div>
+              </div>
             );
           })}
 
           {/* Выход из системы */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.2, duration: 0.3 }}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
+          <div
           >
             <Button
               variant="ghost"
@@ -188,7 +171,7 @@ export default function ManagerActionsSection({
                 </>
               )}
             </Button>
-          </motion.div>
+          </div>
         </div>
       </div>
     </div>

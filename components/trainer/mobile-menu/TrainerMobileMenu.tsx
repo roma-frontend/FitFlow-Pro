@@ -1,8 +1,8 @@
-// components/trainer/mobile-menu/TrainerMobileMenu.tsx - ОБНОВЛЕННЫЙ ИНТЕРФЕЙС
+// components/trainer/mobile-menu/TrainerMobileMenu.tsx - ОПТИМИЗИРОВАННАЯ ВЕРСИЯ
 
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useCallback, memo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -28,33 +28,62 @@ interface TrainerMobileMenuProps {
   setShowDebug: (show: boolean) => void;
 }
 
+// ✅ Оптимизированные варианты анимации
 const overlayVariants = {
   hidden: { opacity: 0 },
-  visible: { opacity: 1 },
-  exit: { opacity: 0 },
+  visible: { 
+    opacity: 1,
+    transition: { duration: 0.15, ease: "easeOut" } // Ускорили анимацию
+  },
+  exit: { 
+    opacity: 0,
+    transition: { duration: 0.1, ease: "easeIn" }  // Ускорили закрытие
+  },
 };
 
 const menuVariants = {
-  hidden: { x: "100%" },
+  hidden: { 
+    x: "100%",
+    transition: { duration: 0 } // Убрали анимацию при монтировании
+  },
   visible: {
     x: 0,
     transition: {
       type: "spring",
-      damping: 25,
-      stiffness: 200,
+      damping: 30, // Увеличили демпинг для меньшего колебания
+      stiffness: 300, // Увеличили жесткость для быстроты
+      mass: 0.8, // Уменьшили массу для быстроты
     },
   },
   exit: {
     x: "100%",
     transition: {
       type: "spring",
-      damping: 25,
-      stiffness: 200,
+      damping: 35,
+      stiffness: 400,
+      mass: 0.6,
     },
   },
 };
 
-export default function TrainerMobileMenu({
+// ✅ Мемоизированный заголовок
+const MenuHeader = memo(({ onClose }: { onClose: () => void }) => (
+  <div className="flex items-center justify-between p-4 border-b border-white/20">
+    <h2 className="text-lg font-semibold text-white">Меню тренера</h2>
+    <Button
+      variant="ghost"
+      size="sm"
+      onClick={onClose}
+      className="text-white hover:bg-white/10 p-2 h-8 w-8 transition-colors duration-150"
+    >
+      <X className="h-4 w-4" />
+    </Button>
+  </div>
+));
+
+MenuHeader.displayName = 'MenuHeader';
+
+export default memo(function TrainerMobileMenu({
   isOpen,
   onClose,
   navigationItems,
@@ -70,23 +99,58 @@ export default function TrainerMobileMenu({
   showDebug,
   setShowDebug,
 }: TrainerMobileMenuProps) {
-  // Блокируем скролл при открытом меню
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [isOpen]);
-
   const { user } = useAuth();
 
+  // ✅ Оптимизированное управление скроллом
+  useEffect(() => {
+    if (isOpen) {
+      // Запоминаем текущую позицию скролла
+      const scrollY = window.scrollY;
+      
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
+      document.body.style.overflow = 'hidden';
+      
+      return () => {
+        // Восстанавливаем позицию скролла
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+        document.body.style.overflow = '';
+        window.scrollTo(0, scrollY);
+      };
+    }
+  }, [isOpen]);
+
+  // ✅ Мемоизированный обработчик закрытия
+  const handleClose = useCallback(() => {
+    onClose();
+  }, [onClose]);
+
+  // ✅ Мемоизированный обработчик клика по overlay
+  const handleOverlayClick = useCallback((e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
+      handleClose();
+    }
+  }, [handleClose]);
+
+  // ✅ Обработка Escape
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        handleClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscape);
+      return () => document.removeEventListener('keydown', handleEscape);
+    }
+  }, [isOpen, handleClose]);
+
   return (
-    <AnimatePresence>
+    <AnimatePresence mode="wait">
       {isOpen && (
         <>
           {/* Overlay */}
@@ -96,7 +160,8 @@ export default function TrainerMobileMenu({
             initial="hidden"
             animate="visible"
             exit="exit"
-            onClick={onClose}
+            onClick={handleOverlayClick}
+            style={{ willChange: 'opacity' }} // Оптимизация для браузера
           />
 
           {/* Menu */}
@@ -106,21 +171,15 @@ export default function TrainerMobileMenu({
             initial="hidden"
             animate="visible"
             exit="exit"
+            style={{ 
+              willChange: 'transform', // Оптимизация для браузера
+              backfaceVisibility: 'hidden', // Предотвращение мерцания
+            }}
           >
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-white/20">
-              <h2 className="text-lg font-semibold text-white">Меню тренера</h2>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onClose}
-                className="text-white hover:bg-white/10 p-2 h-8 w-8"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
+            <MenuHeader onClose={handleClose} />
 
-            {/* Content - также не передаем user */}
+            {/* Content */}
             <TrainerMobileMenuContent
               user={user}
               navigationItems={navigationItems}
@@ -132,7 +191,7 @@ export default function TrainerMobileMenu({
               error={error}
               onNavigation={onNavigation}
               onLogout={onLogout}
-              onClose={onClose}
+              onClose={handleClose}
               refetch={refetch}
               showDebug={showDebug}
               setShowDebug={setShowDebug}
@@ -142,4 +201,4 @@ export default function TrainerMobileMenu({
       )}
     </AnimatePresence>
   );
-}
+});

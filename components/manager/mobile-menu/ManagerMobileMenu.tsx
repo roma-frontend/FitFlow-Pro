@@ -80,7 +80,7 @@ export default function ManagerMobileMenu({
             initial="hidden"
             animate="visible"
             exit="exit"
-            onClick={onClose}
+            style={{ willChange: 'opacity' }} 
           />
 
           {/* Menu */}
@@ -90,6 +90,10 @@ export default function ManagerMobileMenu({
             initial="hidden"
             animate="visible"
             exit="exit"
+            style={{ 
+              willChange: 'transform',
+              backfaceVisibility: 'hidden',
+            }}
           >
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-white/20">

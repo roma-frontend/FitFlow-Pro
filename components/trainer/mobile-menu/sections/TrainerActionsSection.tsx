@@ -28,16 +28,15 @@ export default function TrainerActionsSection({
   isLoading,
   onClose,
 }: TrainerActionsSectionProps) {
-
-  const {logout} = useAuth()
+  const { logout } = useAuth();
 
   const handleAction = (action: () => void) => {
     action();
     onClose();
   };
 
-    const handleLogout = async () => {
-    await logout()
+  const handleLogout = async () => {
+    await logout();
     onClose();
   };
 
@@ -98,18 +97,13 @@ export default function TrainerActionsSection({
         <h3 className="text-sm font-medium text-white/70 uppercase tracking-wide">
           Быстрые действия
         </h3>
-        
+
         <div className="grid grid-cols-2 gap-2">
           {quickActions.map((action, index) => {
             const IconComponent = action.icon;
-            
+
             return (
-              <motion.div
-                key={action.href}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: index * 0.1, duration: 0.3 }}
-              >
+              <div key={index}>
                 <Button
                   variant="ghost"
                   onClick={() => handleAction(() => onNavigation(action.href))}
@@ -126,7 +120,7 @@ export default function TrainerActionsSection({
                     </div>
                   </div>
                 </Button>
-              </motion.div>
+              </div>
             );
           })}
         </div>
@@ -137,11 +131,11 @@ export default function TrainerActionsSection({
         <h3 className="text-sm font-medium text-white/70 uppercase tracking-wide">
           Система
         </h3>
-        
+
         <div className="space-y-2">
           {systemActions.map((action, index) => {
             const IconComponent = action.icon;
-            
+
             return (
               <motion.div
                 key={action.href}
@@ -170,7 +164,7 @@ export default function TrainerActionsSection({
               </motion.div>
             );
           })}
-          
+
           {/* Выход */}
           <motion.div
             initial={{ opacity: 0, x: 20 }}
