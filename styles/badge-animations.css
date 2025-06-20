@@ -1,0 +1,223 @@
+/* styles/badge-animations.css */
+
+/* Базовые анимации */
+@keyframes quantum-particle {
+  0%, 100% { transform: translate(0, 0); }
+  25% { transform: translate(-2px, -2px); }
+  50% { transform: translate(2px, -2px); }
+  75% { transform: translate(-2px, 2px); }
+}
+
+@keyframes quantum-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.05); }
+}
+
+@keyframes quantum-ring {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes neural-flow {
+  0%, 100% { opacity: 0.5; transform: translateX(-10px); }
+  50% { opacity: 1; transform: translateX(10px); }
+}
+
+@keyframes holo-glint {
+  0%, 100% { opacity: 0; transform: translateX(-100%); }
+  50% { opacity: 1; transform: translateX(100%); }
+}
+
+@keyframes cosmic-twinkle {
+  0%, 100% { opacity: 0.3; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+@keyframes matrix-rain {
+  0% { opacity: 0; transform: translateY(-10px); }
+  50% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(10px); }
+}
+
+/* Классы для применения анимаций */
+.quantum-particle-1 { 
+  animation: quantum-particle 3s infinite;
+  animation-delay: 0s;
+}
+
+.quantum-particle-2 { 
+  animation: quantum-particle 3s infinite;
+  animation-delay: 1s;
+}
+
+.quantum-particle-3 { 
+  animation: quantum-particle 3s infinite;
+  animation-delay: 2s;
+}
+
+.quantum-particle-4 { 
+  animation: quantum-particle 3s infinite;
+  animation-delay: 0.5s;
+}
+
+.quantum-ring-1 { 
+  animation: quantum-ring 8s linear infinite;
+}
+
+.quantum-ring-2 { 
+  animation: quantum-ring 6s linear infinite reverse;
+}
+
+.quantum-pulse { 
+  animation: quantum-pulse 4s ease-in-out infinite;
+}
+
+.neural-particle-1 { 
+  animation: neural-flow 2s ease-in-out infinite;
+  animation-delay: 0s;
+}
+
+.neural-particle-2 { 
+  animation: neural-flow 2s ease-in-out infinite;
+  animation-delay: 0.2s;
+}
+
+.neural-particle-3 { 
+  animation: neural-flow 2s ease-in-out infinite;
+  animation-delay: 0.4s;
+}
+
+.neural-particle-4 { 
+  animation: neural-flow 2s ease-in-out infinite;
+  animation-delay: 0.6s;
+}
+
+.holo-glint-1 { 
+  animation: holo-glint 3s ease-in-out infinite;
+}
+
+.holo-glint-2 { 
+  animation: holo-glint 3s ease-in-out infinite;
+  animation-delay: 0.5s;
+}
+
+.holo-line-1 { 
+  animation: holo-glint 4s ease-in-out infinite;
+  animation-delay: 1s;
+}
+
+.holo-line-2 { 
+  animation: holo-glint 4s ease-in-out infinite;
+  animation-delay: 1.5s;
+}
+
+.cosmic-star-1 { 
+  animation: cosmic-twinkle 4s ease-in-out infinite;
+  animation-delay: 0s;
+}
+
+.cosmic-star-2 { 
+  animation: cosmic-twinkle 4s ease-in-out infinite;
+  animation-delay: 0.5s;
+}
+
+.cosmic-star-3 { 
+  animation: cosmic-twinkle 4s ease-in-out infinite;
+  animation-delay: 1s;
+}
+
+.cosmic-star-4 { 
+  animation: cosmic-twinkle 4s ease-in-out infinite;
+  animation-delay: 1.5s;
+}
+
+.cosmic-ring-1 { 
+  animation: quantum-ring 10s linear infinite;
+}
+
+.cosmic-ring-2 { 
+  animation: quantum-ring 3s linear infinite reverse;
+}
+
+.cosmic-wave-1 { 
+  animation: quantum-pulse 4s ease-in-out infinite;
+}
+
+.cosmic-wave-2 { 
+  animation: quantum-pulse 4s ease-in-out infinite;
+  animation-delay: 2s;
+}
+
+.matrix-digit-1 { 
+  animation: matrix-rain 2s ease-in-out infinite;
+  animation-delay: 0s;
+}
+
+.matrix-digit-2 { 
+  animation: matrix-rain 2s ease-in-out infinite;
+  animation-delay: 0.5s;
+}
+
+.matrix-digit-3 { 
+  animation: matrix-rain 2s ease-in-out infinite;
+  animation-delay: 1s;
+}
+
+.matrix-digit-4 { 
+  animation: matrix-rain 2s ease-in-out infinite;
+  animation-delay: 1.5s;
+}
+
+.matrix-scan { 
+  animation: holo-glint 2s ease-in-out infinite;
+}
+
+/* Дополнительные эффекты для badge */
+.badge-glow {
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+.badge-quantum {
+  overflow: clip;
+}
+
+.badge-quantum::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  border-radius: inherit;
+  animation: holo-glint 3s ease-in-out infinite;
+  z-index: -1;
+}
+
+.badge-glow {
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.4);
+}
+
+.badge-glow-intense {
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.6), 0 0 24px rgba(255, 255, 255, 0.3);
+}
+
+/* Дополнительные анимации для neural */
+@keyframes neural-flow {
+  0%, 100% { opacity: 0.4; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+.neural-particle-1 { animation: neural-flow 2s ease-in-out infinite; }
+.neural-particle-2 { animation: neural-flow 2s ease-in-out infinite 0.2s; }
+.neural-particle-3 { animation: neural-flow 2s ease-in-out infinite 0.4s; }
+.neural-particle-4 { animation: neural-flow 2s ease-in-out infinite 0.6s; }
+
+/* Анимации для holographic линий */
+@keyframes holo-line-sweep {
+  0%, 100% { opacity: 0; transform: translateX(-100%); }
+  50% { opacity: 0.8; transform: translateX(100%); }
+}
+
+.holo-line-1 { animation: holo-line-sweep 3s ease-in-out infinite; }
+.holo-line-2 { animation: holo-line-sweep 3s ease-in-out infinite 1.5s; }
