@@ -1,6 +1,6 @@
 // lib/unified-auth.ts
 import { ConvexHttpClient } from "convex/browser";
-import { authenticate, createSession, getSession, logout as simpleLogout } from '@/lib/simple-auth';
+import { authenticate, createSession, getSession, logout as simpleLogout, User } from '@/lib/simple-auth';
 import { verifyToken, createToken } from '@/lib/jwt-auth';
 import type { UserRole } from '@/lib/permissions';
 
@@ -734,13 +734,15 @@ class UnifiedAuthSystem {
             deviceInfo?: string;
         }
     ): Promise<AuthSession> {
-        // Создаем простую сессию
-        const sessionId = createSession({
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            role: user.role
-        });
+        const now = new Date();
+
+        const fullUser: User = {
+            ...user,
+            createdAt: now,
+            updatedAt: now
+        };
+
+        const sessionId = createSession(fullUser);
 
         const session = getSession(sessionId);
         if (!session) {
@@ -749,7 +751,7 @@ class UnifiedAuthSystem {
 
         return {
             id: sessionId,
-            user,
+            user, // оставляем оригинальный AuthUser — это нормально, если ты не хочешь светить даты в сессии
             method: options.method as 'password' | 'face-id' | 'qr-code' | 'token',
             createdAt: session.createdAt,
             expiresAt: session.expiresAt,

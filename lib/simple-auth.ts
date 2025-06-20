@@ -12,10 +12,12 @@ export interface User {
   rating?: number;
   createdAt: Date;
   updatedAt: Date;
+  lastLoginAt?: Date;
 }
 
 export interface Session {
   id: string;
+  email: string;
   user: User;
   createdAt: Date;
   expiresAt: Date;
@@ -44,6 +46,7 @@ export const createSession = (user: User): string => {
   const now = new Date();
   const session: Session = {
     id: sessionId,
+    email: user.email,
     user,
     createdAt: now,
     expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 дней

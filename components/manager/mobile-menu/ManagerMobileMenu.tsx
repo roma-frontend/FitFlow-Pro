@@ -14,7 +14,7 @@ interface ManagerMobileMenuProps {
   onClose: () => void;
   navigationItems: ManagerNavigationItem[];
   user: any;
-  stats: ManagerStats; // ✅ Используем правильный тип
+  stats: ManagerStats;
   onNavigation: (href: string) => void;
   onLogout: () => void;
   isLoggingOut: boolean;

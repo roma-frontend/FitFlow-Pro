@@ -81,8 +81,8 @@ export default function TrainerMobileMenuContent({
       {/* Секция навигации */}
       <TrainerNavigationSection
         navigationItems={navigationItems}
-        messageStats={messageStats} // ✅ Добавляем
-        workoutStats={workoutStats} // ✅ Добавляем
+        messageStats={messageStats}
+        workoutStats={workoutStats}
         onNavigation={onNavigation}
         isLoading={isLoading}
         onClose={onClose}

@@ -3,7 +3,6 @@
 
 import { useAuth } from "@/hooks/useAuth";
 import { useRoleTexts } from "@/lib/roleTexts";
-import { toast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 
 // Импорт компонентов
@@ -18,7 +17,7 @@ import { RoleSpecificWidgets } from "@/components/admin/dashboard/RoleSpecificWi
 import { QuickStatsWidget } from "@/components/admin/dashboard/QuickStatsWidget";
 import { NotificationsWidget } from "@/components/admin/dashboard/NotificationsWidget";
 import { QuickLinksWidget } from "@/components/admin/dashboard/QuickLinksWidget";
-import { SecurityWidget } from "@/components/admin/dashboard/SecurityWidget"; // ✅ Добавляем импорт
+import { SecurityWidget } from "@/components/admin/dashboard/SecurityWidget";
 import { KeyMetrics } from "@/components/admin/dashboard/KeyMetrics";
 import { WeeklyCalendar } from "@/components/admin/dashboard/WeeklyCalendar";
 import { ProgressTracker } from "@/components/admin/dashboard/ProgressTracker";

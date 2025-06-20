@@ -1,20 +1,21 @@
-// components/trainer/mobile-menu/TrainerMobileMenu.tsx
+// components/trainer/mobile-menu/TrainerMobileMenu.tsx - ОБНОВЛЕННЫЙ ИНТЕРФЕЙС
+
 "use client";
 
 import { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { TrainerNavigationItem } from "../types/trainer-navigation";
-import TrainerMobileMenuHeader from "./TrainerMobileMenuHeader";
+import { X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import TrainerMobileMenuContent from "./TrainerMobileMenuContent";
-import TrainerMobileMenuFooter from "./TrainerMobileMenuFooter";
-import type { SystemStats, WorkoutStats, MessageStats } from "@/types/trainer"; // ✅ Используем MessageStats из trainer
+import { TrainerNavigationItem } from "../types/trainer-navigation";
+import type { MessageStats, WorkoutStats, SystemStats } from "@/types/trainer";
+import { useAuth } from "@/hooks/useAuth";
 
 interface TrainerMobileMenuProps {
   isOpen: boolean;
   onClose: () => void;
   navigationItems: TrainerNavigationItem[];
-  user: any;
-  messageStats: MessageStats; // ✅ Используем MessageStats из @/types/trainer
+  messageStats: MessageStats;
   workoutStats: WorkoutStats;
   stats: SystemStats;
   isLoading: boolean;
@@ -27,44 +28,39 @@ interface TrainerMobileMenuProps {
   setShowDebug: (show: boolean) => void;
 }
 
-// ✅ Оптимизированные варианты анимаций
-const backdropVariants = {
-  hidden: { 
-    opacity: 0,
-    transition: { duration: 0.2, ease: "easeOut" }
-  },
-  visible: { 
-    opacity: 1,
-    transition: { duration: 0.3, ease: "easeOut" }
-  }
+const overlayVariants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1 },
+  exit: { opacity: 0 },
 };
 
-const slideVariants = {
-  hidden: { 
-    x: "100%",
-    transition: { 
-      duration: 0.3, 
-      ease: [0.4, 0, 0.2, 1]
-    }
-  },
-  visible: { 
+const menuVariants = {
+  hidden: { x: "100%" },
+  visible: {
     x: 0,
-    transition: { 
-      duration: 0.4, 
-      ease: [0.4, 0, 0.2, 1],
-      type: "tween"
-    }
-  }
+    transition: {
+      type: "spring",
+      damping: 25,
+      stiffness: 200,
+    },
+  },
+  exit: {
+    x: "100%",
+    transition: {
+      type: "spring",
+      damping: 25,
+      stiffness: 200,
+    },
+  },
 };
 
 export default function TrainerMobileMenu({
   isOpen,
   onClose,
   navigationItems,
-  user,
   messageStats,
   workoutStats,
-  stats, // ✅ Добавляем stats в деструктуризацию
+  stats,
   isLoading,
   loadingStep,
   error,
@@ -74,77 +70,75 @@ export default function TrainerMobileMenu({
   showDebug,
   setShowDebug,
 }: TrainerMobileMenuProps) {
-  
-  // ✅ Обработка Escape
+  // Блокируем скролл при открытом меню
   useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
-        onClose();
-      }
-    };
-
     if (isOpen) {
-      document.addEventListener('keydown', handleEscape);
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
     }
 
     return () => {
-      document.removeEventListener('keydown', handleEscape);
+      document.body.style.overflow = "";
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
-  const handleOverlayClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
-  };
+  const { user } = useAuth();
 
   return (
-    <AnimatePresence mode="wait">
+    <AnimatePresence>
       {isOpen && (
-        <motion.div 
-          className="fixed inset-0 z-50 xl:hidden"
-          onClick={handleOverlayClick}
-          initial="hidden"
-          animate="visible"
-          exit="hidden"
-          variants={backdropVariants}
-        >
-          {/* Backdrop */}
-          <motion.div 
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-            style={{ willChange: 'opacity' }}
+        <>
+          {/* Overlay */}
+          <motion.div
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
+            variants={overlayVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            onClick={onClose}
           />
-          
-          {/* Slide-out menu */}
-          <motion.div 
-            className="absolute top-0 right-0 h-full w-80 max-w-[85vw] bg-gradient-to-br from-green-600 via-green-700 to-blue-600 shadow-2xl"
-            variants={slideVariants}
-            style={{ willChange: 'transform' }}
+
+          {/* Menu */}
+          <motion.div
+            className="fixed top-0 right-0 h-full w-80 bg-gradient-to-br from-green-600 via-green-700 to-blue-600 shadow-2xl z-50 flex flex-col"
+            variants={menuVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
           >
-            <div className="flex flex-col h-full">
-              <TrainerMobileMenuHeader onClose={onClose} />
-              
-              <TrainerMobileMenuContent
-                navigationItems={navigationItems}
-                user={user}
-                messageStats={messageStats}
-                workoutStats={workoutStats}
-                stats={stats} // ✅ Передаем stats
-                isLoading={isLoading}
-                loadingStep={loadingStep}
-                error={error}
-                onNavigation={onNavigation}
-                onLogout={onLogout}
-                refetch={refetch}
-                showDebug={showDebug}
-                setShowDebug={setShowDebug}
-                onClose={onClose}
-              />
-              
-              <TrainerMobileMenuFooter />
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-white/20">
+              <h2 className="text-lg font-semibold text-white">Меню тренера</h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onClose}
+                className="text-white hover:bg-white/10 p-2 h-8 w-8"
+              >
+                <X className="h-4 w-4" />
+              </Button>
             </div>
+
+            {/* Content - также не передаем user */}
+            <TrainerMobileMenuContent
+              user={user}
+              navigationItems={navigationItems}
+              messageStats={messageStats}
+              workoutStats={workoutStats}
+              stats={stats}
+              isLoading={isLoading}
+              loadingStep={loadingStep}
+              error={error}
+              onNavigation={onNavigation}
+              onLogout={onLogout}
+              onClose={onClose}
+              refetch={refetch}
+              showDebug={showDebug}
+              setShowDebug={setShowDebug}
+            />
           </motion.div>
-        </motion.div>
+        </>
       )}
     </AnimatePresence>
   );

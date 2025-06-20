@@ -1,4 +1,5 @@
-// app/trainer-dashboard/page.tsx
+// app/trainer-dashboard/page.tsx - ИСПРАВЛЕННАЯ ВЕРСИЯ
+
 "use client";
 
 import { useState, useEffect, lazy, Suspense } from 'react';
@@ -9,6 +10,8 @@ import { BarChart3, Users, Calendar, MessageSquare } from "lucide-react";
 import { TrainerProvider } from '@/contexts/TrainerContext';
 import { TrainerStats } from '@/components/trainer/components/TrainerStats';
 import { useTrainerDataQuery } from '@/hooks/useTrainerDataQuery';
+import { useAuth } from '@/hooks/useAuth';
+
 // Ленивая загрузка компонентов
 const TrainerOverview = lazy(() => import('@/components/trainer/TrainerOverview'));
 const ClientsManagement = lazy(() => import('@/components/trainer/ClientsManagement'));
@@ -201,13 +204,11 @@ function DashboardContent() {
 }
 
 export default function TrainerDashboard() {
+  // ✅ УБИРАЕМ проверку авторизации здесь - она должна быть в middleware
   return (
     <TrainerProvider>
       <div className="min-h-screen bg-gray-50">
-        {/* Header отдельно, без логики загрузки */}
         <TrainerHeader />
-
-        {/* Основной контент с проверкой загрузки */}
         <DashboardContent />
       </div>
     </TrainerProvider>

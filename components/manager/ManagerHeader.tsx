@@ -123,7 +123,7 @@ export default function ManagerHeader() {
   const router = useRouter();
   const pathname = usePathname();
   const { stats, loading } = useManager();
-  const { user: authUser, logout, isLoading: authLoading } = useAuth(); // ✅ Используем useAuth
+  const { user: authUser, logout, isLoading: authLoading } = useAuth();useAuth
   const { toast } = useToast();
 
   // ✅ Мемоизируем объект пользователя для предотвращения лишних ререндеров
@@ -147,40 +147,7 @@ export default function ManagerHeader() {
   const handleLogout = async () => {
     setIsLoggingOut(true);
 
-    try {
-      console.log("🚪 Начинаем процесс выхода из системы...");
-
-      await logout(); // ✅ Используем logout из useAuth
-
-      console.log("✅ Успешный выход из системы");
-
-      toast({
-        title: "Выход выполнен",
-        description: "Вы успешно вышли из системы",
-      });
-
-      setTimeout(() => {
-        router.push("/");
-      }, 1000);
-
-    } catch (error) {
-      console.error("❌ Ошибка выхода:", error);
-
-      toast({
-        variant: "destructive",
-        title: "Ошибка выхода",
-        description:
-          error instanceof Error
-            ? error.message
-            : "Не удалось выйти из системы",
-      });
-
-      setTimeout(() => {
-        router.push("/");
-      }, 2000);
-    } finally {
-      setIsLoggingOut(false);
-    }
+    await logout();
   };
 
   // ✅ Мемоизируем навигационные элементы
@@ -262,8 +229,8 @@ export default function ManagerHeader() {
                   user={user} 
                   stats={stats}
                   isLoading={loading}
-                  showDebug={false} // ✅ Добавляем недостающие пропсы
-                  setShowDebug={() => {}} // ✅ Заглушка для setShowDebug
+                  showDebug={false}
+                  setShowDebug={() => {}}
                 />
               )}
 

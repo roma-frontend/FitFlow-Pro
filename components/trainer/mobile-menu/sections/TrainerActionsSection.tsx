@@ -14,6 +14,7 @@ import {
   FileText,
   BarChart3,
 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 interface TrainerActionsSectionProps {
   onNavigation: (href: string) => void;
@@ -24,13 +25,19 @@ interface TrainerActionsSectionProps {
 
 export default function TrainerActionsSection({
   onNavigation,
-  onLogout,
   isLoading,
   onClose,
 }: TrainerActionsSectionProps) {
 
+  const {logout} = useAuth()
+
   const handleAction = (action: () => void) => {
     action();
+    onClose();
+  };
+
+    const handleLogout = async () => {
+    await logout()
     onClose();
   };
 
@@ -172,7 +179,7 @@ export default function TrainerActionsSection({
           >
             <Button
               variant="ghost"
-              onClick={() => handleAction(onLogout)}
+              onClick={handleLogout}
               disabled={isLoading}
               className="w-full justify-start h-auto p-3 bg-red-500/10 hover:bg-red-500/20 border border-red-400/20 hover:border-red-400/40 text-red-300 hover:text-red-200 transition-all duration-200"
             >

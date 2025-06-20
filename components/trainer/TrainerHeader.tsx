@@ -1,4 +1,6 @@
-// components/trainer/TrainerHeader.tsx
+
+// components/trainer/TrainerHeader.tsx - ИСПРАВЛЕННАЯ ВЕРСИЯ
+
 "use client";
 
 import { useState, useEffect, memo } from "react";
@@ -23,7 +25,7 @@ import TrainerNotifications from "./components/TrainerNotifications";
 import TrainerMobileMenu from "./mobile-menu/TrainerMobileMenu";
 import { TrainerNavigationItem } from "./types/trainer-navigation";
 
-// ✅ Мемоизированный логотип с пропсом router
+// ✅ Мемоизированный логотип
 const TrainerLogo = memo(({ router }: { router: any }) => (
   <div
     className={combineAnimations(
@@ -58,13 +60,11 @@ TrainerLogo.displayName = 'TrainerLogo';
 const TrainerDesktopNavigation = memo(({ 
   navigationItems, 
   pathname, 
-  router, 
-  isLoading 
+  router 
 }: {
   navigationItems: TrainerNavigationItem[];
   pathname: string;
   router: any;
-  isLoading: boolean;
 }) => {
   const isActivePath = (href: string) => {
     if (href === "/trainer") {
@@ -84,7 +84,6 @@ const TrainerDesktopNavigation = memo(({
             key={item.href}
             variant={isActive ? "default" : "ghost"}
             onClick={() => router.push(item.href)}
-            disabled={isLoading}
             className={combineAnimations(
               `relative flex items-center gap-2 px-3 py-2 transition-all duration-200 ${
                 isActive
@@ -116,83 +115,15 @@ const TrainerDesktopNavigation = memo(({
 
 TrainerDesktopNavigation.displayName = 'TrainerDesktopNavigation';
 
-// ✅ Компонент для отладки
-const DebugPanel = memo(({ 
-  showDebug, 
-  setShowDebug, 
-  token, 
-  user, 
-  isLoading, 
-  error, 
-  loadingStep, 
-  refetch 
-}: {
-  showDebug: boolean;
-  setShowDebug: (show: boolean) => void;
-  token: any;
-  user: any;
-  isLoading: boolean;
-  error: string | null;
-  loadingStep: string;
-  refetch: () => void;
-}) => {
-  if (!showDebug) return null;
-
-  return (
-    <div className="bg-yellow-50 border-b border-yellow-200 p-4">
-      <div className="max-w-7xl mx-auto">
-        <h3 className="font-semibold text-yellow-800 mb-2">Отладочная информация</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-          <div>
-            <p><strong>Токен:</strong> {token ? '✅ Есть' : '❌ Нет'}</p>
-            <p><strong>Пользователь:</strong> {user ? '✅ Есть' : '❌ Нет'}</p>
-            <p><strong>Загрузка:</strong> {isLoading ? '🔄 Да' : '✅ Нет'}</p>
-          </div>
-          <div>
-            <p><strong>Ошибка:</strong> {error || 'Нет'}</p>
-            <p><strong>Этап:</strong> {loadingStep || 'Нет'}</p>
-            <p><strong>Email:</strong> {user?.email || 'Нет'}</p>
-          </div>
-          <div>
-            <p><strong>Имя:</strong> {user?.name || 'Нет'}</p>
-            <p><strong>Роль:</strong> {user?.role || 'Нет'}</p>
-            <p><strong>ID:</strong> {user?.id || user?.userId || 'Нет'}</p>
-          </div>
-          <div className="md:col-span-3">
-            <Button onClick={refetch} size="sm" className="mr-2">
-              Перезагрузить
-            </Button>
-            <Button onClick={() => setShowDebug(false)} size="sm" variant="outline">
-              Скрыть
-            </Button>
-          </div>
-        </div>
-        {/* Показываем полные данные пользователя для отладки */}
-        {user && (
-          <div className="mt-4 p-3 bg-gray-100 rounded-lg">
-            <p className="font-semibold mb-2">Полные данные пользователя:</p>
-            <pre className="text-xs overflow-auto max-h-40">
-              {JSON.stringify(user, null, 2)}
-            </pre>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-});
-
-DebugPanel.displayName = 'DebugPanel';
-
 export default function TrainerHeader() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showDebug, setShowDebug] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
   
-  // ✅ Получаем реальные данные пользователя из useAuth
-  const { user, logout, token, isLoading: authLoading } = useAuth();
+  const { logout, isLoading: authLoading } = useAuth();
   
-  // ✅ Используем ваш хук с правильными полями
+  // ✅ Используем хук для данных тренера
   const { 
     messageStats, 
     workoutStats, 
@@ -203,29 +134,11 @@ export default function TrainerHeader() {
     refetch 
   } = useTrainerDataQuery();
 
-  // ✅ Общее состояние загрузки
-  const isLoading = authLoading || dataLoading;
-
-  // ✅ Логируем данные пользователя для отладки
-  useEffect(() => {
-    if (user) {
-      console.log('🎯 TrainerHeader: Получены данные пользователя:', {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        avatar: user.avatar || user.avatarUrl,
-        isVerified: user.isVerified,
-        rating: user.rating
-      });
-    }
-  }, [user]);
-
   const handleLogout = async () => {
     await logout();
   };
 
-  // ✅ Навигационные элементы с правильными полями из вашего хука
+  // ✅ Навигационные элементы с данными из хука
   const navigationItems: TrainerNavigationItem[] = [
     {
       href: "/trainer/clients",
@@ -260,23 +173,6 @@ export default function TrainerHeader() {
     },
   ];
 
-  // ✅ Если загрузка длится больше 10 секунд, показываем отладку
-  useEffect(() => {
-    if (isLoading) {
-      const timer = setTimeout(() => {
-        setShowDebug(true);
-      }, 10000);
-      return () => clearTimeout(timer);
-    }
-  }, [isLoading]);
-
-  // ✅ Показываем отладку при ошибках
-  useEffect(() => {
-    if (error) {
-      setShowDebug(true);
-    }
-  }, [error]);
-
   // ✅ Управление скроллом для мобильного меню
   useEffect(() => {
     if (isMobileMenuOpen) {
@@ -301,23 +197,6 @@ export default function TrainerHeader() {
     router.push(href);
   };
 
-  // ✅ Показываем состояние загрузки если нет данных пользователя
-  if (authLoading && !user) {
-    return (
-      <header className="bg-gradient-to-r from-green-600 to-blue-600 shadow-lg sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-14 sm:h-16">
-            <TrainerLogo router={router} />
-            <div className="flex items-center gap-2 text-white">
-              <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-              <span className="text-sm">Загрузка...</span>
-            </div>
-          </div>
-        </div>
-      </header>
-    );
-  }
-
   return (
     <>
       {/* Основной header */}
@@ -327,35 +206,19 @@ export default function TrainerHeader() {
             {/* Левая часть - Логотип */}
             <TrainerLogo router={router} />
 
-            {/* Центральная часть - Навигация (скрыта на мобильных и планшетах) */}
+            {/* Центральная часть - Навигация */}
             <TrainerDesktopNavigation
               navigationItems={navigationItems}
               pathname={pathname}
               router={router}
-              isLoading={isLoading}
             />
 
             {/* Правая часть - Статистика и действия */}
             <div className="flex items-center gap-2 sm:gap-3 lg:gap-4">
-              {/* Кнопка отладки (если есть проблемы) */}
-              {(error || showDebug) && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowDebug(!showDebug)}
-                  className="hidden sm:flex items-center gap-1 text-orange-300 hover:text-orange-200 hover:bg-orange-500/20 border border-orange-400/20 hover:border-orange-400/30 px-2 sm:px-3"
-                >
-                  <AlertCircle className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                  <span className="text-sm">
-                    {showDebug ? 'Скрыть' : 'Отладка'}
-                  </span>
-                </Button>
-              )}
-
               {/* Кнопка быстрого действия */}
               <Button
                 onClick={() => router.push("/trainer/workouts/create")}
-                disabled={isLoading}
+                disabled={dataLoading}
                 className="hidden sm:flex items-center gap-1 sm:gap-2 bg-white/20 hover:bg-white/30 text-white border-white/20 hover:border-white/30 transition-all duration-300 px-2 sm:px-3 lg:px-4 h-8 sm:h-9 lg:h-10"
               >
                 <Plus className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
@@ -375,21 +238,12 @@ export default function TrainerHeader() {
                 error={error}
               />
 
-              {/* ✅ Профиль пользователя с реальными данными */}
+              {/* ✅ ИСПРАВЛЕНО: НЕ передаем user через пропсы */}
               <TrainerUserMenu 
-                user={{
-                  id: user?.id,
-                  email: user?.email,
-                  name: user?.name,
-                  role: user?.role,
-                  avatar: user?.avatar || user?.avatarUrl,
-                  isVerified: user?.isVerified,
-                  rating: user?.rating
-                }}
                 messageStats={messageStats}
                 workoutStats={workoutStats}
                 stats={stats}
-                isLoading={isLoading}
+                isLoading={dataLoading}
                 showDebug={showDebug}
                 setShowDebug={setShowDebug}
               />
@@ -400,7 +254,7 @@ export default function TrainerHeader() {
                 size="sm"
                 className="xl:hidden text-white hover:bg-white/10 p-2 h-8 w-8 sm:h-9 sm:w-9"
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                disabled={isLoading}
+                disabled={authLoading}
               >
                 {isMobileMenuOpen ? (
                   <X className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -413,24 +267,14 @@ export default function TrainerHeader() {
         </div>
       </header>
 
-      {/* ✅ Мобильное меню с реальными данными пользователя */}
       <TrainerMobileMenu
         isOpen={isMobileMenuOpen}
         onClose={() => setIsMobileMenuOpen(false)}
         navigationItems={navigationItems}
-        user={{
-          id: user?.id,
-          email: user?.email,
-          name: user?.name,
-          role: user?.role,
-          avatar: user?.avatar || user?.avatarUrl,
-          isVerified: user?.isVerified,
-          rating: user?.rating
-        }}
         messageStats={messageStats}
         workoutStats={workoutStats}
         stats={stats}
-        isLoading={isLoading}
+        isLoading={dataLoading}
         loadingStep={loadingStep}
         error={error}
         onNavigation={handleNavClick}
@@ -438,18 +282,6 @@ export default function TrainerHeader() {
         refetch={refetch}
         showDebug={showDebug}
         setShowDebug={setShowDebug}
-      />
-
-      {/* Панель отладки с подробной информацией */}
-      <DebugPanel
-        showDebug={showDebug}
-        setShowDebug={setShowDebug}
-        token={token}
-        user={user}
-        isLoading={isLoading}
-        error={error}
-        loadingStep={loadingStep}
-        refetch={refetch}
       />
     </>
   );

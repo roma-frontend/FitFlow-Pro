@@ -1,7 +1,9 @@
-// components/trainer/components/TrainerUserMenu.tsx
+// components/trainer/components/TrainerUserMenu.tsx - ИСПРАВЛЕННАЯ ВЕРСИЯ
+
 "use client";
 
 import { useState, memo, useEffect } from "react";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -32,13 +34,10 @@ import {
   Verified,
   Loader2,
   UserCheck,
-  Clock,
 } from "lucide-react";
 import type { MessageStats, WorkoutStats, SystemStats } from "@/types/trainer";
-import { useAuth } from "@/hooks/useAuth";
 
 interface TrainerUserMenuProps {
-  user: any;
   messageStats: MessageStats;
   workoutStats: WorkoutStats;
   stats: SystemStats;
@@ -48,42 +47,36 @@ interface TrainerUserMenuProps {
 }
 
 const TrainerUserMenu = memo(({
-  user,
   messageStats,
   workoutStats,
   stats,
-  isLoading,
   showDebug,
   setShowDebug,
 }: TrainerUserMenuProps) => {
   const [isOpen, setIsOpen] = useState(false);
-  const { logout, user: authUser, isLoading: authLoading } = useAuth();
+  
+  // ✅ Получаем данные пользователя напрямую из useAuth
+  const { user, logout, isLoading: authLoading, refreshUser } = useAuth();
 
-  // ✅ Используем данные из useAuth как основной источник
-  const currentUser = user || authUser;
-
-  // ✅ ИСПРАВЛЕННАЯ логика определения готовности данных
-  const hasUserData = Boolean(currentUser && currentUser.email);
-  const isUserLoading = authLoading && !currentUser;
-
-  // ✅ Логирование для отладки
+  // ✅ Добавляем логирование для отладки
   useEffect(() => {
-    console.log('🔍 TrainerUserMenu Debug:', {
-      hasUserData,
-      isUserLoading,
+    console.log('🎯 TrainerUserMenu: состояние', {
+      user,
       authLoading,
-      isLoading,
-      currentUser: currentUser ? {
-        id: currentUser.id,
-        name: currentUser.name,
-        firstName: currentUser.firstName,
-        lastName: currentUser.lastName,
-        email: currentUser.email,
-        role: currentUser.role
-      } : null,
+      hasUser: !!user,
+      userName: user?.name,
+      userEmail: user?.email,
       timestamp: new Date().toISOString()
     });
-  }, [hasUserData, isUserLoading, authLoading, isLoading, currentUser]);
+  }, [user, authLoading]);
+
+  // ✅ Пробуем обновить данные если их нет
+  useEffect(() => {
+    if (!authLoading && !user && refreshUser) {
+      console.log('🔄 TrainerUserMenu: пытаемся обновить данные пользователя...');
+      refreshUser();
+    }
+  }, [authLoading, user, refreshUser]);
 
   const handleLogout = async () => {
     setIsOpen(false);
@@ -95,18 +88,18 @@ const TrainerUserMenu = memo(({
     action();
   };
 
-  // ✅ Получаем полное имя пользователя
+  // Вспомогательные функции
   const getFullName = (user: any) => {
-    if (user?.name) return user.name;
-    if (user?.firstName && user?.lastName) {
+    if (!user) return 'Загрузка...';
+    if (user.name) return user.name;
+    if (user.firstName && user.lastName) {
       return `${user.firstName} ${user.lastName}`;
     }
-    if (user?.firstName) return user.firstName;
-    if (user?.lastName) return user.lastName;
-    return user?.email?.split('@')[0] || 'Пользователь';
+    if (user.firstName) return user.firstName;
+    if (user.lastName) return user.lastName;
+    return user.email?.split('@')[0] || 'trainer';
   };
 
-  // ✅ Определяем роль пользователя для отображения
   const getRoleDisplayName = (role: string) => {
     const roleMap: Record<string, string> = {
       'super-admin': 'Супер-админ',
@@ -117,10 +110,9 @@ const TrainerUserMenu = memo(({
       'client': 'Клиент',
       'user': 'Пользователь'
     };
-    return roleMap[role] || 'Пользователь';
+    return roleMap[role] || 'Тренер';
   };
 
-  // ✅ Определяем цвет роли
   const getRoleColor = (role: string) => {
     const colorMap: Record<string, string> = {
       'super-admin': 'from-purple-500 to-pink-500',
@@ -134,7 +126,6 @@ const TrainerUserMenu = memo(({
     return colorMap[role] || 'from-gray-500 to-slate-500';
   };
 
-  // ✅ Определяем иконку роли
   const getRoleIcon = (role: string) => {
     switch (role) {
       case 'super-admin':
@@ -150,7 +141,7 @@ const TrainerUserMenu = memo(({
     }
   };
 
-  // ✅ Статистика
+  // Статистика
   const userStats = [
     {
       label: "Активные клиенты",
@@ -175,16 +166,15 @@ const TrainerUserMenu = memo(({
     },
     {
       label: "Рейтинг",
-      value: currentUser?.rating?.toFixed(1) || stats?.avgRating?.toFixed(1) || "4.5",
+      value: user?.rating?.toFixed(1) || stats?.avgRating?.toFixed(1) || "4.5",
       icon: Star,
       color: "text-amber-500",
       bgColor: "bg-gradient-to-br from-amber-50 to-amber-100",
     },
   ];
 
-  // ✅ Получаем инициалы пользователя
   const getUserInitials = (user: any) => {
-    if (!user) return 'U';
+    if (!user) return '...';
     
     const fullName = getFullName(user);
     const words = fullName.split(' ');
@@ -195,67 +185,66 @@ const TrainerUserMenu = memo(({
     return fullName.charAt(0).toUpperCase();
   };
 
-  const RoleIcon = getRoleIcon(currentUser?.role || 'user');
-
-  // ✅ ИСПРАВЛЕННЫЕ значения для отображения
-  const displayName = hasUserData ? getFullName(currentUser) : 'Загрузка...';
-  const displayRole = hasUserData ? getRoleDisplayName(currentUser?.role || 'user') : 'Ожидание...';
-  const displayEmail = hasUserData ? currentUser?.email : 'loading@example.com';
-
-  // ✅ Получаем аватар пользователя
   const getUserAvatar = (user: any) => {
     return user?.avatar || user?.avatarUrl || user?.profileImage;
   };
 
+  const RoleIcon = getRoleIcon(user?.role || 'trainer');
+
+  // ✅ Всегда показываем кнопку, но с разным состоянием
+  const isDataLoading = authLoading || (!user && !authLoading);
+  
   return (
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
-          disabled={isUserLoading} // ✅ ИСПРАВЛЕНО: используем isUserLoading вместо authLoading && !hasUserData
+          disabled={isDataLoading}
           className="flex items-center gap-2 text-white hover:bg-white/20 hover:backdrop-blur-sm hover:scale-105 transition-all duration-300 ease-out px-2 sm:px-3 h-8 sm:h-9 rounded-xl"
         >
           <div className="relative">
             <Avatar className="h-6 w-6 sm:h-8 sm:w-8 border-2 border-white/30 shadow-lg transition-all duration-300 hover:border-white/50">
-              <AvatarImage 
-                src={hasUserData ? getUserAvatar(currentUser) : undefined} 
-                alt={displayName} 
-              />
-              <AvatarFallback className="bg-gradient-to-br from-white/30 to-white/20 text-white text-xs font-semibold backdrop-blur-sm">
-                {hasUserData ? getUserInitials(currentUser) : (
+              {isDataLoading ? (
+                <AvatarFallback className="bg-gradient-to-br from-white/30 to-white/20 text-white text-xs font-semibold backdrop-blur-sm">
                   <Loader2 className="h-3 w-3 animate-spin" />
-                )}
-              </AvatarFallback>
+                </AvatarFallback>
+              ) : (
+                <>
+                  <AvatarImage 
+                    src={getUserAvatar(user)} 
+                    alt={getFullName(user)} 
+                  />
+                  <AvatarFallback className="bg-gradient-to-br from-white/30 to-white/20 text-white text-xs font-semibold backdrop-blur-sm">
+                    {getUserInitials(user)}
+                  </AvatarFallback>
+                </>
+              )}
             </Avatar>
             
-            {/* ✅ Индикатор онлайн статуса только если данные готовы */}
-            {hasUserData && (
-              <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 bg-gradient-to-r from-green-400 to-emerald-400 rounded-full border-2 border-white shadow-sm animate-pulse" />
-            )}
-            
-            {/* ✅ Индикатор роли для супер-админа */}
-            {hasUserData && currentUser?.role === 'super-admin' && (
-              <div className="absolute -top-1 -left-1 h-4 w-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full border-2 border-white shadow-sm flex items-center justify-center">
-                <Crown className="h-2 w-2 text-white" />
-              </div>
+            {/* Индикаторы только если есть данные */}
+            {!isDataLoading && user && (
+              <>
+                <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 bg-gradient-to-r from-green-400 to-emerald-400 rounded-full border-2 border-white shadow-sm animate-pulse" />
+                
+                {user.role === 'super-admin' && (
+                  <div className="absolute -top-1 -left-1 h-4 w-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full border-2 border-white shadow-sm flex items-center justify-center">
+                    <Crown className="h-2 w-2 text-white" />
+                  </div>
+                )}
+              </>
             )}
           </div>
           
           <div className="hidden sm:block text-left min-w-0">
             <div className="text-sm font-semibold text-white truncate max-w-24 lg:max-w-32 drop-shadow-sm">
-              {displayName}
+              {isDataLoading ? 'Загрузка...' : getFullName(user)}
             </div>
             <div className="text-xs text-white/80 font-medium">
-              {displayRole}
+              {isDataLoading ? 'Ожидание...' : getRoleDisplayName(user?.role || 'trainer')}
             </div>
           </div>
           
           <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 text-white/80 transition-transform duration-300 hover:rotate-180" />
-          
-          {/* ✅ ИСПРАВЛЕНО: Индикатор загрузки только при isUserLoading */}
-          {isUserLoading && (
-            <div className="absolute top-0 right-0 h-2 w-2 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-full animate-pulse shadow-lg" />
-          )}
         </Button>
       </DropdownMenuTrigger>
 
@@ -264,103 +253,94 @@ const TrainerUserMenu = memo(({
         className="w-72 sm:w-80 border-0 shadow-2xl bg-white/95 backdrop-blur-xl rounded-2xl"
         sideOffset={8}
       >
-        {/* ✅ Заголовок профиля */}
-        <DropdownMenuLabel className="p-4 bg-gradient-to-br from-gray-50 to-gray-100 rounded-t-2xl">
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <Avatar className="h-12 w-12 border-2 border-gray-200 shadow-lg">
-                <AvatarImage 
-                  src={hasUserData ? getUserAvatar(currentUser) : undefined} 
-                  alt={displayName} 
-                />
-                <AvatarFallback className={`text-lg font-semibold bg-gradient-to-br ${hasUserData ? getRoleColor(currentUser?.role || 'user') : 'from-gray-400 to-gray-500'} text-white`}>
-                  {hasUserData ? getUserInitials(currentUser) : (
-                    <Loader2 className="h-6 w-6 animate-spin" />
-                  )}
-                </AvatarFallback>
-              </Avatar>
-              
-              {/* Статус онлайн */}
-              {hasUserData && (
-                <div className="absolute -bottom-1 -right-1 h-4 w-4 bg-gradient-to-r from-green-400 to-emerald-400 rounded-full border-2 border-white shadow-sm" />
-              )}
-              
-              {/* Индикатор роли */}
-              {hasUserData && currentUser?.role === 'super-admin' && (
-                <div className="absolute -top-1 -left-1 h-5 w-5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full border-2 border-white shadow-sm flex items-center justify-center">
-                  <Crown className="h-2.5 w-2.5 text-white" />
-                </div>
-              )}
-            </div>
-            
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <h3 className="font-bold text-gray-800 truncate">
-                  {displayName}
-                </h3>
-                {hasUserData && currentUser?.isVerified && (
-                  <div className="p-1 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full">
-                    <Verified className="h-3 w-3 text-white" />
-                  </div>
-                )}
-                {hasUserData && <RoleIcon className="h-3 w-3 text-gray-500" />}
-              </div>
-              
-              <div className="text-sm text-gray-600 truncate mb-2 font-medium">
-                {displayEmail}
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <Badge className={`bg-gradient-to-r ${hasUserData ? getRoleColor(currentUser?.role || 'user') : 'from-gray-400 to-gray-500'} text-white border-0 shadow-sm`}>
-                  <div className="w-2 h-2 bg-white rounded-full mr-1 animate-pulse" />
-                  {displayRole}
-                </Badge>
-                
-                {hasUserData && currentUser?.rating && (
-                  <div className="flex items-center gap-1 bg-gradient-to-r from-amber-50 to-amber-100 px-2 py-1 rounded-full">
-                    <Star className="h-3 w-3 text-amber-500 fill-current" />
-                    <span className="text-xs font-semibold text-amber-700">
-                      {currentUser.rating.toFixed(1)}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
+        {isDataLoading ? (
+          // Показываем загрузку
+          <div className="p-8 text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-gray-400" />
+            <p className="text-sm text-gray-500">Загрузка данных пользователя...</p>
           </div>
-          
-          {/* ✅ Дополнительная информация только если данные готовы */}
-          {hasUserData && (
-            <div className="mt-3 pt-3 border-t border-gray-200">
-              <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
-                <div>
-                  <span className="font-medium">ID:</span> {currentUser?.id || currentUser?.userId || 'N/A'}
+        ) : user ? (
+          <>
+            {/* Заголовок профиля */}
+            <DropdownMenuLabel className="p-4 bg-gradient-to-br from-gray-50 to-gray-100 rounded-t-2xl">
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <Avatar className="h-12 w-12 border-2 border-gray-200 shadow-lg">
+                    <AvatarImage 
+                      src={getUserAvatar(user)} 
+                      alt={getFullName(user)} 
+                    />
+                    <AvatarFallback className={`text-lg font-semibold bg-gradient-to-br ${getRoleColor(user?.role || 'trainer')} text-white`}>
+                      {getUserInitials(user)}
+                    </AvatarFallback>
+                  </Avatar>
+                  
+                  {/* Статус онлайн */}
+                  <div className="absolute -bottom-1 -right-1 h-4 w-4 bg-gradient-to-r from-green-400 to-emerald-400 rounded-full border-2 border-white shadow-sm" />
+                  
+                  {/* Индикатор роли для супер-админа */}
+                  {user?.role === 'super-admin' && (
+                    <div className="absolute -top-1 -left-1 h-5 w-5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full border-2 border-white shadow-sm flex items-center justify-center">
+                      <Crown className="h-2.5 w-2.5 text-white" />
+                    </div>
+                  )}
                 </div>
-                <div>
-                  <span className="font-medium">Создан:</span> {
-                    currentUser?.createdAt ? 
-                    new Date(currentUser.createdAt).toLocaleDateString('ru-RU') : 
-                    'N/A'
-                  }
+                
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="font-bold text-gray-800 truncate">
+                      {getFullName(user)}
+                    </h3>
+                    {user?.isVerified && (
+                      <div className="p-1 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full">
+                        <Verified className="h-3 w-3 text-white" />
+                      </div>
+                    )}
+                    <RoleIcon className="h-3 w-3 text-gray-500" />
+                  </div>
+                  
+                  <div className="text-sm text-gray-600 truncate mb-2 font-medium">
+                    {user?.email}
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <Badge className={`bg-gradient-to-r ${getRoleColor(user?.role || 'user')} text-white border-0 shadow-sm`}>
+                      <div className="w-2 h-2 bg-white rounded-full mr-1 animate-pulse" />
+                      {getRoleDisplayName(user?.role || 'user')}
+                    </Badge>
+                    
+                    {user?.rating && (
+                      <div className="flex items-center gap-1 bg-gradient-to-r from-amber-50 to-amber-100 px-2 py-1 rounded-full">
+                        <Star className="h-3 w-3 text-amber-500 fill-current" />
+                        <span className="text-xs font-semibold text-amber-700">
+                          {user.rating.toFixed(1)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
               
-              {/* ✅ Показываем время последнего входа если есть */}
-              {currentUser?.lastLoginAt && (
-                <div className="mt-2 flex items-center gap-1 text-xs text-gray-500">
-                  <Clock className="h-3 w-3" />
-                  <span>Последний вход: {new Date(currentUser.lastLoginAt).toLocaleString('ru-RU')}</span>
+              {/* Дополнительная информация */}
+              <div className="mt-3 pt-3 border-t border-gray-200">
+                <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
+                  <div>
+                    <span className="font-medium">ID:</span> {user?.id || 'N/A'}
+                  </div>
+                  <div>
+                    <span className="font-medium">Создан:</span> {
+                      user?.createdAt ? 
+                      new Date(user.createdAt).toLocaleDateString('ru-RU') : 
+                      'N/A'
+                    }
+                  </div>
                 </div>
-              )}
-            </div>
-          )}
-        </DropdownMenuLabel>
+              </div>
+            </DropdownMenuLabel>
 
-        {/* ✅ Показываем содержимое только если данные готовы */}
-        {hasUserData ? (
-          <>
             <DropdownMenuSeparator className="border-gray-200" />
 
-            {/* ✅ Статистика */}
+            {/* Статистика */}
             <div className="p-3">
               <div className="flex items-center gap-2 mb-3">
                 <Sparkles className="h-4 w-4 text-purple-500" />
@@ -368,7 +348,7 @@ const TrainerUserMenu = memo(({
               </div>
               
               <div className="grid grid-cols-2 gap-2">
-                {userStats.map((stat, index) => {
+                {userStats.map((stat) => {
                   const IconComponent = stat.icon;
                   
                   return (
@@ -393,10 +373,10 @@ const TrainerUserMenu = memo(({
 
             <DropdownMenuSeparator className="border-gray-200 mx-2" />
 
-            {/* ✅ Меню действий */}
+            {/* Меню действий */}
             <div className="p-2 space-y-1">
               <DropdownMenuItem 
-                onClick={() => handleMenuItemClick(() => console.log('Open profile:', currentUser))}
+                onClick={() => handleMenuItemClick(() => console.log('Open profile:', user))}
                 className="flex items-center gap-3 p-3 cursor-pointer rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 border border-blue-100 hover:border-blue-200 transition-all duration-300 hover:shadow-md"
               >
                 <div className="p-2 bg-white/70 rounded-lg shadow-sm">
@@ -437,7 +417,7 @@ const TrainerUserMenu = memo(({
 
             <DropdownMenuSeparator className="border-gray-200 mx-2" />
 
-            {/* ✅ Отладка */}
+            {/* Отладка */}
             <div className="p-2">
               <DropdownMenuItem 
                 onClick={() => handleMenuItemClick(() => setShowDebug(!showDebug))}
@@ -464,7 +444,7 @@ const TrainerUserMenu = memo(({
 
             <DropdownMenuSeparator className="border-gray-200 mx-2" />
 
-            {/* ✅ Кнопка выхода */}
+            {/* Кнопка выхода */}
             <div className="p-2">
               <DropdownMenuItem 
                 onClick={handleLogout}
@@ -481,10 +461,16 @@ const TrainerUserMenu = memo(({
             </div>
           </>
         ) : (
-          // ✅ Показываем загрузку если данных нет
+          // Если нет данных после загрузки
           <div className="p-8 text-center">
-            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-gray-400" />
-            <p className="text-sm text-gray-500">Загрузка данных пользователя...</p>
+            <p className="text-sm text-gray-500 mb-4">Не удалось загрузить данные пользователя</p>
+            <Button
+              onClick={() => refreshUser && refreshUser()}
+              size="sm"
+              variant="outline"
+            >
+              Повторить попытку
+            </Button>
           </div>
         )}
       </DropdownMenuContent>
