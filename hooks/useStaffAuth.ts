@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/useAuth"; // 🔧 ДОБАВЛЕНО: импорт useAuth
 
 export function useStaffAuth() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -11,9 +10,6 @@ export function useStaffAuth() {
   const [resetEmail, setResetEmail] = useState<string>("");
   const [resetSent, setResetSent] = useState<boolean>(false);
   
-  // 🔧 ИЗМЕНЕНО: убрали локальный token state, используем из контекста
-  const { user, token } = useAuth();
-
   const { toast } = useToast();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -23,6 +19,20 @@ export function useStaffAuth() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
+        // Сначала проверяем localStorage
+        const storedUser = localStorage.getItem('auth_user');
+        const storedToken = localStorage.getItem('auth_token');
+        
+        if (storedUser && storedToken) {
+          const user = JSON.parse(storedUser);
+          if (["admin", "super-admin", "manager", "trainer"].includes(user.role)) {
+            const dashboardUrl = getDashboardForRole(user.role);
+            router.replace(dashboardUrl);
+            return;
+          }
+        }
+
+        // Если нет в localStorage, проверяем через API
         const response = await fetch("/api/auth/check");
         const data = await response.json();
 
@@ -32,6 +42,14 @@ export function useStaffAuth() {
             data.user?.role
           )
         ) {
+          // Сохраняем в localStorage если пришло из API
+          if (data.user) {
+            localStorage.setItem('auth_user', JSON.stringify(data.user));
+          }
+          if (data.token) {
+            localStorage.setItem('auth_token', data.token);
+          }
+          
           const dashboardUrl = getDashboardForRole(data.user.role);
           router.replace(dashboardUrl);
         }
@@ -72,6 +90,7 @@ export function useStaffAuth() {
     }
   }, []);
 
+  // ✅ Функция входа с сохранением токенов
   const handleStaffLogin = useCallback(async (formData: any): Promise<void> => {
     setIsLoading(true);
 
@@ -91,18 +110,21 @@ export function useStaffAuth() {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        // 🔧 ИЗМЕНЕНО: сохраняем токен в localStorage
+        // 🔧 ВАЖНО: Сохраняем данные в localStorage
+        if (data.user) {
+          const userData = {
+            id: data.user.id || data.user.userId,
+            email: data.user.email,
+            name: data.user.name,
+            role: data.user.role
+          };
+          localStorage.setItem('auth_user', JSON.stringify(userData));
+          console.log('💾 Данные пользователя сохранены в localStorage');
+        }
+        
         if (data.token) {
-          console.log('🎫 Staff Login: сохраняем токен');
           localStorage.setItem('auth_token', data.token);
-          
-          // 🔧 ВАЖНО: Триггерим обновление контекста
-          // Вызываем событие для обновления AuthContext
-          window.dispatchEvent(new CustomEvent('auth-token-saved', { 
-            detail: { token: data.token, user: data.user } 
-          }));
-        } else {
-          console.warn('⚠️ Staff Login: токен не получен от сервера');
+          console.log('💾 Токен сохранен в localStorage');
         }
 
         toast({
@@ -122,7 +144,6 @@ export function useStaffAuth() {
           redirectPath ||
           getDashboardForRole(data.user.role);
 
-        // 🔧 ИЗМЕНЕНО: даем время на обновление контекста
         setTimeout(() => {
           router.push(destination);
         }, 500);
@@ -175,17 +196,6 @@ export function useStaffAuth() {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        // 🔧 ИЗМЕНЕНО: сохраняем токен если он приходит
-        if (data.token) {
-          console.log('🎫 Password Reset: сохраняем токен');
-          localStorage.setItem('auth_token', data.token);
-          
-          // Триггерим обновление контекста
-          window.dispatchEvent(new CustomEvent('auth-token-saved', { 
-            detail: { token: data.token } 
-          }));
-        }
-        
         setResetSent(true);
         toast({
           title: "Письмо отправлено! 📧",
@@ -226,15 +236,19 @@ export function useStaffAuth() {
       const result = await response.json();
 
       if (result.success) {
-        // 🔧 ДОБАВЛЕНО: сохраняем токен при быстром входе
+        // 🔧 Сохраняем данные быстрого входа
+        if (result.user) {
+          const userData = {
+            id: result.user.id || result.user.userId,
+            email: result.user.email,
+            name: result.user.name,
+            role: result.user.role
+          };
+          localStorage.setItem('auth_user', JSON.stringify(userData));
+        }
+        
         if (result.token) {
-          console.log('🎫 Quick Login: сохраняем токен');
           localStorage.setItem('auth_token', result.token);
-          
-          // Триггерим обновление контекста
-          window.dispatchEvent(new CustomEvent('auth-token-saved', { 
-            detail: { token: result.token, user: result.user } 
-          }));
         }
 
         toast({
@@ -271,15 +285,14 @@ export function useStaffAuth() {
     showForgotPassword,
     resetEmail,
     resetSent,
-    token, // 🔧 ИЗМЕНЕНО: возвращаем token из контекста
-
+    
     setShowForgotPassword,
     setResetEmail,
     setResetSent,
     handleStaffLogin,
     handlePasswordReset,
     handleSuperAdminQuickLogin,
-
+    
     getDashboardForRole,
     getRoleDisplayName,
   };

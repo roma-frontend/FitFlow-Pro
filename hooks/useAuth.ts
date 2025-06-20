@@ -4,7 +4,6 @@ import React, { useState, useEffect, ReactNode, useRef } from 'react';
 import { User } from '@/lib/simple-auth';
 import { useRouter, usePathname } from 'next/navigation';
 
-// Обновленный интерфейс для совместимости с главной страницей
 export interface AuthStatus {
   authenticated: boolean;
   user?: {
@@ -79,18 +78,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   
-  // 🔧 ИСПРАВЛЕНИЕ: Предотвращаем множественные вызовы checkSession
+  // 🔧 Предотвращаем множественные вызовы checkSession
   const checkingSession = useRef(false);
   const lastCheckTime = useRef(0);
   const CHECK_THROTTLE = 1000; // 1 секунда между проверками
+  const initialCheckDone = useRef(false);
 
+  // 🔧 НОВОЕ: Загружаем данные из localStorage при инициализации
   useEffect(() => {
-    // Читаем токен из localStorage при монтировании
-    const savedToken = localStorage.getItem('auth_token');
-    if (savedToken && !token) {
-      console.log('🎫 AuthProvider: восстановлен токен из localStorage');
-      setToken(savedToken);
-    }
+    const loadStoredAuth = () => {
+      try {
+        const storedToken = localStorage.getItem('auth_token');
+        const storedUser = localStorage.getItem('auth_user');
+        
+        console.log('🔍 AuthProvider: загружаем сохраненные данные...', {
+          hasToken: !!storedToken,
+          hasUser: !!storedUser
+        });
+        
+        if (storedToken && storedUser) {
+          const parsedUser = JSON.parse(storedUser);
+          console.log('✅ AuthProvider: восстановлены данные пользователя:', parsedUser);
+          setUser(parsedUser);
+          setToken(storedToken);
+          setLoading(false);
+          initialCheckDone.current = true;
+        }
+      } catch (error) {
+        console.error('❌ AuthProvider: ошибка загрузки сохраненных данных:', error);
+      }
+    };
+    
+    loadStoredAuth();
   }, []);
 
   // Синхронизируем authStatus с user
@@ -100,28 +119,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     console.log('🔄 AuthProvider: authStatus обновлен:', newAuthStatus);
   }, [user]);
 
-  // 🔧 ИСПРАВЛЕНИЕ: Единственный useEffect для проверки сессии
+  // 🔧 ИСПРАВЛЕНИЕ: Проверяем сессию только если нет сохраненных данных
   useEffect(() => {
-    console.log('🚀 AuthProvider: инициализация или изменение маршрута:', pathname);
+    console.log('🚀 AuthProvider: проверка необходимости загрузки сессии:', {
+      pathname,
+      hasUser: !!user,
+      initialCheckDone: initialCheckDone.current
+    });
     
-    // Проверяем сессию только при инициализации
-    if (!user && loading) {
+    // Проверяем сессию только если:
+    // 1. Нет пользователя И не было начальной проверки
+    // 2. ИЛИ мы на странице логина (для проверки уже авторизованных)
+    if ((!user && !initialCheckDone.current) || pathname.includes('login')) {
       console.log('🔍 AuthProvider: требуется проверка сессии');
       checkSessionThrottled();
     }
-  }, []); // Пустой массив зависимостей - только при монтировании
+  }, [pathname]);
 
-  // 🔧 ИСПРАВЛЕНИЕ: Throttled версия checkSession
+  // 🔧 Throttled версия checkSession
   const checkSessionThrottled = async (): Promise<void> => {
     const now = Date.now();
     
-    // Предотвращаем множественные вызовы
     if (checkingSession.current) {
       console.log('⏳ AuthProvider: проверка сессии уже выполняется, пропускаем...');
       return;
     }
     
-    // Throttling - не чаще раза в секунду
     if (now - lastCheckTime.current < CHECK_THROTTLE) {
       console.log('⏳ AuthProvider: throttling, слишком частые проверки, пропускаем...');
       return;
@@ -134,6 +157,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await checkSession();
     } finally {
       checkingSession.current = false;
+      initialCheckDone.current = true;
     }
   };
 
@@ -151,62 +175,65 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           'X-Auth-Check': `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
         }
       });
-  
+
       console.log('🔍 AuthProvider: статус ответа:', response.status);
-  
+
       if (response.ok) {
         const data = await response.json();
         console.log('🔍 AuthProvider: данные от API:', data);
         
         if (data.authenticated && data.user) {
           console.log('✅ AuthProvider: пользователь авторизован:', data.user);
-          setUser({
+          
+          const userData: User = {
             id: data.user.id,
             role: data.user.role,
             email: data.user.email,
             name: data.user.name
-          });
+          };
+          
+          setUser(userData);
+          
+          // 🔧 НОВОЕ: Сохраняем в localStorage
+          localStorage.setItem('auth_user', JSON.stringify(userData));
+          console.log('💾 AuthProvider: данные пользователя сохранены в localStorage');
           
           // Сохраняем токен если есть
           if (data.token) {
-            console.log('🎫 AuthProvider: восстанавливаем токен из сессии');
             setToken(data.token);
             localStorage.setItem('auth_token', data.token);
-          } else {
-            // Пробуем взять из localStorage
-            const savedToken = localStorage.getItem('auth_token');
-            if (savedToken) {
-              console.log('🎫 AuthProvider: восстанавливаем токен из localStorage');
-              setToken(savedToken);
-            }
+            console.log('💾 AuthProvider: токен сохранен в localStorage');
           }
         } else {
           console.log('❌ AuthProvider: пользователь не авторизован');
-          
-          // 🔧 ВАЖНОЕ ИСПРАВЛЕНИЕ: НЕ очищаем токен автоматически
-          // Проверяем, есть ли сохраненный токен
-          const savedToken = localStorage.getItem('auth_token');
-          if (savedToken) {
-            console.log('⚠️ AuthProvider: сохраняем существующий токен');
-            setToken(savedToken);
-            // НЕ очищаем пользователя, если есть токен
-          } else {
-            // Очищаем только если действительно нет токена
-            setUser(null);
-            setToken(null);
+          // 🔧 ИСПРАВЛЕНИЕ: Очищаем только если это не главная страница или нет сохраненного пользователя
+          if (pathname !== '/' && !user) {
+            clearAuthData();
           }
         }
       } else {
         console.log('❌ AuthProvider: ошибка ответа от API:', response.status);
-        // НЕ очищаем токен при ошибке сети
+        // При ошибке 401 - очищаем данные
+        if (response.status === 401) {
+          clearAuthData();
+        }
       }
     } catch (error) {
       console.error('❌ AuthProvider: ошибка проверки сессии:', error);
-      // НЕ очищаем при ошибках сети
+      // При сетевой ошибке не очищаем данные
     } finally {
       setLoading(false);
       console.log('🏁 AuthProvider: проверка сессии завершена');
     }
+  };
+
+  // 🔧 НОВОЕ: Функция для очистки данных авторизации
+  const clearAuthData = () => {
+    console.log('🧹 AuthProvider: очистка данных авторизации...');
+    setUser(null);
+    setToken(null);
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('auth_user');
   };
 
   const login = async (email: string, password: string): Promise<boolean> => {
@@ -222,24 +249,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         credentials: 'include',
         body: JSON.stringify({ email, password }),
       });
-  
+
       const data = await response.json();
       console.log('🔐 AuthProvider: результат входа:', data);
-  
+
       if (data.success && data.user) {
+        console.log('✅ AuthProvider: вход успешен:', data.user);
         
-        setUser(data.user);
+        const userData: User = {
+          id: data.user.id || data.user.userId,
+          role: data.user.role,
+          email: data.user.email,
+          name: data.user.name
+        };
         
+        setUser(userData);
+        
+        // 🔧 НОВОЕ: Сохраняем в localStorage
+        localStorage.setItem('auth_user', JSON.stringify(userData));
+        console.log('💾 AuthProvider: данные пользователя сохранены в localStorage');
+        
+        // Сохраняем токен если он есть
         if (data.token) {
+          setToken(data.token);
           localStorage.setItem('auth_token', data.token);
-          setToken(data.token); // обновить состояние
-        } else {
-          console.warn('⚠️ AuthProvider: токен не получен от сервера');
+          console.log('💾 AuthProvider: токен сохранен в localStorage');
         }
         
         return true;
       }
-  
+
       return false;
     } catch (error) {
       console.error('❌ AuthProvider: ошибка входа:', error);
@@ -254,14 +293,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(true);
       console.log('🚪 AuthProvider: выполняем выход...');
       
-      // Сначала очищаем состояние
-      setUser(null);
-      setToken(null);
+      // Сначала очищаем состояние и localStorage
+      clearAuthData();
       setAuthStatus({ authenticated: false });
       
-      // Очищаем токен из localStorage
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('user_role'); // Добавляем очистку роли
+      // Очищаем все данные из хранилищ
+      localStorage.clear();
+      sessionStorage.clear();
       
       const response = await fetch('/api/auth/logout', {
         method: 'POST',
@@ -273,20 +311,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   
       if (response.ok) {
         console.log('✅ AuthProvider: выход успешен');
-        // Очищаем локальное хранилище
-        localStorage.clear();
-        sessionStorage.clear();
-        
-        // Принудительно перенаправляем на главную
-        router.push("/");
       }
+      
+      // Всегда перенаправляем на главную
+      router.push("/");
     } catch (error) {
       console.error('❌ AuthProvider: ошибка выхода:', error);
-      setUser(null);
-      setToken(null);
+      // Даже при ошибке очищаем данные и перенаправляем
+      clearAuthData();
       setAuthStatus({ authenticated: false });
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('user_role');
       router.push("/");
     } finally {
       setLoading(false);
@@ -295,6 +328,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshUser = async (): Promise<void> => {
     console.log('🔄 AuthProvider: принудительное обновление пользователя...');
+    initialCheckDone.current = false; // Сбрасываем флаг для повторной проверки
     await checkSessionThrottled();
   };
 
@@ -355,6 +389,20 @@ export function useFaceAuth() {
 
       if (data.success && data.user) {
         console.log('✅ useFaceAuth: Face ID вход успешен:', data.user);
+        
+        // 🔧 НОВОЕ: Сохраняем данные в localStorage
+        const userData = {
+          id: data.user.id || data.user.userId,
+          role: data.user.role,
+          email: data.user.email,
+          name: data.user.name
+        };
+        localStorage.setItem('auth_user', JSON.stringify(userData));
+        
+        if (data.token) {
+          localStorage.setItem('auth_token', data.token);
+        }
+        
         return true;
       } else {
         console.log('❌ useFaceAuth: Face ID вход неуспешен:', data.message || 'Unknown error');
@@ -516,7 +564,6 @@ export function usePermissions() {
 
 // Хук для получения информации о пользователе
 export function useUser() {
-  const router = useRouter()
   const { user, loading } = useAuth();
   
   return {

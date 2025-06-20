@@ -5,12 +5,55 @@ import { jwtVerify } from 'jose';
 const isDev = process.env.NODE_ENV === 'development';
 const isVercel = process.env.VERCEL === '1';
 
-// 🔧 PERFORMANCE: Увеличенный кэш для стабильности на Vercel
-const routeCache = new Map<string, { type: string; role?: string; timestamp: number }>();
-const roleCache = new Map<string, { role: string; timestamp: number }>();
-const CACHE_TTL = isVercel ? 300000 : 60000;
+// 🔧 ТИПЫ ДЛЯ АВТОРИЗАЦИИ
+interface AuthResult {
+  authenticated: boolean;
+  userRole?: string;
+  token?: string;
+  userId?: string;
+  userEmail?: string;
+  userName?: string;
+}
 
-// 🎯 ИСПРАВЛЕННАЯ РОЛЬ-БАЗИРОВАННАЯ КОНФИГУРАЦИЯ
+interface CacheEntry {
+  authenticated: boolean;
+  role?: string;
+  userId?: string;
+  timestamp: number;
+}
+
+interface RouteCacheEntry {
+  type: string;
+  role?: string;
+  timestamp: number;
+}
+
+// 🔧 ENHANCED CACHING с автоочисткой
+const routeCache = new Map<string, RouteCacheEntry>();
+const authCache = new Map<string, CacheEntry>();
+const CACHE_TTL = isVercel ? 300000 : 60000; // 5 минут на Vercel, 1 минута локально
+const MAX_CACHE_SIZE = 1000;
+
+// Очистка кэша
+const cleanCache = (cache: Map<any, any>) => {
+  if (cache.size > MAX_CACHE_SIZE) {
+    const now = Date.now();
+    for (const [key, value] of cache.entries()) {
+      if (now - value.timestamp > CACHE_TTL) {
+        cache.delete(key);
+      }
+    }
+    // Если всё ещё слишком много, очищаем старые записи
+    if (cache.size > MAX_CACHE_SIZE) {
+      const entries = Array.from(cache.entries());
+      entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
+      const toDelete = entries.slice(0, Math.floor(cache.size / 2));
+      toDelete.forEach(([key]) => cache.delete(key));
+    }
+  }
+};
+
+// 🎯 УСИЛЕННАЯ РОЛЬ-БАЗИРОВАННАЯ КОНФИГУРАЦИЯ
 const ROLE_CONFIG = {
   // Иерархия ролей (чем меньше число, тем выше уровень доступа)
   hierarchy: {
@@ -19,23 +62,25 @@ const ROLE_CONFIG = {
     'manager': 2,
     'trainer': 3,
     'member': 4,
+    'client': 4, // Тот же уровень что и member
     'guest': 5
-  },
+  } as const,
 
-  // Автоматическое определение дашбордов по ролям
+  // Дашборды по ролям
   dashboards: {
     'super-admin': '/admin',
     'admin': '/admin',
     'manager': '/manager-dashboard',
     'trainer': '/trainer-dashboard',
     'member': '/member-dashboard',
+    'client': '/member-dashboard',
     'guest': '/'
-  },
+  } as const,
 
-  // 🔧 РАСШИРЕННЫЕ паттерны маршрутов для каждой роли
+  // 🔧 РАСШИРЕННЫЕ паттерны маршрутов
   routePatterns: {
     'super-admin': [
-      /^\/admin(\/.*)?$/,          // Это ДОЛЖНО покрывать /admin/users
+      /^\/admin(\/.*)?$/,
       /^\/manager-dashboard(\/.*)?$/,
       /^\/trainer-dashboard(\/.*)?$/,
       /^\/member-dashboard(\/.*)?$/,
@@ -44,8 +89,10 @@ const ROLE_CONFIG = {
       /^\/staff-(.*)?$/,
       /^\/manage-(.*)?$/,
       /^\/training-(.*)?$/,
-      /^\/users(\/.*)?$/,          // 🔧 ДОБАВЬТЕ ЭТО для прямого доступа к /users
-      /^\/admin\/users(\/.*)?$/    // 🔧 И ЭТО для явного доступа к /admin/users
+      /^\/users(\/.*)?$/,
+      /^\/shop(\/.*)?$/,
+      /^\/analytics(\/.*)?$/,
+      /^\/reports(\/.*)?$/
     ],
     'admin': [
       /^\/admin(\/.*)?$/,
@@ -55,11 +102,58 @@ const ROLE_CONFIG = {
       /^\/staff-(.*)?$/,
       /^\/manage-(.*)?$/,
       /^\/training-(.*)?$/,
-      /^\/users(\/.*)?$/,          // 🔧 ДОБАВЬТЕ ЭТО
-      /^\/admin\/users(\/.*)?$/    // 🔧 И ЭТО
+      /^\/users(\/.*)?$/,
+      /^\/shop(\/.*)?$/,
+      /^\/analytics(\/.*)?$/,
+      /^\/reports(\/.*)?$/
     ],
-  }
+    'manager': [
+      /^\/manager-dashboard(\/.*)?$/,
+      /^\/trainer-dashboard(\/.*)?$/,
+      /^\/member-dashboard(\/.*)?$/,
+      /^\/manage-(.*)?$/,
+      /^\/training-(.*)?$/,
+      /^\/shop(\/.*)?$/,
+      /^\/analytics(\/.*)?$/
+    ],
+    'trainer': [
+      /^\/trainer-dashboard(\/.*)?$/,
+      /^\/member-dashboard(\/.*)?$/,
+      /^\/training-(.*)?$/,
+      /^\/schedule(\/.*)?$/,
+      /^\/clients(\/.*)?$/
+    ],
+    'member': [
+      /^\/member-dashboard(\/.*)?$/,
+      /^\/profile(\/.*)?$/,
+      /^\/bookings(\/.*)?$/,
+      /^\/my-(.*)?$/,
+      /^\/shop(\/.*)?$/,
+      /^\/qr-code(\/.*)?$/,
+      /^\/setup-face-recognition(\/.*)?$/
+    ],
+    'client': [
+      /^\/member-dashboard(\/.*)?$/,
+      /^\/profile(\/.*)?$/,
+      /^\/bookings(\/.*)?$/,
+      /^\/my-(.*)?$/,
+      /^\/shop(\/.*)?$/,
+      /^\/qr-code(\/.*)?$/,
+      /^\/setup-face-recognition(\/.*)?$/
+    ],
+    'guest': [
+      // Гости имеют очень ограниченный доступ - только к публичным страницам
+      /^\/$/,
+      /^\/about(\/.*)?$/,
+      /^\/contact(\/.*)?$/,
+      /^\/programs(\/.*)?$/,
+      /^\/trainers(\/.*)?$/
+    ]
+  } as const
 };
+
+// 🔧 ТИП ДЛЯ РОЛЕЙ
+type UserRole = keyof typeof ROLE_CONFIG.hierarchy;
 
 // 🚨 КРИТИЧЕСКАЯ ЗАЩИТА ОТ CVE-2025-29927 + Vercel проблем
 const SECURITY_CHECK = (request: NextRequest): NextResponse | null => {
@@ -114,10 +208,10 @@ const SECURITY_CHECK = (request: NextRequest): NextResponse | null => {
   return null;
 };
 
-// 🔐 УСТОЙЧИВОЕ ЧТЕНИЕ COOKIES для Vercel Edge Runtime
+// 🔐 УЛУЧШЕННОЕ чтение cookies для всех сред
 const getCookieValue = (request: NextRequest, cookieName: string): string | undefined => {
   try {
-    // Метод 1: Стандартное чтение (работает в большинстве случаев)
+    // Метод 1: Стандартное чтение
     const cookieValue = request.cookies.get(cookieName)?.value;
     if (cookieValue) {
       return decodeURIComponent(cookieValue);
@@ -129,7 +223,7 @@ const getCookieValue = (request: NextRequest, cookieName: string): string | unde
   }
 
   try {
-    // Метод 2: Чтение из заголовков (fallback для Edge Runtime)
+    // Метод 2: Чтение из заголовков
     const cookieHeader = request.headers.get('cookie');
     if (cookieHeader) {
       const cookies = cookieHeader.split(';');
@@ -149,96 +243,154 @@ const getCookieValue = (request: NextRequest, cookieName: string): string | unde
   return undefined;
 };
 
-// 🎯 ИСПРАВЛЕННОЕ ИЗВЛЕЧЕНИЕ РОЛИ ИЗ JWT ТОКЕНА
-const extractUserRole = async (request: NextRequest): Promise<string | null> => {
+// 🔧 ФУНКЦИЯ ПРОВЕРКИ ВАЛИДНОСТИ РОЛИ
+const isValidUserRole = (role: string): role is UserRole => {
+  return role in ROLE_CONFIG.hierarchy;
+};
+
+// 🔧 НОРМАЛИЗАЦИЯ РОЛИ
+const normalizeUserRole = (role: string): UserRole => {
+  const normalized = role.toLowerCase().replace(/_/g, '-') as UserRole;
+  
+  if (isValidUserRole(normalized)) {
+    return normalized;
+  }
+  
+  // Fallback маппинг
+  const roleMapping: Record<string, UserRole> = {
+    'user': 'member',
+    'customer': 'client',
+    'employee': 'trainer',
+    'superadmin': 'super-admin',
+    'super_admin': 'super-admin',
+    'admin_user': 'admin'
+  };
+  
+  if (roleMapping[normalized]) {
+    return roleMapping[normalized];
+  }
+  
+  console.warn(`⚠️ Неизвестная роль: ${role}, используем 'member' по умолчанию`);
+  return 'member';
+};
+
+// 🎯 МОЩНАЯ ФУНКЦИЯ ПРОВЕРКИ АВТОРИЗАЦИИ с кэшированием
+const checkAuthentication = async (request: NextRequest): Promise<AuthResult> => {
   const pathname = request.nextUrl.pathname;
   
   try {
-    // Пытаемся получить токен из разных источников
-    let token: string | undefined;
+    // Получаем все возможные токены
+    const sessionId = getCookieValue(request, 'session_id');
+    const sessionIdDebug = getCookieValue(request, 'session_id_debug');
+    const authToken = getCookieValue(request, 'auth_token');
+    const userRoleCookie = getCookieValue(request, 'user_role');
 
-    // 1. Из auth_token cookie
-    token = getCookieValue(request, 'auth_token');
+    // 🔧 ИНИЦИАЛИЗИРУЕМ РЕЗУЛЬТАТ
+    let result: AuthResult = { 
+      authenticated: false, 
+      userRole: undefined, 
+      token: undefined 
+    };
 
-    // 2. Из user_role cookie как fallback
-    if (!token) {
-      const userRole = getCookieValue(request, 'user_role');
-      if (userRole) {
-        console.log(`👤 Роль из cookie для ${pathname}: ${userRole}`);
-        return userRole;
+    // Приоритет 1: JWT токен
+    if (authToken) {
+      try {
+        const secret = new TextEncoder().encode(
+          process.env.JWT_SECRET || process.env.NEXT_PUBLIC_JWT_SECRET || 'your-secret-key'
+        );
+
+        const { payload } = await jwtVerify(authToken, secret);
+        if (payload && payload.userId && payload.email && payload.role) {
+          const normalizedRole = normalizeUserRole(payload.role as string);
+          result = {
+            authenticated: true,
+            userRole: normalizedRole,
+            token: authToken,
+            userId: payload.userId as string,
+            userEmail: payload.email as string,
+            userName: payload.name as string
+          };
+          
+          console.log('✅ JWT валиден для:', payload.email, 'роль:', normalizedRole);
+        }
+      } catch (error) {
+        if (isDev) {
+          console.error('💥 JWT validation error:', error);
+        }
       }
     }
 
-    // 3. Из Authorization header
-    if (!token) {
-      const authHeader = request.headers.get('authorization');
-      if (authHeader?.startsWith('Bearer ')) {
-        token = authHeader.substring(7);
+    // Приоритет 2: Сессии + роль из cookie
+    if (!result.authenticated && (sessionId || sessionIdDebug)) {
+      if (userRoleCookie) {
+        const normalizedRole = normalizeUserRole(userRoleCookie);
+        result = {
+          authenticated: true,
+          userRole: normalizedRole,
+          token: authToken
+        };
+        
+        console.log('✅ Сессия + роль из cookie:', normalizedRole);
       }
     }
 
-    if (!token) {
-      if (isDev) {
-        console.log(`🔍 Токен не найден для ${pathname}`);
-      }
-      return null;
+    // Приоритет 3: Только роль из cookie (для совместимости)
+    if (!result.authenticated && userRoleCookie && authToken) {
+      const normalizedRole = normalizeUserRole(userRoleCookie);
+      result = {
+        authenticated: true,
+        userRole: normalizedRole,
+        token: authToken
+      };
+      
+      console.log('✅ Авторизация по роли из cookie:', normalizedRole);
     }
 
-    // Декодируем JWT
-    const secret = new TextEncoder().encode(
-      process.env.JWT_SECRET || process.env.NEXT_PUBLIC_JWT_SECRET || 'your-secret-key'
-    );
-
-    const { payload } = await jwtVerify(token, secret);
-    const role = payload.role as string || 'member';
-
-    if (isDev) {
-      console.log(`👤 Роль пользователя для ${pathname}: ${role}`);
-    }
-
-    // Сохраняем роль в cookie для быстрого доступа
-    const response = NextResponse.next();
-    response.cookies.set('user_role', role, {
-      httpOnly: false,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24, // 24 часа
-      path: '/'
-    });
-
-    return role;
+    return result;
 
   } catch (error) {
     if (isDev) {
-      console.error(`💥 Ошибка извлечения роли для ${pathname}:`, error);
+      console.error('💥 Middleware: ошибка проверки авторизации:', error);
     }
-    return null;
+    return { authenticated: false, userRole: undefined, token: undefined };
   }
 };
 
-// 🚀 ИСПРАВЛЕННАЯ ПРОВЕРКА ДОСТУПА К МАРШРУТУ
+// 🚀 ДИНАМИЧЕСКАЯ ПРОВЕРКА ДОСТУПА К МАРШРУТУ
 const checkRouteAccess = (pathname: string, userRole: string): boolean => {
-  const roleLevel = ROLE_CONFIG.hierarchy[userRole as keyof typeof ROLE_CONFIG.hierarchy];
-
-  if (roleLevel === undefined) {
+  // Проверяем валидность роли
+  if (!isValidUserRole(userRole)) {
     console.log(`❌ Неизвестная роль: ${userRole}`);
     return false;
   }
 
-  // 🔧 СПЕЦИАЛЬНАЯ ПРОВЕРКА для /admin/* маршрутов
+  const roleLevel = ROLE_CONFIG.hierarchy[userRole];
+
+  // 🔧 СПЕЦИАЛЬНЫЕ ПРАВИЛА для разных путей
   if (pathname.startsWith('/admin/') && ['admin', 'super-admin'].includes(userRole)) {
-    console.log(`✅ Админ доступ разрешен к ${pathname}`);
     return true;
   }
 
-  // Проверяем паттерны маршрутов для роли пользователя и всех ролей выше
+  if (pathname.startsWith('/manager-') && ['manager', 'admin', 'super-admin'].includes(userRole)) {
+    return true;
+  }
+
+  if (pathname.startsWith('/trainer-') && ['trainer', 'manager', 'admin', 'super-admin'].includes(userRole)) {
+    return true;
+  }
+
+  if (pathname.startsWith('/member-') && ['member', 'client', 'trainer', 'manager', 'admin', 'super-admin'].includes(userRole)) {
+    return true;
+  }
+
+  // Проверяем паттерны для роли и всех ролей выше
   for (const [role, level] of Object.entries(ROLE_CONFIG.hierarchy)) {
     if (level <= roleLevel) {
-      const patterns = ROLE_CONFIG.routePatterns[role as keyof typeof ROLE_CONFIG.routePatterns];
+      const typedRole = role as UserRole;
+      const patterns = ROLE_CONFIG.routePatterns[typedRole];
       if (patterns) {
         for (const pattern of patterns) {
           if (pattern.test(pathname)) {
-            console.log(`✅ Доступ разрешен для ${userRole} к ${pathname} через роль ${role}`);
             return true;
           }
         }
@@ -246,19 +398,21 @@ const checkRouteAccess = (pathname: string, userRole: string): boolean => {
     }
   }
 
-  console.log(`❌ Доступ запрещен для ${userRole} к ${pathname}`);
   return false;
 };
 
-const getRouteType = (pathname: string, userRole?: string): { type: string; role?: string } => {
-  const cacheKey = `${pathname}:${userRole || 'anonymous'}`;
-  let result = { type: 'protected', role: userRole };
+// 🎯 УЛУЧШЕННОЕ ОПРЕДЕЛЕНИЕ ТИПА МАРШРУТА
+const getRouteType = (pathname: string, userRole?: string): { type: string; needsAuth: boolean } => {
+  let routeType = 'protected';
+  let needsAuth = true;
 
-  // 🔧 СПЕЦИАЛЬНАЯ ОБРАБОТКА ГЛАВНОЙ СТРАНИЦЫ
+  // 🔧 ГЛАВНАЯ СТРАНИЦА - особая логика
   if (pathname === '/') {
-    result = { type: 'public', role: userRole };
+    // Главная страница всегда публична, но сохраняем информацию о пользователе
+    routeType = userRole && userRole !== 'guest' ? 'home_authenticated' : 'public';
+    needsAuth = false;
   }
-  // 🔧 ОСТАЛЬНЫЕ ПУБЛИЧНЫЕ МАРШРУТЫ (точные совпадения)
+  // 🔧 ПУБЛИЧНЫЕ МАРШРУТЫ
   else {
     const publicRoutes = new Set([
       '/member-login', '/staff-login', '/register', '/demo', '/setup',
@@ -274,98 +428,84 @@ const getRouteType = (pathname: string, userRole?: string): { type: string; role
     ]);
 
     if (publicRoutes.has(pathname)) {
-      result = { type: 'public', role: userRole };
+      routeType = 'public';
+      needsAuth = false;
     }
-    // 🔧 ПУБЛИЧНЫЕ ПРЕФИКСЫ
+    // ПУБЛИЧНЫЕ ПРЕФИКСЫ
     else if (pathname.startsWith('/trainer/') ||
-      pathname.startsWith('/programs/') ||
-      pathname.startsWith('/book-')) {
-      result = { type: 'public', role: userRole };
+             pathname.startsWith('/programs/') ||
+             pathname.startsWith('/book-')) {
+      routeType = 'public';
+      needsAuth = false;
     }
-    // 🔧 LOGIN СТРАНИЦЫ
+    // LOGIN СТРАНИЦЫ
     else if (pathname === '/member-login' || pathname === '/staff-login' || pathname === '/login') {
-      result = { type: 'login', role: userRole };
+      routeType = 'login';
+      needsAuth = false;
     }
-    // 🔧 STAFF МАРШРУТЫ (динамическое определение по роли)
-    else if (userRole && checkRouteAccess(pathname, userRole)) {
-      result = { type: 'staff', role: userRole };
-    }
-    // 🔧 MEMBER МАРШРУТЫ
-    else if (pathname.startsWith('/member-dashboard') ||
-      pathname.startsWith('/member-') ||
-      pathname.startsWith('/my-') ||
-      pathname.startsWith('/profile') ||
-      pathname.startsWith('/bookings') ||
-      pathname.startsWith('/group-classes') ||
-      pathname.startsWith('/qr-code') ||
-      pathname.startsWith('/setup-face-recognition')) {
-      result = { type: 'member', role: userRole };
-    }
-    // 🔧 SHOP МАРШРУТЫ
-    else if (pathname.startsWith('/shop')) {
-      result = { type: 'shop', role: userRole };
-    }
-  }
-
-  // Кэшируем результат
-  if (routeCache.size > 1000) {
-    routeCache.clear();
-  }
-  routeCache.set(cacheKey, {
-    type: result.type,
-    role: result.role,
-    timestamp: Date.now()
-  });
-
-  return result;
-};
-
-// 🔐 УЛУЧШЕННАЯ ПРОВЕРКА АВТОРИЗАЦИИ
-const checkAuthentication = async (request: NextRequest): Promise<boolean> => {
-  try {
-    // Получаем токены устойчивым способом
-    const sessionId = getCookieValue(request, 'session_id');
-    const sessionIdDebug = getCookieValue(request, 'session_id_debug');
-    const authToken = getCookieValue(request, 'auth_token');
-
-    // Быстрая проверка наличия токенов
-    if (!sessionId && !sessionIdDebug && !authToken) {
-      return false;
-    }
-
-    // Приоритет 1: JWT токен (если есть)
-    if (authToken) {
-      try {
-        const secret = new TextEncoder().encode(
-          process.env.JWT_SECRET || process.env.NEXT_PUBLIC_JWT_SECRET || 'your-secret-key'
-        );
-
-        const { payload } = await jwtVerify(authToken, secret);
-        const isValid = !!(payload && payload.userId && payload.email && payload.role);
-        if (isValid) return true;
-      } catch (error) {
-        if (isDev) {
-          console.error('💥 Ошибка валидации JWT:', error);
-        }
+    // ЗАЩИЩЕННЫЕ МАРШРУТЫ
+    else {
+      needsAuth = true;
+      
+      if (pathname.startsWith('/admin')) {
+        routeType = 'admin';
+      } else if (pathname.startsWith('/manager-')) {
+        routeType = 'manager';
+      } else if (pathname.startsWith('/trainer-')) {
+        routeType = 'trainer';
+      } else if (pathname.startsWith('/member-')) {
+        routeType = 'member';
+      } else if (pathname.startsWith('/shop')) {
+        routeType = 'shop';
+      } else {
+        routeType = 'protected';
       }
     }
-
-    // Приоритет 2: Сессии (простая проверка наличия)
-    if (sessionId || sessionIdDebug) {
-      return true;
-    }
-
-    return false;
-
-  } catch (error) {
-    if (isDev) {
-      console.error('💥 Middleware: ошибка проверки авторизации:', error);
-    }
-    return false;
   }
+
+  return { type: routeType, needsAuth };
 };
 
-// 📊 УСЛОВНОЕ логирование для production
+// 🔧 СОЗДАНИЕ ЗАЩИЩЕННОГО RESPONSE с сохранением состояния
+const createAuthenticatedResponse = (
+  request: NextRequest, 
+  authResult: AuthResult
+): NextResponse => {
+  const response = NextResponse.next();
+  
+  // Устанавливаем заголовки для авторизованного пользователя
+  response.headers.set('X-User-Role', authResult.userRole || '');
+  response.headers.set('X-Authenticated', 'true');
+  
+  if (authResult.userId) {
+    response.headers.set('X-User-Id', authResult.userId);
+  }
+  
+  // 🔧 ВАЖНО: Обновляем user_role cookie если нужно
+  const currentUserRole = getCookieValue(request, 'user_role');
+  if (authResult.userRole && currentUserRole !== authResult.userRole) {
+    response.cookies.set('user_role', authResult.userRole, {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60, // 7 дней
+      path: '/'
+    });
+  }
+
+  // Специальные заголовки для Vercel в продакшене
+  if (isVercel) {
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
+    response.headers.set('X-Middleware-Cache', 'MISS');
+    response.headers.set('Vary', 'Cookie, Authorization');
+  }
+
+  return response;
+};
+
+// 📊 УСЛОВНОЕ логирование
 const log = (message: string, data?: any) => {
   if (isDev || process.env.DEBUG_MIDDLEWARE === 'true') {
     console.log(message, data || '');
@@ -393,38 +533,35 @@ export async function middleware(request: NextRequest) {
 
   log(`🔍 Middleware: ${pathname}`);
 
-  // 🎯 ИЗВЛЕКАЕМ РОЛЬ ПОЛЬЗОВАТЕЛЯ
-  const userRole = await extractUserRole(request);
-  log(`👤 User role: ${userRole || 'anonymous'}`);
+  // 🔐 ПРОВЕРЯЕМ АВТОРИЗАЦИЮ
+  const authResult = await checkAuthentication(request);
+  log(`👤 Auth status: ${authResult.authenticated}, Role: ${authResult.userRole || 'none'}`);
 
-  // 🎯 ОПРЕДЕЛЯЕМ тип маршрута с учетом роли
-  const { type: routeType } = getRouteType(pathname, userRole || undefined);
-  log(`📍 Route type: ${routeType}`);
+  // 🎯 ОПРЕДЕЛЯЕМ тип маршрута
+  const { type: routeType, needsAuth } = getRouteType(pathname, authResult.userRole);
+  log(`📍 Route type: ${routeType}, Needs auth: ${needsAuth}`);
 
-  // 🔧 ИСПРАВЛЕНИЕ: НЕ редиректим с главной страницы
-  if (pathname === '/' && routeType === 'public') {
-    const response = NextResponse.next();
-    
-    // Добавляем заголовки для предотвращения кэширования
-    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
-    response.headers.set('X-Middleware-Cache', 'MISS');
-    
-    return response;
+  // 🔧 ОСОБАЯ ОБРАБОТКА ГЛАВНОЙ СТРАНИЦЫ ДЛЯ АВТОРИЗОВАННЫХ ПОЛЬЗОВАТЕЛЕЙ
+  if (pathname === '/' && authResult.authenticated && authResult.userRole) {
+    log(`🏠 Authenticated user on home page, preserving auth state`);
+    return createAuthenticatedResponse(request, authResult);
   }
 
-  // ✅ ПУБЛИЧНЫЕ маршруты - пропускаем БЕЗ проверки авторизации
-  if (routeType === 'public') {
+  // ✅ ПУБЛИЧНЫЕ маршруты
+  if (routeType === 'public' && !needsAuth) {
     log(`✅ Public route allowed`);
+    // Даже для публичных маршрутов сохраняем состояние авторизации
+    if (authResult.authenticated) {
+      return createAuthenticatedResponse(request, authResult);
+    }
     return NextResponse.next();
   }
 
-  // 🔐 ПРОВЕРЯЕМ АВТОРИЗАЦИЮ
-  const hasAuth = await checkAuthentication(request);
-
   // 🔄 ПЕРЕНАПРАВЛЕНИЕ с login страниц для авторизованных пользователей
-  if (routeType === 'login' && hasAuth && userRole) {
-    const dashboardUrl = ROLE_CONFIG.dashboards[userRole as keyof typeof ROLE_CONFIG.dashboards] || '/';
+  if ((routeType === 'login' || pathname.includes('login')) && authResult.authenticated && authResult.userRole) {
+    const dashboardUrl = ROLE_CONFIG.dashboards[authResult.userRole as UserRole] || '/';
     log(`↗️ Redirecting from login page to ${dashboardUrl}`);
+    
     const response = NextResponse.redirect(new URL(dashboardUrl, request.url));
     response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
     response.headers.set('X-Middleware-Cache', 'MISS');
@@ -432,22 +569,26 @@ export async function middleware(request: NextRequest) {
   }
 
   // 🔒 ЗАЩИЩЕННЫЕ маршруты требуют авторизации
-  if (!hasAuth) {
+  if (needsAuth && !authResult.authenticated) {
     let loginUrl = '/';
 
-    switch (routeType) {
-      case 'member':
-        loginUrl = '/member-login';
-        break;
-      case 'staff':
-      case 'shop':
-        loginUrl = '/staff-login';
-        break;
-      default:
-        loginUrl = '/';
+    // Определяем правильную страницу входа
+    if (pathname.startsWith('/member-') || 
+        pathname.startsWith('/my-') || 
+        pathname.startsWith('/profile') ||
+        pathname.startsWith('/bookings')) {
+      loginUrl = '/member-login';
+    } else if (pathname.startsWith('/admin') || 
+               pathname.startsWith('/manager-') || 
+               pathname.startsWith('/trainer-') ||
+               pathname.startsWith('/staff-') ||
+               pathname.startsWith('/shop')) {
+      loginUrl = '/staff-login';
+    } else {
+      loginUrl = '/member-login';
     }
 
-    log(`❌ No auth, redirecting to ${loginUrl}`);
+    log(`❌ No auth for protected route, redirecting to ${loginUrl}`);
     const response = NextResponse.redirect(
       new URL(loginUrl + '?redirect=' + encodeURIComponent(pathname), request.url)
     );
@@ -456,42 +597,32 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
-  // 🎯 ПРОВЕРЯЕМ ДОСТУП К STAFF МАРШРУТАМ
-  if (routeType === 'staff' && userRole) {
-    const hasAccess = checkRouteAccess(pathname, userRole);
+  // 🎯 ПРОВЕРЯЕМ ДОСТУП К КОНКРЕТНЫМ МАРШРУТАМ
+  if (authResult.authenticated && authResult.userRole && needsAuth) {
+    const hasAccess = checkRouteAccess(pathname, authResult.userRole);
 
     if (!hasAccess) {
-      const dashboardUrl = ROLE_CONFIG.dashboards[userRole as keyof typeof ROLE_CONFIG.dashboards] || '/unauthorized';
-      log(`❌ Access denied for role ${userRole} to ${pathname}, redirecting to ${dashboardUrl}`);
+      const dashboardUrl = ROLE_CONFIG.dashboards[authResult.userRole as UserRole] || '/unauthorized';
+      log(`❌ Access denied for role ${authResult.userRole} to ${pathname}, redirecting to ${dashboardUrl}`);
+      
       const response = NextResponse.redirect(new URL(dashboardUrl, request.url));
       response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
       response.headers.set('X-Middleware-Cache', 'MISS');
       response.headers.set('X-Access-Denied', 'true');
+      response.headers.set('X-User-Role', authResult.userRole);
       return response;
     }
   }
 
-  log(`✅ Access granted for role ${userRole}`);
-  const response = NextResponse.next();
-
-  // 🔧 СОХРАНЯЕМ РОЛЬ В ЗАГОЛОВКЕ для быстрого доступа
-  if (userRole) {
-    response.headers.set('X-User-Role', userRole);
-  }
-
-  // 🔧 СПЕЦИАЛЬНЫЕ ЗАГОЛОВКИ для staff маршрутов в production
-  if (isVercel && (routeType === 'staff' || routeType === 'member')) {
-    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-    response.headers.set('Pragma', 'no-cache');
-    response.headers.set('Expires', '0');
-    response.headers.set('X-Middleware-Cache', 'MISS');
-    response.headers.set('Vary', 'Cookie, Authorization');
-  }
-
-  return response;
+  log(`✅ Access granted for role ${authResult.userRole}`);
+  
+  // Создаем правильный response для авторизованного пользователя
+  return authResult.authenticated 
+    ? createAuthenticatedResponse(request, authResult)
+    : NextResponse.next();
 }
 
-// 🎯 КОНФИГУРАЦИЯ для Vercel с правильным matcher
+// 🎯 КОНФИГУРАЦИЯ для Vercel
 export const config = {
   matcher: [
     '/((?!api|_next/static|_next/image|favicon.ico|public).*)',
