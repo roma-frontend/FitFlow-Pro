@@ -254,7 +254,7 @@ export default function MemberDashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50">
       {/* Хедер */}
-      <MemberHeader user={user} onLogout={handleLogout} />
+      <MemberHeader onLogout={handleLogout} />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Приветствие */}
