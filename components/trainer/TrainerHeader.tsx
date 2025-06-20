@@ -25,7 +25,6 @@ import { TrainerNavigationItem } from "./types/trainer-navigation";
 
 // ✅ Мемоизированный логотип с пропсом router
 const TrainerLogo = memo(({ router }: { router: any }) => (
-  
   <div
     className={combineAnimations(
       "flex items-center gap-2 sm:gap-3 min-w-0 cursor-pointer group",
@@ -152,8 +151,14 @@ const DebugPanel = memo(({
           <div>
             <p><strong>Ошибка:</strong> {error || 'Нет'}</p>
             <p><strong>Этап:</strong> {loadingStep || 'Нет'}</p>
+            <p><strong>Email:</strong> {user?.email || 'Нет'}</p>
           </div>
           <div>
+            <p><strong>Имя:</strong> {user?.name || 'Нет'}</p>
+            <p><strong>Роль:</strong> {user?.role || 'Нет'}</p>
+            <p><strong>ID:</strong> {user?.id || user?.userId || 'Нет'}</p>
+          </div>
+          <div className="md:col-span-3">
             <Button onClick={refetch} size="sm" className="mr-2">
               Перезагрузить
             </Button>
@@ -162,6 +167,15 @@ const DebugPanel = memo(({
             </Button>
           </div>
         </div>
+        {/* Показываем полные данные пользователя для отладки */}
+        {user && (
+          <div className="mt-4 p-3 bg-gray-100 rounded-lg">
+            <p className="font-semibold mb-2">Полные данные пользователя:</p>
+            <pre className="text-xs overflow-auto max-h-40">
+              {JSON.stringify(user, null, 2)}
+            </pre>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -174,18 +188,38 @@ export default function TrainerHeader() {
   const [showDebug, setShowDebug] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
-  const { user, logout, token } = useAuth();
+  
+  // ✅ Получаем реальные данные пользователя из useAuth
+  const { user, logout, token, isLoading: authLoading } = useAuth();
   
   // ✅ Используем ваш хук с правильными полями
   const { 
     messageStats, 
     workoutStats, 
     stats,
-    isLoading, 
+    isLoading: dataLoading, 
     error, 
     loadingStep, 
     refetch 
   } = useTrainerDataQuery();
+
+  // ✅ Общее состояние загрузки
+  const isLoading = authLoading || dataLoading;
+
+  // ✅ Логируем данные пользователя для отладки
+  useEffect(() => {
+    if (user) {
+      console.log('🎯 TrainerHeader: Получены данные пользователя:', {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        avatar: user.avatar || user.avatarUrl,
+        isVerified: user.isVerified,
+        rating: user.rating
+      });
+    }
+  }, [user]);
 
   const handleLogout = async () => {
     await logout();
@@ -233,10 +267,15 @@ export default function TrainerHeader() {
         setShowDebug(true);
       }, 10000);
       return () => clearTimeout(timer);
-    } else {
-      setShowDebug(false);
     }
   }, [isLoading]);
+
+  // ✅ Показываем отладку при ошибках
+  useEffect(() => {
+    if (error) {
+      setShowDebug(true);
+    }
+  }, [error]);
 
   // ✅ Управление скроллом для мобильного меню
   useEffect(() => {
@@ -262,6 +301,23 @@ export default function TrainerHeader() {
     router.push(href);
   };
 
+  // ✅ Показываем состояние загрузки если нет данных пользователя
+  if (authLoading && !user) {
+    return (
+      <header className="bg-gradient-to-r from-green-600 to-blue-600 shadow-lg sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-14 sm:h-16">
+            <TrainerLogo router={router} />
+            <div className="flex items-center gap-2 text-white">
+              <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+              <span className="text-sm">Загрузка...</span>
+            </div>
+          </div>
+        </div>
+      </header>
+    );
+  }
+
   return (
     <>
       {/* Основной header */}
@@ -281,17 +337,18 @@ export default function TrainerHeader() {
 
             {/* Правая часть - Статистика и действия */}
             <div className="flex items-center gap-2 sm:gap-3 lg:gap-4">
-
               {/* Кнопка отладки (если есть проблемы) */}
               {(error || showDebug) && (
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={refetch}
+                  onClick={() => setShowDebug(!showDebug)}
                   className="hidden sm:flex items-center gap-1 text-orange-300 hover:text-orange-200 hover:bg-orange-500/20 border border-orange-400/20 hover:border-orange-400/30 px-2 sm:px-3"
                 >
                   <AlertCircle className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                  <span className="text-sm">Перезагрузить</span>
+                  <span className="text-sm">
+                    {showDebug ? 'Скрыть' : 'Отладка'}
+                  </span>
                 </Button>
               )}
 
@@ -313,14 +370,22 @@ export default function TrainerHeader() {
                 messageStats={messageStats}
                 workoutStats={workoutStats}
                 stats={stats}
-                isLoading={isLoading}
+                isLoading={dataLoading}
                 loadingStep={loadingStep}
                 error={error}
               />
 
-              {/* Профиль пользователя */}
+              {/* ✅ Профиль пользователя с реальными данными */}
               <TrainerUserMenu 
-                user={user} 
+                user={{
+                  id: user?.id,
+                  email: user?.email,
+                  name: user?.name,
+                  role: user?.role,
+                  avatar: user?.avatar || user?.avatarUrl,
+                  isVerified: user?.isVerified,
+                  rating: user?.rating
+                }}
                 messageStats={messageStats}
                 workoutStats={workoutStats}
                 stats={stats}
@@ -348,12 +413,20 @@ export default function TrainerHeader() {
         </div>
       </header>
 
-      {/* ✅ Мобильное меню */}
+      {/* ✅ Мобильное меню с реальными данными пользователя */}
       <TrainerMobileMenu
         isOpen={isMobileMenuOpen}
         onClose={() => setIsMobileMenuOpen(false)}
         navigationItems={navigationItems}
-        user={user}
+        user={{
+          id: user?.id,
+          email: user?.email,
+          name: user?.name,
+          role: user?.role,
+          avatar: user?.avatar || user?.avatarUrl,
+          isVerified: user?.isVerified,
+          rating: user?.rating
+        }}
         messageStats={messageStats}
         workoutStats={workoutStats}
         stats={stats}
@@ -367,7 +440,7 @@ export default function TrainerHeader() {
         setShowDebug={setShowDebug}
       />
 
-      {/* Панель отладки */}
+      {/* Панель отладки с подробной информацией */}
       <DebugPanel
         showDebug={showDebug}
         setShowDebug={setShowDebug}

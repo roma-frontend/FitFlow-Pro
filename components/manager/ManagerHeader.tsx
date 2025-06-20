@@ -1,9 +1,10 @@
 // components/manager/ManagerHeader.tsx
 "use client";
 
-import { useState, useEffect, memo } from "react";
+import { useState, useEffect, memo, useMemo } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useManager } from "@/contexts/ManagerContext";
+import { useAuth } from "@/hooks/useAuth"; // ✅ Добавляем useAuth
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -122,48 +123,46 @@ export default function ManagerHeader() {
   const router = useRouter();
   const pathname = usePathname();
   const { stats, loading } = useManager();
+  const { user: authUser, logout, isLoading: authLoading } = useAuth(); // ✅ Используем useAuth
   const { toast } = useToast();
 
-  // Мок данные для пользователя
-  const user = {
-    name: "Анна Менеджер",
-    email: "anna.manager@fitaccess.com",
-    avatar: "/avatars/manager-anna.jpg",
-    role: "Менеджер",
-  };
+  // ✅ Мемоизируем объект пользователя для предотвращения лишних ререндеров
+  const user = useMemo(() => {
+    if (!authUser) return null;
+    
+    return {
+      id: authUser.id,
+      name: authUser.name,
+      firstName: authUser.name,
+      email: authUser.email,
+      role: authUser.role,
+      avatar: authUser.avatar || authUser.avatarUrl,
+      isVerified: authUser.isVerified,
+      rating: authUser.rating,
+      createdAt: authUser.createdAt,
+    };
+  }, [authUser]);
 
-  // Функция выхода из системы
+  // ✅ Функция выхода из системы через useAuth
   const handleLogout = async () => {
     setIsLoggingOut(true);
 
     try {
       console.log("🚪 Начинаем процесс выхода из системы...");
 
-      const response = await fetch("/api/auth/logout", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+      await logout(); // ✅ Используем logout из useAuth
+
+      console.log("✅ Успешный выход из системы");
+
+      toast({
+        title: "Выход выполнен",
+        description: "Вы успешно вышли из системы",
       });
 
-      const data = await response.json();
+      setTimeout(() => {
+        router.push("/");
+      }, 1000);
 
-      if (response.ok && data.success) {
-        console.log("✅ Успешный выход из системы");
-
-        toast({
-          title: "Выход выполнен",
-          description: "Вы успешно вышли из системы",
-        });
-
-        setTimeout(() => {
-          // Перенаправляем на главную страницу
-          router.push("/");
-
-        }, 1000);
-      } else {
-        throw new Error(data.error || "Ошибка при выходе из системы");
-      }
     } catch (error) {
       console.error("❌ Ошибка выхода:", error);
 
@@ -184,8 +183,8 @@ export default function ManagerHeader() {
     }
   };
 
-  // ✅ Навигационные элементы (используем только доступные поля)
-  const navigationItems: ManagerNavigationItem[] = [
+  // ✅ Мемоизируем навигационные элементы
+  const navigationItems: ManagerNavigationItem[] = useMemo(() => [
     {
       href: "/manager/trainers",
       label: "Тренеры",
@@ -210,7 +209,7 @@ export default function ManagerHeader() {
       category: "analytics",
       description: "Аналитика и отчеты",
     },
-  ];
+  ], [stats?.activeTrainers, stats?.totalTrainers, stats?.todayBookings, stats?.newClients]);
 
   // ✅ Управление скроллом для мобильного меню
   useEffect(() => {
@@ -242,7 +241,7 @@ export default function ManagerHeader() {
       <header className="bg-gradient-to-r from-blue-600 to-green-600 shadow-lg sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
           <div className="flex justify-between items-center h-14 sm:h-16">
-            {/* Левая часть - Логотип - ✅ Now passing router as prop */}
+            {/* Левая часть - Логотип */}
             <ManagerLogo router={router} />
 
             {/* Центральная часть - Навигация (скрыта на мобильных и планшетах) */}
@@ -257,12 +256,24 @@ export default function ManagerHeader() {
             <div className="flex items-center gap-2 sm:gap-3 lg:gap-4">
               <ManagerNotifications isLoggingOut={isLoggingOut} />
 
-              {/* ✅ Профиль пользователя с правильными пропсами */}
-              <ManagerUserMenu 
-                user={user} 
-                stats={stats}
-                isLoading={loading}
-              />
+              {/* ✅ Показываем меню пользователя только если не загружается */}
+              {!authLoading && (
+                <ManagerUserMenu 
+                  user={user} 
+                  stats={stats}
+                  isLoading={loading}
+                  showDebug={false} // ✅ Добавляем недостающие пропсы
+                  setShowDebug={() => {}} // ✅ Заглушка для setShowDebug
+                />
+              )}
+
+              {/* ✅ Показываем индикатор загрузки если нужно */}
+              {authLoading && (
+                <div className="flex items-center gap-2 text-white">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span className="text-sm hidden sm:inline">Загрузка...</span>
+                </div>
+              )}
 
               {/* Мобильное меню */}
               <Button
@@ -270,7 +281,7 @@ export default function ManagerHeader() {
                 size="sm"
                 className="xl:hidden text-white hover:bg-white/10 p-2 h-8 w-8 sm:h-9 sm:w-9"
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                disabled={isLoggingOut}
+                disabled={isLoggingOut || authLoading}
               >
                 {isMobileMenuOpen ? (
                   <X className="h-4 w-4 sm:h-5 sm:w-5" />

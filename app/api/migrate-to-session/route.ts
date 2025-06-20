@@ -33,7 +33,10 @@ export async function POST(request: NextRequest) {
         id: decoded.userId,
         email: decoded.email,
         role: decoded.role,
-        name: decoded.name
+        name: decoded.name,
+        avatar: decoded.avatar,
+        createdAt: new Date(),
+        updatedAt: new Date()
       });
 
       console.log('API migrate-to-session: сессия создана:', sessionId);
