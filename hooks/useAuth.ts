@@ -189,7 +189,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             id: data.user.id,
             role: data.user.role,
             email: data.user.email,
-            name: data.user.name
+            name: data.user.name,
+            avatar: data.user.avatar,
+            createdAt: data.user.createdAt,
+            updatedAt: data.user.updatedAt
           };
           
           setUser(userData);
@@ -260,7 +263,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           id: data.user.id || data.user.userId,
           role: data.user.role,
           email: data.user.email,
-          name: data.user.name
+          name: data.user.name,
+          avatar: data.user.avatar,
+          createdAt: data.user.createdAt,
+          updatedAt: data.user.updatedAt
         };
         
         setUser(userData);

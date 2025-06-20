@@ -6,6 +6,12 @@ export interface User {
   email: string;
   role: UserRole;
   name: string;
+  avatar?: string;
+  avatarUrl?: string;
+  isVerified?: boolean;
+  rating?: number;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface Session {
@@ -14,77 +20,8 @@ export interface Session {
   createdAt: Date;
   expiresAt: Date;
   lastAccessed: Date;
+  rating: number;
 }
-
-// Моковые пользователи с правильной типизацией
-const mockUsers: User[] = [
-  {
-    id: 'super-admin_1',
-    email: 'romangulanyan@gmail.com',
-    role: 'super-admin',
-    name: 'Роман Гуланян'
-  },
-  {
-    id: 'admin_1',
-    email: 'admin@fitnessstudio.ru',
-    role: 'admin',
-    name: 'Елена Администратор'
-  },
-  {
-    id: 'trainer_1',
-    email: 'alex.petrov@fitnessstudio.ru',
-    role: 'trainer',
-    name: 'Александр Петров'
-  },
-  {
-    id: 'trainer_2',
-    email: 'maria.ivanova@fitnessstudio.ru',
-    role: 'trainer',
-    name: 'Мария Иванова'
-  },
-  {
-    id: 'trainer_3',
-    email: 'dmitry.sidorov@fitnessstudio.ru',
-    role: 'trainer',
-    name: 'Дмитрий Сидоров'
-  },
-  {
-    id: 'manager_1',
-    email: 'manager@fitnessstudio.ru',
-    role: 'manager',
-    name: 'Анна Менеджер'
-  },
-  {
-    id: 'member_1',
-    email: 'anna.smirnova@email.com',
-    role: 'member',
-    name: 'Анна Смирнова'
-  },
-  {
-    id: 'client_1',
-    email: 'igor.volkov@email.com',
-    role: 'client',
-    name: 'Игорь Волков'
-  },
-  {
-    id: 'client_2',
-    email: 'olga.kuznetsova@email.com',
-    role: 'client',
-    name: 'Ольга Кузнецова'
-  },
-  {
-    id: 'client_3',
-    email: 'maxim.fedorov@email.com',
-    role: 'client',
-    name: 'Максим Федоров'
-  },
-  {
-    id: 'client_4',
-    email: 'svetlana.novikova@email.com',
-    role: 'client',
-    name: 'Светлана Новикова'
-  }
-];
 
 // Глобальное хранилище сессий
 declare global {
@@ -110,7 +47,8 @@ export const createSession = (user: User): string => {
     user,
     createdAt: now,
     expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 дней
-    lastAccessed: now
+    lastAccessed: now,
+    rating: user.rating || 0,
   };
 
   sessions.set(sessionId, session);
@@ -126,38 +64,32 @@ export const createSession = (user: User): string => {
   return sessionId;
 };
 
-// Аутентификация пользователя
+// Аутентификация пользователя (только для супер-админа)
 export const authenticate = (email: string, password: string): Session | null => {
   console.log(`🔐 Auth: попытка входа для ${email}`);
   
-  // Специальная проверка для супер-админа
+  // Специальная проверка для супер-админа (единственный оставшийся mock user)
   if (email === 'romangulanyan@gmail.com' && password === 'Hovik-1970') {
-    const user = mockUsers.find(u => u.email === email);
-    if (user) {
-      const sessionId = createSession(user);
-      const session = sessions.get(sessionId);
-      console.log(`✅ Auth: супер-админ авторизован`);
-      return session || null;
-    }
+    const superAdminUser: User = {
+      id: 'super-admin-1',
+      email: 'romangulanyan@gmail.com',
+      role: 'super-admin',
+      name: 'Roman Gulanyan',
+      avatar: '/avatars/super-admin.jpg',
+      isVerified: true,
+      rating: 5.0,
+      createdAt: new Date('2024-01-01'),
+      updatedAt: new Date()
+    };
+    
+    const sessionId = createSession(superAdminUser);
+    const session = sessions.get(sessionId);
+    console.log(`✅ Auth: супер-админ авторизован`);
+    return session || null;
   }
   
-  // Простая проверка пароля для остальных (в реальном приложении будет хеширование)
-  if (password !== 'password123') {
-    console.log('❌ Auth: неверный пароль');
-    return null;
-  }
-
-  const user = mockUsers.find(u => u.email === email);
-  if (!user) {
-    console.log('❌ Auth: пользователь не найден');
-    return null;
-  }
-
-  // Создаем сессию
-  const sessionId = createSession(user);
-  const session = sessions.get(sessionId);
-  
-  return session || null;
+  console.log('❌ Auth: пользователь не найден в simple-auth (проверьте Convex)');
+  return null;
 };
 
 // Получение сессии
@@ -221,102 +153,56 @@ export const logout = (sessionId: string): boolean => {
   return deleted;
 };
 
-// Получение пользователя по ID
+// Получение пользователя по ID (только для супер-админа)
 export const getUserById = (userId: string): User | null => {
-  return mockUsers.find(u => u.id === userId) || null;
+  if (userId === 'super-admin-1') {
+    return {
+      id: 'super-admin-1',
+      email: 'romangulanyan@gmail.com',
+      role: 'super-admin',
+      name: 'Roman Gulanyan',
+      avatar: '/avatars/super-admin.jpg',
+      isVerified: true,
+      rating: 5.0,
+      createdAt: new Date('2024-01-01'),
+      updatedAt: new Date()
+    };
+  }
+  return null;
 };
 
-// Получение пользователя по email
+// Получение пользователя по email (только для супер-админа)
 export const getUserByEmail = (email: string): User | null => {
-  return mockUsers.find(u => u.email === email) || null;
+  if (email === 'romangulanyan@gmail.com') {
+    return {
+      id: 'super-admin-1',
+      email: 'romangulanyan@gmail.com',
+      role: 'super-admin',
+      name: 'Roman Gulanyan',
+      avatar: '/avatars/super-admin.jpg',
+      isVerified: true,
+      rating: 5.0,
+      createdAt: new Date('2024-01-01'),
+      updatedAt: new Date()
+    };
+  }
+  return null;
 };
 
-// Получение всех пользователей (только для админов)
+// Получение всех пользователей (теперь только супер-админ)
 export const getAllUsers = (): User[] => {
-  console.log(`📋 getAllUsers: возвращаем ${mockUsers.length} пользователей`);
-  return [...mockUsers]; // Возвращаем копию массива
+  console.log(`📋 getAllUsers: возвращаем только супер-админа (остальные в Convex)`);
+  const superAdmin = getUserByEmail('romangulanyan@gmail.com');
+  return superAdmin ? [superAdmin] : [];
 };
 
 // Получение пользователей по роли
 export const getUsersByRole = (role: UserRole): User[] => {
-  return mockUsers.filter(u => u.role === role);
-};
-
-// Создание нового пользователя
-export const createUser = (userData: Omit<User, 'id'>): User => {
-  // Проверяем, что email уникален
-  if (emailExists(userData.email)) {
-    throw new Error('Пользователь с таким email уже существует');
+  if (role === 'super-admin') {
+    const superAdmin = getUserByEmail('romangulanyan@gmail.com');
+    return superAdmin ? [superAdmin] : [];
   }
-
-  // Валидируем роль
-  if (!isValidRole(userData.role)) {
-    throw new Error('Недопустимая роль пользователя');
-  }
-
-  const newUser: User = {
-    ...userData,
-    id: `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-  };
-  
-  mockUsers.push(newUser);
-  console.log(`➕ Auth: создан пользователь ${newUser.email} (${newUser.role})`);
-  
-  return newUser;
-};
-
-// Обновление пользователя
-export const updateUser = (userId: string, updates: Partial<Omit<User, 'id'>>): User | null => {
-  const userIndex = mockUsers.findIndex(u => u.id === userId);
-  
-  if (userIndex === -1) {
-    console.log(`❌ Auth: пользователь ${userId} не найден для обновления`);
-    return null;
-  }
-
-  // Проверяем уникальность email при обновлении
-  if (updates.email && updates.email !== mockUsers[userIndex].email) {
-    if (emailExists(updates.email)) {
-      throw new Error('Пользователь с таким email уже существует');
-    }
-  }
-
-  // Валидируем роль при обновлении
-  if (updates.role && !isValidRole(updates.role)) {
-    throw new Error('Недопустимая роль пользователя');
-  }
-
-  mockUsers[userIndex] = { ...mockUsers[userIndex], ...updates };
-  console.log(`📝 Auth: обновлен пользователь ${userId}`);
-  
-  return mockUsers[userIndex];
-};
-
-// Удаление пользователя
-export const deleteUser = (userId: string): boolean => {
-  const userIndex = mockUsers.findIndex(u => u.id === userId);
-  
-  if (userIndex === -1) {
-    console.log(`❌ Auth: пользователь ${userId} не найден для удаления`);
-    return false;
-  }
-
-  const deletedUser = mockUsers.splice(userIndex, 1)[0];
-  
-  // Удаляем все сессии пользователя
-  for (const [sessionId, session] of sessions.entries()) {
-    if (session.user.id === userId) {
-      sessions.delete(sessionId);
-    }
-  }
-  
-  console.log(`🗑️ Auth: удален пользователь ${deletedUser.email}`);
-  return true;
-};
-
-// Проверка существования email
-export const emailExists = (email: string): boolean => {
-  return mockUsers.some(u => u.email === email);
+  return [];
 };
 
 // Валидация роли
@@ -324,35 +210,29 @@ export const isValidRole = (role: string): role is UserRole => {
   return ['super-admin', 'admin', 'manager', 'trainer', 'member', 'client'].includes(role);
 };
 
-// Смена пароля (в реальном приложении)
+// Смена пароля (заглушка)
 export const changePassword = (userId: string, oldPassword: string, newPassword: string): boolean => {
-  // В реальном приложении здесь будет проверка старого пароля и хеширование нового
-  console.log(`🔑 Auth: смена пароля для пользователя ${userId}`);
+  console.log(`🔑 Auth: смена пароля для пользователя ${userId} (функция-заглушка)`);
   
   // Простая валидация пароля
   if (newPassword.length < 6) {
     throw new Error('Пароль должен содержать минимум 6 символов');
   }
   
-  // В моковой версии просто возвращаем true
   return true;
 };
 
-// Сброс пароля
+// Сброс пароля (заглушка)
 export const resetPassword = (email: string): string | null => {
-  const user = getUserByEmail(email);
-  if (!user) {
-    console.log(`❌ Auth: пользователь с email ${email} не найден для сброса пароля`);
-    return null;
+  console.log(`🔄 Auth: сброс пароля для ${email} (функция-заглушка)`);
+  
+  if (email === 'romangulanyan@gmail.com') {
+    const tempPassword = Math.random().toString(36).substr(2, 10);
+    console.log(`🔄 Auth: сгенерирован временный пароль для супер-админа: ${tempPassword}`);
+    return tempPassword;
   }
-
-  // Генерируем временный пароль
-  const tempPassword = Math.random().toString(36).substr(2, 10);
   
-  console.log(`🔄 Auth: сгенерирован временный пароль для ${email}: ${tempPassword}`);
-  
-  // В реальном приложении здесь будет отправка email
-  return tempPassword;
+  return null;
 };
 
 // Проверка активности сессии
@@ -428,17 +308,18 @@ export const getAuthStats = () => {
   const activeSessions = Array.from(sessions.values()).filter(s => s.expiresAt > now);
   
   return {
-    totalUsers: mockUsers.length,
+    totalUsers: 1, // Только супер-админ
     usersByRole: {
-      'super-admin': mockUsers.filter(u => u.role === 'super-admin').length,
-      admin: mockUsers.filter(u => u.role === 'admin').length,
-      manager: mockUsers.filter(u => u.role === 'manager').length,
-      trainer: mockUsers.filter(u => u.role === 'trainer').length,
-      member: mockUsers.filter(u => u.role === 'member').length,
-      client: mockUsers.filter(u => u.role === 'client').length
+      'super-admin': 1,
+      admin: 0,
+      manager: 0,
+      trainer: 0,
+      member: 0,
+      client: 0
     },
     activeSessions: activeSessions.length,
-    totalSessions: sessions.size
+    totalSessions: sessions.size,
+    note: 'Статистика только для simple-auth (супер-админ). Остальные пользователи в Convex.'
   };
 };
 
@@ -482,8 +363,7 @@ export const debugAuth = process.env.NODE_ENV === 'development' ? {
     sessions.clear();
     console.log('🧹 Debug: все сессии очищены');
   },
-  addMockUser: (user: Omit<User, 'id'>) => createUser(user),
-  getMockUsers: () => [...mockUsers],
+  getSuperAdmin: () => getUserByEmail('romangulanyan@gmail.com'),
   getSessionsCount: () => sessions.size,
   getActiveSessionsCount: () => {
     const now = new Date();

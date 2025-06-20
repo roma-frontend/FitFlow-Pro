@@ -1,6 +1,6 @@
 // app/api/auth/login/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { authenticate, createSession, getUserByEmail } from '@/lib/simple-auth';
+import { authenticate, createSession, getUserByEmail, type User } from '@/lib/simple-auth';
 import { ConvexHttpClient } from "convex/browser";
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
@@ -97,6 +97,24 @@ function createAuthResponse(user: any, sessionId?: string) {
   response.headers.set('Expires', '0');
   
   return response;
+}
+
+// Функция для создания полного объекта User из данных Convex
+function createUserFromConvex(convexUser: any): User {
+  const now = new Date();
+  
+  return {
+    id: convexUser._id,
+    email: convexUser.email,
+    role: convexUser.role,
+    name: convexUser.name || `${convexUser.firstName || ''} ${convexUser.lastName || ''}`.trim() || convexUser.email,
+    avatar: convexUser.avatar || convexUser.photoUrl || undefined,
+    avatarUrl: convexUser.avatarUrl || convexUser.photoUrl || undefined,
+    isVerified: convexUser.isVerified || false,
+    rating: convexUser.rating || undefined,
+    createdAt: convexUser.createdAt ? new Date(convexUser.createdAt) : now,
+    updatedAt: convexUser.updatedAt ? new Date(convexUser.updatedAt) : now
+  };
 }
 
 export async function POST(request: NextRequest) {
@@ -200,15 +218,20 @@ export async function POST(request: NextRequest) {
           console.log('⚠️ Не удалось обновить время входа:', updateError);
         }
         
+        // Создаем полный объект User для сессии
+        const fullUser = createUserFromConvex(convexUser);
+        
         // Создаем сессию в simple-auth
-        const sessionId = createSession({
+        const sessionId = createSession(fullUser);
+        
+        console.log('✅ Сессия создана для Convex пользователя:', sessionId);
+        
+        return createAuthResponse({
           id: convexUser._id,
           email: convexUser.email,
           role: convexUser.role,
-          name: convexUser.name || `${convexUser.firstName} ${convexUser.lastName}`
-        });
-        
-        return createAuthResponse(convexUser, sessionId);
+          name: fullUser.name
+        }, sessionId);
       }
       
     } catch (convexError) {
@@ -229,7 +252,7 @@ export async function POST(request: NextRequest) {
       { 
         success: false, 
         error: 'Внутренняя ошибка сервера',
-        details: process.env.NODE_ENV === 'development' ? error: error instanceof Error ? error.message : undefined
+        details: process.env.NODE_ENV === 'development' ? error : error instanceof Error ? error.message : undefined
       },
       { status: 500 }
     );
