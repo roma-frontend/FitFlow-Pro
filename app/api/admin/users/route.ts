@@ -23,6 +23,11 @@ function createErrorResponse(message: string, status: number = 500, details?: an
 
 // Функция для добавления заголовков против кэширования
 function addNoCacheHeaders(response: NextResponse) {
+  response.headers.set('Access-Control-Allow-Origin', 
+    process.env.NODE_ENV === 'production' 
+      ? 'https://yourdomain.com' 
+      : '*'
+  );
   response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   response.headers.set('Pragma', 'no-cache');
   response.headers.set('Expires', '0');

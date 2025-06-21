@@ -15,7 +15,7 @@ export const TabletHierarchyTab = () => {
       <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl p-5 shadow-sm">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold flex items-center gap-3">
+            <h1 className="text-xl font-bold flex items-center gap-3">
               <Crown className="h-6 w-6 text-purple-600" />
               Панель управления
             </h1>
@@ -51,7 +51,7 @@ export const TabletHierarchyTab = () => {
                     </div>
                     <div className="flex-1">
                       <div className="flex flex-wrap items-center gap-3 mb-3">
-                        <h3 className="text-lg font-bold text-gray-900">
+                        <h3 className="text-md font-bold text-gray-900">
                           {role.name}
                         </h3>
                         <Badge className={`${role.textColor} ${role.bgColor}`}>
@@ -61,7 +61,7 @@ export const TabletHierarchyTab = () => {
                           {role.count} пользователей
                         </Badge>
                       </div>
-                      <p className="text-gray-700 mb-3">{role.description}</p>
+                      <p className="text-gray-700 mb-3 text-sm">{role.description}</p>
                       <div className="flex flex-wrap gap-2">
                         {role.permissions.slice(0, 3).map((permission, idx) => (
                           <Badge

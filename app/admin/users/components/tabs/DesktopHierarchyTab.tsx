@@ -28,21 +28,21 @@ export const DesktopHierarchyTab = () => {
   };
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto p-4">
+    <div className="space-y-8">
       {/* Шапка панели */}
       <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-2xl p-6 shadow-lg">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold flex items-center gap-4">
+            <h1 className="text-xl font-bold flex items-center gap-4">
               <Crown className="h-8 w-8 text-purple-600" />
               Панель супер-администратора
             </h1>
-            <p className="text-gray-600 mt-2 text-lg">Управление пользователями и правами доступа</p>
+            <p className="text-gray-600 mt-2 text-base">Управление пользователями и правами доступа</p>
           </div>
-          <div className="bg-white px-6 py-3 rounded-xl border border-purple-200 shadow-sm">
+          <div className="bg-white px-4 py-3 rounded-xl border border-purple-200 shadow-sm">
             <div className="flex items-center gap-4">
-              <span className="text-gray-700 font-medium text-lg">Всего пользователей:</span>
-              <Badge variant="custom" className="text-xl px-4 py-2">
+              <span className="text-gray-700 font-medium text-base">Всего пользователей:</span>
+              <Badge variant="special" className="text-md px-4 py-2">
                 {roleHierarchy.reduce((sum, role) => sum + role.count, 0)}
               </Badge>
             </div>
@@ -53,7 +53,7 @@ export const DesktopHierarchyTab = () => {
       {/* Иерархия ролей */}
       <Card className="bg-white/90 backdrop-blur-sm border border-gray-200 shadow-xl">
         <CardHeader>
-          <CardTitle className="flex items-center gap-3 text-2xl">
+          <CardTitle className="flex items-center gap-3 text-lg">
             <Crown className="h-6 w-6" />
             Иерархия ролей
           </CardTitle>
@@ -79,23 +79,23 @@ export const DesktopHierarchyTab = () => {
                         <div
                           className={`p-4 rounded-xl ${role.color} text-white shadow-md`}
                         >
-                          <Icon className="h-7 w-7" />
+                          <Icon className="h-6 w-6" />
                         </div>
                         <div className="flex-1">
                           <div className="flex flex-wrap items-center gap-4 mb-3">
-                            <h3 className="text-xl font-bold text-gray-900">
+                            <h3 className="text-md font-bold text-gray-900">
                               {role.name}
                             </h3>
                             <Badge
-                              className={`text-base py-1 px-3 ${role.textColor} ${role.bgColor}`}
+                              className={`text-sm py-1 px-3 ${role.textColor} ${role.bgColor}`}
                             >
                               Уровень {role.level}
                             </Badge>
-                            <Badge variant="destructive" className="text-base py-1 px-3">
+                            <Badge variant="destructive" className="text-sm py-1 px-3">
                               {role.count} пользователей
                             </Badge>
                           </div>
-                          <p className="text-gray-700 text-lg mb-4">
+                          <p className="text-gray-700 text-sm mb-4">
                             {role.description}
                           </p>
                           
@@ -144,7 +144,7 @@ export const DesktopHierarchyTab = () => {
       {/* Матрица прав доступа */}
       <Card className="bg-white/90 backdrop-blur-sm border border-gray-200 shadow-xl">
         <CardHeader>
-          <CardTitle className="flex items-center gap-3 text-2xl">
+          <CardTitle className="flex items-center gap-3 text-xl">
             <Lock className="h-6 w-6" />
             Матрица прав доступа
           </CardTitle>
@@ -155,7 +155,7 @@ export const DesktopHierarchyTab = () => {
               const CategoryIcon = category.icon;
               return (
                 <div key={categoryIndex} className="space-y-6">
-                  <h3 className="flex items-center gap-3 text-xl font-bold text-gray-900">
+                  <h3 className="flex items-center gap-3 text-lg font-bold text-gray-900">
                     <CategoryIcon className="h-6 w-6" />
                     {category.category}
                   </h3>
@@ -164,7 +164,7 @@ export const DesktopHierarchyTab = () => {
                     <table className="w-full border-collapse">
                       <thead>
                         <tr className="bg-gray-50 border-b border-gray-200">
-                          <th className="text-left py-4 px-6 font-bold text-gray-700 text-lg">
+                          <th className="text-left py-4 px-6 font-bold text-gray-700 text-md">
                             Разрешение
                           </th>
                           {roleHierarchy.map((role) => {

@@ -9,7 +9,7 @@ import { DesktopHierarchyTab } from "./DesktopHierarchyTab";
 
 export const HierarchyTab = () => {
   const isMobile = useMediaQuery("(max-width: 640px)");
-  const isTablet = useMediaQuery("(min-width: 641px) and (max-width: 1024px)");
+  const isTablet = useMediaQuery("(min-width: 641px) and (max-width: 1280px)");
 
   if (isMobile) return <MobileHierarchyTab />;
   if (isTablet) return <TabletHierarchyTab />;
