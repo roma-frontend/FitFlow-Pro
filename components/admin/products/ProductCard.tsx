@@ -143,7 +143,7 @@ export const ProductCard = memo(function ProductCard({
               <span className="text-2xl font-bold text-gray-900">
                 ₽{product.price.toLocaleString()}
               </span>
-              <Badge variant="outline" className="w-fit text-xs">
+              <Badge variant="special" className="w-fit text-xs">
                 {getCategoryLabel(product.category)}
               </Badge>
             </div>

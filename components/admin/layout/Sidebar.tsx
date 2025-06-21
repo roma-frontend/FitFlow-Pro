@@ -53,7 +53,7 @@ export function Sidebar({
   };
 
   return (
-    <aside className="sticky top-0 left-0 hidden lg:flex lg:flex-col w-80 bg-white/90 backdrop-blur-sm border-r shadow-sm">
+    <aside className="sticky top-0 left-0 hidden lg:flex lg:flex-col w-80 bg-white/90 backdrop-blur-sm border-r shadow-sm flex-shrink-0">
       {/* Header */}
       <div className="p-6 border-b">
         <div className="flex flex-col xl:flex-row items-start xl:items-center gap-4 xl:gap-0 mb-4">
