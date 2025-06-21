@@ -1,5 +1,6 @@
 "use client";
 
+import { getProfileUrl } from "@/utils/roleHelpers";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,14 +12,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { 
-  User, 
-  Settings, 
-  LogOut, 
-  Shield, 
+import {
+  User,
+  Settings,
+  LogOut,
+  Shield,
   ChevronDown,
   Activity,
-  Bell
+  Bell,
 } from "lucide-react";
 import { useAuth, useRole } from "@/hooks/useAuth";
 import { getRoleLabel, getUserDashboardUrl } from "@/utils/roleHelpers";
@@ -39,9 +40,9 @@ export default function UserMenu() {
 
   const getInitials = (name: string) => {
     return name
-      .split(' ')
-      .map(word => word[0])
-      .join('')
+      .split(" ")
+      .map((word) => word[0])
+      .join("")
       .toUpperCase()
       .slice(0, 2);
   };
@@ -63,21 +64,19 @@ export default function UserMenu() {
               {getInitials(user.name)}
             </AvatarFallback>
           </Avatar>
-          
+
           <div className="text-left hidden sm:block">
-            <div className="text-sm font-medium text-white">
-              {user.name}
-            </div>
+            <div className="text-sm font-medium text-white">{user.name}</div>
             <div className="text-xs text-blue-100">
-              {getRoleLabel(role || '')}
+              {getRoleLabel(role || "")}
             </div>
           </div>
-          
+
           <ChevronDown className="h-4 w-4 text-blue-100" />
         </Button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent 
+      <DropdownMenuContent
         className="min-w-64 bg-white border border-gray-200 shadow-lg rounded-xl"
         align="end"
         sideOffset={8}
@@ -93,14 +92,14 @@ export default function UserMenu() {
               <div className="font-medium text-gray-900">{user.name}</div>
               <div className="text-sm text-gray-500">{user.email}</div>
               <div className="text-xs text-blue-600 font-medium">
-                {getRoleLabel(role || '')}
+                {getRoleLabel(role || "")}
               </div>
             </div>
           </div>
         </DropdownMenuLabel>
 
         <div className="py-2">
-          <DropdownMenuItem 
+          <DropdownMenuItem
             onClick={() => navigateTo(getUserDashboardUrl(user))}
             className="flex items-center gap-3 px-4 py-2 hover:bg-blue-50 cursor-pointer"
           >
@@ -108,35 +107,39 @@ export default function UserMenu() {
             <span>Мой дашборд</span>
           </DropdownMenuItem>
 
-          <DropdownMenuItem 
-            onClick={() => navigateTo('/profile')}
+          <DropdownMenuItem
+            onClick={() => navigateTo(getProfileUrl(role || ""))}
             className="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 cursor-pointer"
           >
             <User className="h-4 w-4 text-gray-600" />
             <span>Профиль</span>
           </DropdownMenuItem>
 
-          <DropdownMenuItem 
-            onClick={() => navigateTo('/admin/notifications')}
-            className="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 cursor-pointer"
-          >
-            <Bell className="h-4 w-4 text-gray-600" />
-            <span>Уведомления</span>
-          </DropdownMenuItem>
+          {isAdmin && (
+            <>
+              <DropdownMenuItem
+                onClick={() => navigateTo("/admin/notifications")}
+                className="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 cursor-pointer"
+              >
+                <Bell className="h-4 w-4 text-gray-600" />
+                <span>Уведомления</span>
+              </DropdownMenuItem>
 
-          <DropdownMenuItem 
-            onClick={() => navigateTo('/admin/settings')}
-            className="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 cursor-pointer"
-          >
-            <Settings className="h-4 w-4 text-gray-600" />
-            <span>Настройки</span>
-          </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => navigateTo("/admin/settings")}
+                className="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 cursor-pointer"
+              >
+                <Settings className="h-4 w-4 text-gray-600" />
+                <span>Настройки</span>
+              </DropdownMenuItem>
+            </>
+          )}
 
           {isAdmin && (
             <>
               <DropdownMenuSeparator className="my-2" />
-              <DropdownMenuItem 
-                onClick={() => navigateTo('/admin')}
+              <DropdownMenuItem
+                onClick={() => navigateTo("/admin")}
                 className="flex items-center gap-3 px-4 py-2 hover:bg-purple-50 cursor-pointer"
               >
                 <Shield className="h-4 w-4 text-purple-600" />
@@ -147,9 +150,9 @@ export default function UserMenu() {
         </div>
 
         <DropdownMenuSeparator className="my-2" />
-        
+
         <div className="py-2">
-          <DropdownMenuItem 
+          <DropdownMenuItem
             onClick={handleLogout}
             className="flex items-center gap-3 px-4 py-2 hover:bg-red-50 cursor-pointer text-red-600"
           >
@@ -161,4 +164,3 @@ export default function UserMenu() {
     </DropdownMenu>
   );
 }
-

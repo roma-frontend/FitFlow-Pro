@@ -36,6 +36,7 @@ import {
   UserCheck,
 } from "lucide-react";
 import type { MessageStats, WorkoutStats, SystemStats } from "@/types/trainer";
+import { useRouter } from "next/navigation";
 
 interface TrainerUserMenuProps {
   messageStats: MessageStats;
@@ -57,6 +58,7 @@ const TrainerUserMenu = memo(({
   
   // ✅ Получаем данные пользователя напрямую из useAuth
   const { user, logout, isLoading: authLoading, refreshUser } = useAuth();
+  const router = useRouter()
 
   // ✅ Добавляем логирование для отладки
   useEffect(() => {
@@ -366,10 +368,10 @@ const TrainerUserMenu = memo(({
                 <div className="p-2 bg-white/70 rounded-lg shadow-sm">
                   <User className="h-4 w-4 text-blue-500" />
                 </div>
-                <div className="flex-1">
+                <Button variant="outline" className="flex-1 flex flex-col items-start border-0 bg-transparent ps-0 hover:bg-transparent" onClick={() => router.push("/trainer/profile")}>
                   <div className="text-sm font-semibold text-gray-800">Профиль</div>
                   <div className="text-xs text-gray-600">Управление профилем</div>
-                </div>
+                </Button>
               </DropdownMenuItem>
 
               <DropdownMenuItem 

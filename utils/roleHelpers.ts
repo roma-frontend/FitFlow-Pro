@@ -11,6 +11,20 @@ export const ROLE_LABELS = {
   staff: "Персонал",
 } as const;
 
+export const getProfileUrl = (role: string): string => {
+  switch (role) {
+    case 'trainer':
+      return '/trainer/profile';
+    case 'manager':
+      return '/manager/profile';
+    case 'admin':
+    case 'super-admin':
+      return '/admin/profile';
+    default: // member, client и другие
+      return '/profile';
+  }
+};
+
 export const getRoleLabel = (role: string): string => {
   return ROLE_LABELS[role as keyof typeof ROLE_LABELS] || role;
 };

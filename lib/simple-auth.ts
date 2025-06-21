@@ -144,6 +144,61 @@ export const getSession = (sessionId: string): Session | null => {
   return session;
 };
 
+
+export const updateSession = (sessionId: string, updatedSession: Session): boolean => {
+  console.log(`🔄 updateSession: обновление сессии ${sessionId.substring(0, 20)}...`);
+  
+  const session = sessions.get(sessionId);
+  
+  if (!session) {
+    console.log(`❌ updateSession: сессия ${sessionId.substring(0, 20)}... не найдена`);
+    return false;
+  }
+
+  // Обновляем сессию с новыми данными
+  sessions.set(sessionId, {
+    ...updatedSession,
+    lastAccessed: new Date() // Всегда обновляем время последнего доступа
+  });
+
+  console.log(`✅ updateSession: сессия обновлена для ${updatedSession.user.email}`);
+  
+  if (isVercelProduction) {
+    console.log(`🔧 Vercel: сессия ${sessionId.substring(0, 20)}... обновлена`);
+  }
+
+  return true;
+};
+
+// Альтернативная функция для обновления только пользователя в сессии
+export const updateSessionUser = (sessionId: string, updatedUser: Partial<User>): boolean => {
+  console.log(`🔄 updateSessionUser: обновление пользователя в сессии ${sessionId.substring(0, 20)}...`);
+  
+  const session = sessions.get(sessionId);
+  
+  if (!session) {
+    console.log(`❌ updateSessionUser: сессия ${sessionId.substring(0, 20)}... не найдена`);
+    return false;
+  }
+
+  // Обновляем только данные пользователя
+  const updatedSession = {
+    ...session,
+    user: {
+      ...session.user,
+      ...updatedUser,
+      updatedAt: new Date() // Обновляем время изменения пользователя
+    },
+    lastAccessed: new Date()
+  };
+
+  sessions.set(sessionId, updatedSession);
+
+  console.log(`✅ updateSessionUser: данные пользователя обновлены для ${session.user.email}`);
+  
+  return true;
+};
+
 // Выход из системы
 export const logout = (sessionId: string): boolean => {
   const deleted = sessions.delete(sessionId);

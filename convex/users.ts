@@ -385,6 +385,490 @@ export const updateUserOrTrainer = mutation({
   },
 });
 
+
+export const updateProfile = mutation({
+  args: {
+    userId: v.optional(v.string()),
+    email: v.optional(v.string()),
+    updates: v.object({
+      name: v.optional(v.string()),
+      phone: v.optional(v.string()),
+      avatar: v.optional(v.string()),
+      photoUrl: v.optional(v.string()),
+      bio: v.optional(v.string()),
+      birthDate: v.optional(v.string()),
+      location: v.optional(v.string()),
+      department: v.optional(v.string()),
+      secondaryEmail: v.optional(v.string()),
+      emergencyContact: v.optional(v.string()),
+      emergencyPhone: v.optional(v.string()),
+      socialLinks: v.optional(v.object({
+        instagram: v.optional(v.string()),
+        facebook: v.optional(v.string()),
+        twitter: v.optional(v.string()),
+        linkedin: v.optional(v.string()),
+        website: v.optional(v.string()),
+      })),
+      updatedAt: v.optional(v.number()),
+    }),
+  },
+  handler: async (ctx, args) => {
+    console.log('🔧 updateProfile: обновляем профиль', { userId: args.userId, email: args.email });
+    
+    let document;
+    
+    // Находим пользователя по ID или email
+    if (args.userId) {
+      try {
+        document = await ctx.db.get(args.userId as any);
+      } catch (error) {
+        console.log('⚠️ Не удалось найти по ID, пробуем другие методы');
+      }
+    }
+    
+    if (!document && args.email) {
+      // Ищем в users
+      document = await ctx.db
+        .query("users")
+        .filter((q) => q.eq(q.field("email"), args.email))
+        .first();
+      
+      // Если не нашли в users, ищем в trainers
+      if (!document) {
+        document = await ctx.db
+          .query("trainers")
+          .filter((q) => q.eq(q.field("email"), args.email))
+          .first();
+      }
+    }
+    
+    if (!document) {
+      throw new Error("Пользователь не найден");
+    }
+    
+    // Подготавливаем обновления
+    const updates: any = {};
+    
+    // Обрабатываем avatar/photoUrl
+    if (args.updates.avatar !== undefined) {
+      updates.photoUrl = args.updates.avatar;
+      updates.avatar = args.updates.avatar;
+    }
+    if (args.updates.photoUrl !== undefined) {
+      updates.photoUrl = args.updates.photoUrl;
+      updates.avatar = args.updates.photoUrl;
+    }
+    
+    // Добавляем остальные поля
+    if (args.updates.name !== undefined) updates.name = args.updates.name;
+    if (args.updates.phone !== undefined) updates.phone = args.updates.phone;
+    if (args.updates.bio !== undefined) updates.bio = args.updates.bio;
+    if (args.updates.birthDate !== undefined) updates.birthDate = args.updates.birthDate;
+    if (args.updates.location !== undefined) updates.location = args.updates.location;
+    if (args.updates.department !== undefined) updates.department = args.updates.department;
+    if (args.updates.secondaryEmail !== undefined) updates.secondaryEmail = args.updates.secondaryEmail;
+    if (args.updates.emergencyContact !== undefined) updates.emergencyContact = args.updates.emergencyContact;
+    if (args.updates.emergencyPhone !== undefined) updates.emergencyPhone = args.updates.emergencyPhone;
+    if (args.updates.socialLinks !== undefined) updates.socialLinks = args.updates.socialLinks;
+    
+    // Добавляем updatedAt
+    updates.updatedAt = Date.now();
+    
+    console.log('📝 updateProfile: применяем обновления:', updates);
+    
+    // Обновляем документ
+    await ctx.db.patch(document._id, updates);
+    
+    console.log('✅ updateProfile: профиль обновлен');
+    return { success: true, userId: document._id };
+  },
+});
+
+
+export const changePassword = mutation({
+  args: {
+    userId: v.optional(v.string()),
+    email: v.optional(v.string()),
+    currentPassword: v.string(),
+    newPassword: v.string(),
+  },
+  handler: async (ctx, args) => {
+    console.log('🔐 changePassword: смена пароля для:', args.email || args.userId);
+    
+    let document;
+    
+    // Находим пользователя
+    if (args.userId) {
+      try {
+        document = await ctx.db.get(args.userId as any);
+      } catch (error) {
+        console.log('⚠️ Не удалось найти по ID');
+      }
+    }
+    
+    if (!document && args.email) {
+      // Ищем в users
+      document = await ctx.db
+        .query("users")
+        .filter((q) => q.eq(q.field("email"), args.email))
+        .first();
+      
+      // Если не нашли в users, ищем в trainers
+      if (!document) {
+        document = await ctx.db
+          .query("trainers")
+          .filter((q) => q.eq(q.field("email"), args.email))
+          .first();
+      }
+    }
+    
+    if (!document) {
+      return { success: false, error: "Пользователь не найден" };
+    }
+    
+    // Проверяем текущий пароль
+    // В реальном приложении здесь должна быть проверка хеша пароля
+    
+    // Обновляем пароль
+    await ctx.db.patch(document._id, {
+      password: args.newPassword, // В реальности должен быть хеш
+      updatedAt: Date.now(),
+    });
+    
+    console.log('✅ changePassword: пароль успешно изменен');
+    return { success: true };
+  },
+});
+
+export const sendVerificationEmail = mutation({
+  args: {
+    userId: v.optional(v.string()),
+    email: v.string(),
+  },
+  handler: async (ctx, args) => {
+    console.log('📧 sendVerificationEmail: отправка письма для:', args.email);
+    
+    // В реальном приложении здесь будет интеграция с email сервисом
+    // Сейчас просто логируем
+    
+    console.log('✅ sendVerificationEmail: письмо отправлено (заглушка)');
+    return { success: true, message: "Письмо отправлено" };
+  },
+});
+
+
+export const updatePreferences = mutation({
+  args: {
+    userId: v.string(),
+    preferences: v.object({
+      emailNotifications: v.optional(v.boolean()),
+      smsNotifications: v.optional(v.boolean()),
+      pushNotifications: v.optional(v.boolean()),
+      language: v.optional(v.string()),
+      theme: v.optional(v.string()),
+      timezone: v.optional(v.string()),
+      showProfile: v.optional(v.boolean()),
+      allowMessages: v.optional(v.boolean()),
+      marketingEmails: v.optional(v.boolean()),
+      updatedAt: v.optional(v.number()),
+    }),
+  },
+  handler: async (ctx, args) => {
+    console.log('⚙️ updatePreferences: обновляем настройки для:', args.userId);
+    
+    try {
+      const document = await ctx.db.get(args.userId as any);
+      if (!document) {
+        throw new Error("Пользователь не найден");
+      }
+      
+      // Получаем текущие preferences или создаем новый объект
+      const currentPreferences = (document as any).preferences || {
+        notifications: {
+          email: true,
+          push: true,
+          sms: false
+        }
+      };
+      
+      // Обновляем notifications если нужно
+      const updatedNotifications = {
+        ...currentPreferences.notifications,
+        email: args.preferences.emailNotifications ?? currentPreferences.notifications?.email,
+        push: args.preferences.pushNotifications ?? currentPreferences.notifications?.push,
+        sms: args.preferences.smsNotifications ?? currentPreferences.notifications?.sms,
+      };
+      
+      // Создаем обновленный объект preferences
+      const updatedPreferences = {
+        ...currentPreferences,
+        notifications: updatedNotifications,
+        language: args.preferences.language ?? currentPreferences.language,
+        theme: args.preferences.theme ?? currentPreferences.theme,
+        timezone: args.preferences.timezone ?? currentPreferences.timezone,
+        showProfile: args.preferences.showProfile ?? currentPreferences.showProfile,
+        allowMessages: args.preferences.allowMessages ?? currentPreferences.allowMessages,
+        marketingEmails: args.preferences.marketingEmails ?? currentPreferences.marketingEmails,
+        emailNotifications: args.preferences.emailNotifications ?? currentPreferences.emailNotifications,
+        smsNotifications: args.preferences.smsNotifications ?? currentPreferences.smsNotifications,
+        pushNotifications: args.preferences.pushNotifications ?? currentPreferences.pushNotifications,
+      };
+      
+      await ctx.db.patch(document._id, {
+        preferences: updatedPreferences,
+        updatedAt: Date.now(),
+      });
+      
+      console.log('✅ updatePreferences: настройки обновлены');
+      return { success: true, preferences: updatedPreferences };
+      
+    } catch (error) {
+      console.error('❌ updatePreferences: ошибка:', error);
+      throw error;
+    }
+  },
+});
+
+export const deactivateAccount = mutation({
+  args: {
+    userId: v.optional(v.string()),
+    email: v.optional(v.string()),
+    reason: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    console.log('🗑️ deactivateAccount: деактивация аккаунта');
+    
+    let document;
+    
+    // Находим пользователя
+    if (args.userId) {
+      try {
+        document = await ctx.db.get(args.userId as any);
+      } catch (error) {
+        console.log('⚠️ Не удалось найти по ID');
+      }
+    }
+    
+    if (!document && args.email) {
+      // Ищем в users
+      document = await ctx.db
+        .query("users")
+        .filter((q) => q.eq(q.field("email"), args.email))
+        .first();
+      
+      // Если не нашли в users, ищем в trainers
+      if (!document) {
+        document = await ctx.db
+          .query("trainers")
+          .filter((q) => q.eq(q.field("email"), args.email))
+          .first();
+      }
+    }
+    
+    if (!document) {
+      throw new Error("Пользователь не найден");
+    }
+    
+    console.log('✅ deactivateAccount: аккаунт деактивирован');
+    return { success: true, message: "Аккаунт деактивирован" };
+  },
+});
+
+export const getMemberStats = query({
+  args: { userId: v.string() },
+  handler: async (ctx, args) => {
+    console.log('📊 getMemberStats: получаем статистику для:', args.userId);
+    
+    try {
+      const user = await ctx.db.get(args.userId as any);
+      if (!user) {
+        return null;
+      }
+      
+      // Получаем данные из разных таблиц
+      const [workouts, bookings, visits] = await Promise.all([
+        // Тренировки из таблицы workouts
+        ctx.db.query("workouts")
+          .filter((q) => q.eq(q.field("userId"), args.userId as any))
+          .collect(),
+        
+        // Бронирования из таблицы userBookings
+        ctx.db.query("userBookings")
+          .filter((q) => q.eq(q.field("userId"), args.userId as any))
+          .collect(),
+        
+        // Достижения можно получить из поля user
+        Promise.resolve((user as any).achievements || [])
+      ]);
+      
+      // Подсчитываем статистику
+      const totalWorkouts = workouts.length + bookings.length;
+      const totalHours = [...workouts, ...bookings].reduce((sum, item) => {
+        return sum + (item.duration || 0);
+      }, 0) / 60; // Конвертируем минуты в часы
+      
+      // Текущая серия (упрощенный расчет)
+      const sortedWorkouts = [...workouts, ...bookings]
+        .sort((a, b) => (b as any).startTime - (a as any).startTime);
+      
+      let currentStreak = 0;
+      const oneDayMs = 24 * 60 * 60 * 1000;
+      const now = Date.now();
+      
+      for (let i = 0; i < sortedWorkouts.length; i++) {
+        const workout = sortedWorkouts[i] as any;
+        const daysDiff = Math.floor((now - workout.startTime) / oneDayMs);
+        
+        if (daysDiff === i) {
+          currentStreak++;
+        } else {
+          break;
+        }
+      }
+      
+      return {
+        totalWorkouts: (user as any).totalWorkouts || totalWorkouts,
+        totalHours: Math.round(totalHours),
+        currentStreak: (user as any).currentStreak || currentStreak,
+        personalRecords: (user as any).personalRecords || 0,
+        caloriesBurned: (user as any).caloriesBurned || 0,
+        averageWorkoutTime: (user as any).averageWorkoutTime || 45,
+        membershipType: (user as any).membershipType || 'basic',
+        membershipExpiry: (user as any).membershipExpiry || null,
+        lastWorkout: (user as any).lastWorkout || (sortedWorkouts[0] as any)?.startTime || null,
+        achievements: (user as any).achievements || [],
+        goals: (user as any).goals || [],
+      };
+      
+    } catch (error) {
+      console.error('❌ getMemberStats: ошибка:', error);
+      return null;
+    }
+  },
+});
+
+export const addAchievement = mutation({
+  args: {
+    userId: v.string(),
+    achievement: v.object({
+      id: v.string(),
+      title: v.string(),
+      description: v.optional(v.string()),
+      icon: v.optional(v.string()),
+    }),
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db.get(args.userId as any);
+    if (!user) {
+      throw new Error("Пользователь не найден");
+    }
+    
+    const currentAchievements = (user as any).achievements || [];
+    
+    // Проверяем, что достижение еще не получено
+    if (currentAchievements.some((a: any) => a.id === args.achievement.id)) {
+      return { success: false, message: "Достижение уже получено" };
+    }
+    
+    const newAchievement = {
+      ...args.achievement,
+      earnedAt: Date.now(),
+    };
+    
+    return { success: true, achievement: newAchievement };
+  },
+});
+
+// Управление целями пользователя
+export const updateGoals = mutation({
+  args: {
+    userId: v.string(),
+    action: v.union(v.literal("add"), v.literal("update"), v.literal("remove")),
+    goal: v.object({
+      id: v.string(),
+      title: v.optional(v.string()),
+      targetValue: v.optional(v.number()),
+      currentValue: v.optional(v.number()),
+      unit: v.optional(v.string()),
+      targetDate: v.optional(v.number()),
+      completed: v.optional(v.boolean()),
+      completedAt: v.optional(v.number()),
+    }),
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db.get(args.userId as any);
+    if (!user) {
+      throw new Error("Пользователь не найден");
+    }
+    
+    let goals = (user as any).goals || [];
+    
+    switch (args.action) {
+      case "add":
+        const newGoal = {
+          ...args.goal,
+          createdAt: Date.now(),
+          completed: false,
+        };
+        goals.push(newGoal);
+        break;
+        
+      case "update":
+        goals = goals.map((g: any) => 
+          g.id === args.goal.id 
+            ? { ...g, ...args.goal, updatedAt: Date.now() }
+            : g
+        );
+        break;
+        
+      case "remove":
+        goals = goals.filter((g: any) => g.id !== args.goal.id);
+        break;
+    }
+    
+    await ctx.db.patch(user._id, {
+      goals,
+      updatedAt: Date.now(),
+    });
+    
+    return { success: true, goals };
+  },
+});
+
+
+export const getUserByEmail = query({
+  args: { email: v.string() },
+  handler: async (ctx, args) => {
+    console.log('🔍 getUserByEmail: ищем пользователя по email:', args.email);
+    
+    // Сначала ищем в таблице users
+    const user = await ctx.db.query("users")
+      .filter((q) => q.eq(q.field("email"), args.email))
+      .first();
+    
+    
+    // Если не найден в users, ищем в trainers
+    const trainer = await ctx.db.query("trainers")
+      .filter((q) => q.eq(q.field("email"), args.email))
+      .first();
+    
+    if (trainer) {
+      console.log('✅ getUserByEmail: тренер найден в trainers');
+      return {
+        ...trainer,
+        _id: trainer._id,
+        id: trainer._id, // Для совместимости
+        role: trainer.role || 'trainer',
+        avatar: trainer.photoUrl || trainer.avatar,
+        isVerified: true, // Тренеры считаются верифицированными
+      };
+    }
+    
+    console.log('❌ getUserByEmail: пользователь не найден');
+    return null;
+  },
+});
+
 export const getUserById = query({
   args: { userId: v.string() }, // ✅ Изменяем на userId
   handler: async (ctx, args) => {

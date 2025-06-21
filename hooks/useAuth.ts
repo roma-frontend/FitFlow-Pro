@@ -580,7 +580,6 @@ export function useAuthStatus() {
   };
 }
 
-// Остальные хуки остаются без изменений...
 export function useRole() {
   const { user } = useAuth();
 

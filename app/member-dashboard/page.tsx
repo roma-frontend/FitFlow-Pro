@@ -7,7 +7,7 @@ import { useAuth, useApiRequest } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, Heart, Zap, Home, Target } from "lucide-react";
+import { AlertCircle, Heart, Zap, Home, Target, Loader2 } from "lucide-react";
 
 // Импортируем компоненты
 import {MemberHeader} from "@/components/member/MemberHeader";
@@ -280,25 +280,12 @@ export default function MemberDashboard() {
     });
     
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 flex items-center justify-center">
-        <Card className="p-8 text-center max-w-md">
-          <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">
-            Проблема с доступом
-          </h1>
-          <p className="text-gray-600 mb-6">
-            {!user
-              ? "Необходима авторизация"
-              : `Доступ запрещен. Ваша роль: ${user.role}. Эта страница только для участников.`}
-          </p>
-          <div className="flex gap-3 justify-center">
-            <Button onClick={() => router.push("/member-login")}>
-              Войти как участник
-            </Button>
-            <Button variant="outline" onClick={() => router.push("/")}>
-              На главную
-            </Button>
-          </div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardContent className="p-8 text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
+            <p>Загрузка панели персонала...</p>
+          </CardContent>
         </Card>
       </div>
     );

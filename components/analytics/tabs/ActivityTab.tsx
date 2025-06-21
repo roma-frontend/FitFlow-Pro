@@ -306,7 +306,7 @@ export function ActivityTab({ analytics, userStats, loading }: ActivityTabProps)
                     className="flex justify-between items-center p-2 bg-muted/50 rounded"
                   >
                     <span className="text-sm">{time}</span>
-                    <Badge variant="outline">
+                    <Badge variant="warning">
                       {Math.round(Math.random() * 30 + 20)}% активности
                     </Badge>
                   </div>

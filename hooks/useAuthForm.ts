@@ -1,10 +1,9 @@
-// hooks/useAuthForm.ts - исправленная версия
+// hooks/useAuthForm.ts
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/useAuth";
 import { validateEmailFormat, validateName, validatePassword } from "@/utils/authValidation";
 
 interface ValidationState {
@@ -24,11 +23,9 @@ export function useAuthForm() {
   const [isLogin, setIsLogin] = useState<boolean>(true);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
-  const [isRedirecting, setIsRedirecting] = useState<boolean>(false);
-  
+
   const [registrationSuccess, setRegistrationSuccess] = useState<boolean>(false);
-  const [registrationEmail, setRegistrationEmail] = useState<string>("");
-  const [emailValid, setEmailValid] = useState<boolean>(false);
+  const [registrationEmail, setRegistrationEmail] = useState<string>(""); const [emailValid, setEmailValid] = useState<boolean>(false);
 
   const [formData, setFormData] = useState<FormData>({
     email: "",
@@ -36,16 +33,17 @@ export function useAuthForm() {
     name: "",
     phone: "",
   });
-  
+  // Возвращаемся к исходному типу ValidationState
   const [validationStates, setValidationStates] = useState<
     Record<string, ValidationState>
   >({});
   const [isValidating, setIsValidating] = useState<boolean>(false);
+  const [isRedirecting, setIsRedirecting] = useState<boolean>(false);
 
   const { toast } = useToast();
   const router = useRouter();
-  
-  const { login: authLogin, user: authUser, loading: authLoading } = useAuth();
+  const searchParams = useSearchParams();
+  const redirectPath = searchParams.get("redirect");
 
   // Инициализация формы при смене режима
   useEffect(() => {
@@ -56,6 +54,7 @@ export function useAuthForm() {
         name: "",
         phone: "",
       }));
+      // ✅ Сбрасываем состояние успеха при переключении на вход
       setRegistrationSuccess(false);
       setRegistrationEmail("");
     } else {
@@ -69,15 +68,30 @@ export function useAuthForm() {
     setError("");
   }, [isLogin]);
 
-  // Проверяем авторизацию при загрузке страницы
+  // Проверяем авторизацию только при загрузке страницы
   useEffect(() => {
-    // Если пользователь уже авторизован как member, сразу перенаправляем
-    if (!authLoading && authUser && authUser.role === "member") {
-      console.log("✅ Пользователь уже авторизован, немедленно перенаправляем на дашборд");
-      setIsRedirecting(true);
-      router.replace("/member-dashboard");
-    }
-  }, [authUser, authLoading, router]);
+    let isMounted = true;
+
+    const checkAuth = async () => {
+      try {
+        const response = await fetch("/api/auth/check");
+        const data = await response.json();
+
+        if (isMounted && data.authenticated && data.user?.role === "member") {
+          console.log("Пользователь уже авторизован, перенаправляем на дашборд");
+          router.replace("/member-dashboard");
+        }
+      } catch (error) {
+        console.log("Проверка авторизации не удалась:", error);
+      }
+    };
+
+    checkAuth();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [router]);
 
   // Валидация email с debounce
   useEffect(() => {
@@ -185,7 +199,7 @@ export function useAuthForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!isFormReady || loading || isValidating || isRedirecting) return;
+    if (!isFormReady || loading || isValidating) return;
 
     setLoading(true);
     setError("");
@@ -198,66 +212,79 @@ export function useAuthForm() {
         return;
       }
 
-      if (isLogin) {
-        console.log("🔐 Используем login из useAuth для входа участника");
-        
-        const success = await authLogin(
-          formData.email.trim().toLowerCase(),
-          formData.password,
-        );
+      const endpoint = isLogin
+        ? "/api/auth/member-login"
+        : "/api/auth/member-register";
 
-        if (success) {
-          console.log("✅ Успешный вход через useAuth");
-          
-          // Устанавливаем флаг перенаправления перед toast
-          setIsRedirecting(true);
-          
-          toast({
-            title: "Добро пожаловать! 🎉",
-            description: `Перенаправляем на дашборд...`,
-          });
-          
-          // Немедленно перенаправляем без задержки
-          router.replace("/member-dashboard");
-          
-        } else {
-          throw new Error("Неверный email или пароль");
+      const payload = isLogin
+        ? {
+          email: formData.email.trim().toLowerCase(),
+          password: formData.password,
         }
-      } else {
-        // Регистрация - оставляем прямой вызов API
-        const endpoint = "/api/auth/member-register";
-        const payload = {
+        : {
           name: formData.name.trim(),
           email: formData.email.trim().toLowerCase(),
           password: formData.password,
           phone: formData.phone.trim() || undefined,
         };
 
-        console.log("🚀 Регистрация через API:", endpoint);
+      console.log("🚀 Отправка запроса на:", endpoint, {
+        ...payload,
+        password: "***",
+      });
 
-        const response = await fetch(endpoint, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
-        });
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
 
-        const data = await response.json();
+      const data = await response.json();
+      console.log("📨 Ответ сервера:", {
+        ...data,
+        user: data.user ? { ...data.user, password: undefined } : undefined,
+      });
 
-        if (response.ok && data.success) {
+      if (response.ok && data.success) {
+        // Сохраняем данные пользователя и токен в localStorage
+        if (data.user) {
+          localStorage.setItem('auth_user', JSON.stringify(data.user));
+        }
+
+        if (data.token) {
+          localStorage.setItem('auth_token', data.token);
+        }
+
+        if (isLogin) {
+          toast({
+            title: "Добро пожаловать! 🎉",
+            description: `Здравствуйте, ${data.user?.name || "участник"}!`,
+          });
+
+          setTimeout(() => {
+            router.push(redirectPath || "/member-dashboard");
+          }, 500);
+        } else {
+          // ✅ НОВАЯ ЛОГИКА для успешной регистрации
           console.log("✅ Успешная регистрация");
-          
+
+          // Устанавливаем состояние успеха
           setRegistrationSuccess(true);
           setRegistrationEmail(formData.email);
-          
+
+          // Показываем toast уведомление
           toast({
             title: "Регистрация завершена! 🎉",
             description: "Проверьте почту для подтверждения аккаунта",
           });
-        } else {
-          throw new Error(data.error || `Ошибка ${response.status}`);
+
+          // НЕ переключаем на логин сразу, показываем экран успеха
+          console.log("📧 Письмо отправлено на:", formData.email);
         }
+      } else {
+        throw new Error(data.error || `Ошибка ${response.status}`);
       }
     } catch (error) {
       console.error("💥 Ошибка:", error);
@@ -272,16 +299,14 @@ export function useAuthForm() {
         description: errorMessage,
       });
     } finally {
-      if (!isLogin) {
-        setLoading(false);
-      }
-      // Для входа не сбрасываем loading, пока не произойдет перенаправление
+      setLoading(false);
     }
   };
 
   const toggleMode = useCallback(() => {
     setIsLogin((prev) => !prev);
     setError("");
+    // ✅ Сбрасываем состояние успеха при переключении режимов
     setRegistrationSuccess(false);
     setRegistrationEmail("");
   }, []);
@@ -299,10 +324,12 @@ export function useAuthForm() {
     });
     setEmailValid(false);
     setValidationStates({});
+    // ✅ Сбрасываем состояние успеха
     setRegistrationSuccess(false);
     setRegistrationEmail("");
   }, []);
 
+  // ✅ Новая функция для сброса состояния успеха
   const resetRegistrationSuccess = useCallback(() => {
     setRegistrationSuccess(false);
     setRegistrationEmail("");
@@ -311,16 +338,16 @@ export function useAuthForm() {
   return {
     // Состояние
     isLogin: Boolean(isLogin),
-    loading: Boolean(loading || authLoading || isRedirecting),
+    loading: Boolean(loading),
     error,
+    isRedirecting: Boolean(isRedirecting),
     emailValid: Boolean(emailValid),
     formData,
     validationStates,
     isValidating: Boolean(isValidating),
     isFormReady: Boolean(isFormReady),
-    isRedirecting: Boolean(isRedirecting),
-    
-    // Состояния регистрации
+
+    // ✅ Новые состояния
     registrationSuccess: Boolean(registrationSuccess),
     registrationEmail,
 
@@ -330,6 +357,8 @@ export function useAuthForm() {
     toggleMode,
     fillFormData,
     clearForm,
+
+    // ✅ Новые действия
     resetRegistrationSuccess,
     setRegistrationSuccess,
   };

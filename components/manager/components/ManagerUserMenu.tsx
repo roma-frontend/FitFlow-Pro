@@ -31,11 +31,11 @@ import {
   TrendingUp,
   Loader2,
   Verified,
-  Clock,
   Building,
 } from "lucide-react";
 import { ManagerStats } from "@/contexts/ManagerContext";
 import { useAuth } from "@/hooks/useAuth";
+import { useRouter } from "next/navigation";
 
 interface ManagerUserMenuProps {
   user: any;
@@ -53,7 +53,7 @@ const ManagerUserMenu = memo(
   }: ManagerUserMenuProps) => {
     const [isOpen, setIsOpen] = useState(false);
     const { user, logout, isLoading: authLoading, refreshUser } = useAuth();
-
+    const router = useRouter()
     // ✅ Логирование для отладки
     useEffect(() => {
       console.log("🎯 ManagerUserMenu: состояние", {
@@ -374,14 +374,18 @@ const ManagerUserMenu = memo(
                 <div className="p-2 bg-white/70 rounded-lg shadow-sm">
                   <User className="h-4 w-4 text-orange-500" />
                 </div>
-                <div className="flex-1">
+                <Button
+                  variant="outline"
+                  className="flex-1 flex flex-col items-start border-0 bg-transparent p-0 hover:bg-transparent"
+                  onClick={() => router.push("/manager/profile")}
+                >
                   <div className="text-sm font-semibold text-gray-800">
-                    Профиль менеджера
+                    Профиль
                   </div>
                   <div className="text-xs text-gray-600">
                     Управление профилем
                   </div>
-                </div>
+                </Button>
               </DropdownMenuItem>
 
               <DropdownMenuItem

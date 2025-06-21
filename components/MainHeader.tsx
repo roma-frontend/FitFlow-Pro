@@ -1,4 +1,4 @@
-// components/MainHeader.tsx (обновленная версия)
+// components/MainHeader.tsx
 "use client";
 
 import { useState, useEffect, memo } from "react";
@@ -16,7 +16,6 @@ import {
   ShoppingCart,
   BarChart3,
   Scan,
-  Download,
   Smartphone,
 } from "lucide-react";
 import UserMenu from "@/components/auth/UserMenu";
@@ -150,9 +149,6 @@ export default function MainHeader() {
   } = useHeaderBadges();
 
   const { isInstalled, canInstall } = usePWA();
-
-  // ✅ Все обработчики и логика остаются такими же...
-  // (код обработчиков остается без изменений)
 
   const handleNavClick = (href: string) => {
     if (isApiAvailable) {
@@ -363,7 +359,6 @@ export default function MainHeader() {
           </div>
         </div>
 
-        {/* Баннеры остаются без изменений */}
       </header>
 
       {/* ✅ Новое оптимизированное мобильное меню */}

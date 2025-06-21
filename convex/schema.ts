@@ -16,6 +16,9 @@ export default defineSchema({
     updatedAt: v.optional(v.number()),
     createdBy: v.optional(v.string()),
     photoUrl: v.optional(v.string()),
+    bio: v.optional(v.string()),                    // Биография/О себе
+    birthDate: v.optional(v.string()),              // Дата рождения
+    location: v.optional(v.string()),
     faceDescriptor: v.optional(v.array(v.number())),
     faceRecognitionEnabled: v.optional(v.boolean()),
     faceDescriptorUpdatedAt: v.optional(v.number()),
@@ -27,7 +30,17 @@ export default defineSchema({
       })),
       language: v.optional(v.string()),
       timezone: v.optional(v.string()),
+      theme: v.optional(v.string()),
     })),
+    emailNotifications: v.optional(v.boolean()),  // Дублирование для совместимости
+    smsNotifications: v.optional(v.boolean()),
+    pushNotifications: v.optional(v.boolean()),
+
+    // Дополнительные настройки
+    showProfile: v.optional(v.boolean()),         // Показывать профиль другим
+    allowMessages: v.optional(v.boolean()),       // Разрешить сообщения
+    marketingEmails: v.optional(v.boolean()),
+
     avatar: v.optional(v.string()),
     phone: v.optional(v.string()),
     department: v.optional(v.string()),
@@ -1057,7 +1070,64 @@ export default defineSchema({
       endDate: v.number(),
       sessionsRemaining: v.number(),
       status: v.string(),
+
+      membershipType: v.optional(v.string()),         // Тип членства
+      membershipExpiry: v.optional(v.number()),       // Дата окончания членства
+      totalWorkouts: v.optional(v.number()),         // Общее количество тренировок
+      lastWorkout: v.optional(v.number()),           // Последняя тренировка
+      currentStreak: v.optional(v.number()),         // Текущая серия дней
+      personalRecords: v.optional(v.number()),       // Личные рекорды
+      caloriesBurned: v.optional(v.number()),        // Сожжено калорий
+      averageWorkoutTime: v.optional(v.number()),    // Среднее время тренировки
+
+      // Поля безопасности и верификации
+      isVerified: v.optional(v.boolean()),           // Верифицирован ли email
+      verificationEmailSent: v.optional(v.number()), // Когда отправлено письмо
+      emailVerified: v.optional(v.boolean()),        // Дублирование для совместимости
+      emailVerifiedAt: v.optional(v.number()),
+
+      // Поля для деактивации аккаунта
+      deactivatedAt: v.optional(v.number()),         // Когда деактивирован
+      deactivationReason: v.optional(v.string()),    // Причина деактивации
+
+      // Дополнительные контактные данные
+      secondaryEmail: v.optional(v.string()),        // Дополнительный email
+      emergencyContact: v.optional(v.string()),      // Экстренный контакт
+      emergencyPhone: v.optional(v.string()),        // Телефон экстренного контакта
+
+      // Социальные сети и ссылки
+      socialLinks: v.optional(v.object({
+        instagram: v.optional(v.string()),
+        facebook: v.optional(v.string()),
+        twitter: v.optional(v.string()),
+        linkedin: v.optional(v.string()),
+        website: v.optional(v.string()),
+      })),
+
+      // Достижения и статистика
+      achievements: v.optional(v.array(v.object({
+        id: v.string(),
+        title: v.string(),
+        description: v.optional(v.string()),
+        earnedAt: v.number(),
+        icon: v.optional(v.string()),
+      }))),
+
+      // Цели пользователя
+      goals: v.optional(v.array(v.object({
+        id: v.string(),
+        title: v.string(),
+        targetValue: v.number(),
+        currentValue: v.number(),
+        unit: v.string(),
+        createdAt: v.number(),
+        targetDate: v.optional(v.number()),
+        completed: v.boolean(),
+        completedAt: v.optional(v.number()),
+      }))),
     })),
+
+
     // Поля для синхронизации
     _version: v.optional(v.number()),
     _lastSync: v.optional(v.number()),
