@@ -39,7 +39,7 @@ const PaymentView = memo(() => {
           <CardTitle>Оформление заказа</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-center space-x-8">
+          <div className="flex items-center justify-center flex-wrap gap-4 sm:gap-0 space-x-8">
             {/* Шаг 1 - Корзина */}
             <div className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">

@@ -1,8 +1,7 @@
 // components/messages/MessagesList.tsx
-import React from 'react';
-import { MessageSquare } from 'lucide-react';
-import { MessageItem } from './MessageItem';
+import React, { memo } from 'react';
 import { Id } from '@/convex/_generated/dataModel';
+import MessageItem from './MessageItem';
 
 interface MessagesListProps {
   messages: any[];
@@ -11,50 +10,40 @@ interface MessagesListProps {
   currentUserId: Id<"users">;
   onMessageSelect: (messageId: string) => void;
   onMessageToggle: (messageId: string) => void;
-  onSelectAll: () => void;
-  onDeselectAll: () => void;
 }
 
-export function MessagesList({
+const MessagesList: React.FC<MessagesListProps> = memo(({
   messages,
   selectedMessage,
   selectedMessages,
   currentUserId,
   onMessageSelect,
-  onMessageToggle,
-  onSelectAll,
-  onDeselectAll
-}: MessagesListProps) {
+  onMessageToggle
+}) => {
   return (
-    <div className="border rounded-lg overflow-hidden">
-      {/* Заголовок */}
-      <div className="p-3 sm:p-4 border-b bg-gray-50">
-        <div className="flex items-center justify-between gap-2">
-          <h3 className="font-medium text-sm sm:text-base truncate">
+    <div className="border rounded-lg overflow-hidden shadow-sm">
+      <div className="p-3 border-b bg-gray-50">
+        <div className="flex items-center justify-between">
+          <h3 className="font-medium text-sm sm:text-base">
             Сообщения ({messages.length})
           </h3>
           {selectedMessages.length > 0 && (
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <span className="text-xs sm:text-sm text-blue-600 whitespace-nowrap">
-                Выбрано: {selectedMessages.length}
-              </span>
-              <button
-                onClick={onDeselectAll}
-                className="text-xs text-gray-500 hover:text-gray-700 whitespace-nowrap"
-              >
-                Отменить
-              </button>
-            </div>
+            <span className="text-xs text-blue-600">
+              Выбрано: {selectedMessages.length}
+            </span>
           )}
         </div>
       </div>
 
-      {/* Список сообщений */}
-      <div className="max-h-64 sm:max-h-96 overflow-y-auto overflow-x-clip">
+      <div className="max-h-[calc(100vh-220px)] overflow-y-auto">
         {messages.length === 0 ? (
-          <div className="p-6 sm:p-8 text-center text-gray-500">
-            <MessageSquare className="h-8 w-8 sm:h-12 sm:w-12 mx-auto mb-3 sm:mb-4 text-gray-300" />
-            <p className="text-sm sm:text-base">Сообщения не найдены</p>
+          <div className="p-6 text-center text-gray-500">
+            <div className="mx-auto mb-4 text-gray-300">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <p>Сообщения не найдены</p>
           </div>
         ) : (
           <div className="divide-y divide-gray-100">
@@ -74,4 +63,6 @@ export function MessagesList({
       </div>
     </div>
   );
-}
+});
+
+export default MessagesList;

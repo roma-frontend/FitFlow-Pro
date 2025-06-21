@@ -93,7 +93,7 @@ function TestimonialCard({
         </div>
 
         {/* Профиль пользователя */}
-        <div className="flex items-center gap-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
           <div
             className={combineAnimations(
               "relative w-14 h-14 rounded-2xl flex items-center justify-center text-indigo-700 font-bold text-lg",
@@ -110,7 +110,7 @@ function TestimonialCard({
             <h4 className="font-bold text-gray-900 text-lg group-hover:text-blue-700 transition-colors duration-300">
               {name}
             </h4>
-            <p className="text-sm text-gray-600 font-medium bg-gray-50 px-3 py-1 rounded-full inline-block">
+            <p className="text-sm text-gray-600 font-medium bg-gray-50 sm:px-3 py-1 rounded-full inline-block">
               {role}
             </p>
           </div>

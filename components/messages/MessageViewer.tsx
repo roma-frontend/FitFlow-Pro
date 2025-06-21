@@ -1,57 +1,79 @@
-// components/messages/MessageViewer.tsx (исправленная версия)
-import React from 'react';
-import { MessageSquare } from 'lucide-react';
+// components/messages/MessageViewer.tsx
+import React, { memo } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Id } from '@/convex/_generated/dataModel';
+import { Button } from '@/components/ui/button';
 
 interface MessageViewerProps {
   message: any;
   currentUserId: Id<"users">;
-  onReply: (messageId: string) => void;
+  onReply: (message: any) => void;
   onArchive: (messageId: string) => void;
   onDelete: (messageId: string) => void;
   onMarkAsRead: (messageId: string, userId: Id<"users">) => void;
+  onBack?: () => void;
 }
 
-export function MessageViewer({
+const MessageViewer: React.FC<MessageViewerProps> = memo(({
   message,
   currentUserId,
   onReply,
   onArchive,
   onDelete,
-  onMarkAsRead
-}: MessageViewerProps) {
+  onMarkAsRead,
+  onBack
+}) => {
   if (!message) {
     return (
-      <div className="border rounded-lg h-full">
-        <div className="flex items-center justify-center h-64 text-gray-500">
-          <div className="text-center">
-            <MessageSquare className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-            <p>Выберите сообщение для просмотра</p>
-          </div>
+      <div className="border rounded-lg h-full flex items-center justify-center">
+        <div className="text-center p-6 text-gray-500">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto mb-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+          </svg>
+          <p>Выберите сообщение для просмотра</p>
         </div>
       </div>
     );
   }
 
+  const date = new Date(message._creationTime);
+  const formattedDate = date.toLocaleString('ru-RU', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+
   return (
-    <div className="border rounded-lg h-full">
-      <div className="p-6">
-        <div className="flex items-start justify-between mb-4">
+    <div className="border rounded-lg h-full flex flex-col">
+      <div className="p-4 border-b bg-gray-50">
+        {onBack && (
+          <Button 
+            variant="ghost"
+            size="sm"
+            onClick={onBack}
+            className="mb-2 lg:hidden"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Назад
+          </Button>
+        )}
+        
+        <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
-            <h2 className="text-lg font-semibold mb-2">
+            <h2 className="text-lg font-semibold mb-2 line-clamp-1">
               {message.subject || "Без темы"}
             </h2>
-            <div className="flex items-center gap-4 text-sm text-gray-600">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-600">
               <span>От: {message.senderName}</span>
-              <span>
-                {new Date(message._creationTime).toLocaleString("ru")}
-              </span>
+              <span>{formattedDate}</span>
               <Badge
                 variant={
-                  message.priority === "urgent"
-                    ? "destructive"
-                    : "outline"
+                  message.priority === "urgent" ? "destructive" : 
+                  message.priority === "high" ? "warning" : "outline"
                 }
               >
                 {message.priority}
@@ -59,35 +81,40 @@ export function MessageViewer({
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => onReply(message._id)}
-              className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+          <div className="flex flex-wrap gap-2">
+            <Button
+              onClick={() => onReply(message)}
+              variant="outline"
+              size="sm"
             >
               Ответить
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => onArchive(message._id)}
-              className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+              variant="outline"
+              size="sm"
             >
               Архив
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => onDelete(message._id)}
-              className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
+              variant="destructive"
+              size="sm"
             >
               Удалить
-            </button>
+            </Button>
           </div>
         </div>
+      </div>
 
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6">
         <div className="prose max-w-none">
           <div className="whitespace-pre-wrap text-gray-800">
             {message.content}
           </div>
         </div>
 
-        {message.recipientNames && message.recipientNames.length > 0 && (
+        {message.recipientNames?.length > 0 && (
           <div className="mt-6 pt-4 border-t">
             <h4 className="text-sm font-medium text-gray-700 mb-2">
               Получатели:
@@ -97,7 +124,7 @@ export function MessageViewer({
                 <Badge
                   key={index}
                   variant="outline"
-                  className="text-xs"
+                  className="text-xs py-1 px-2"
                 >
                   {name}
                 </Badge>
@@ -108,4 +135,6 @@ export function MessageViewer({
       </div>
     </div>
   );
-}
+});
+
+export default MessageViewer;

@@ -1,6 +1,6 @@
-// app/admin/settings/page.tsx (обновленная версия с передачей onBadgeManagement)
+// app/admin/settings/page.tsx
 "use client";
-import { useState, ChangeEvent, useEffect } from "react";
+import { useState, useEffect, ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useSettingsManager } from "@/hooks/useSettingsManager";
 import { useSettingsImportExport } from "@/hooks/useSettingsImportExport";
@@ -34,9 +34,14 @@ import { Smartphone, Badge as BadgeIcon, Plus, BarChart3 } from "lucide-react";
 import { PWAStatus } from "@/components/PWAStatus";
 import { PWAInfo } from "@/components/PWAInfo";
 import { PWAStats } from "@/components/PWAStats";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 
 export default function SettingsPage() {
   const router = useRouter();
+  const isMobile = useMediaQuery("(max-width: 768px)");
+  const isTablet = useMediaQuery("(min-width: 769px) and (max-width: 1023px)");
+  const isDesktop = !isMobile && !isTablet;
+  
   const [activeTab, setActiveTab] = useState("general");
   const [activeOperation, setActiveOperation] = useState<string | null>(null);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -48,14 +53,6 @@ export default function SettingsPage() {
     "Финализация...",
   ]);
   const [currentLoadingStep, setCurrentLoadingStep] = useState(0);
-
-  const {
-    isMobile,
-    isTablet,
-    isDesktop,
-    getOptimalDelay,
-    shouldUseProgressiveLoading,
-  } = useAdaptiveSettings();
 
   const {
     config,
@@ -91,7 +88,7 @@ export default function SettingsPage() {
 
   // Симуляция прогрессивной загрузки для мобильных устройств
   useEffect(() => {
-    if (loading && shouldUseProgressiveLoading()) {
+    if (loading && isMobile) {
       const interval = setInterval(() => {
         setCurrentLoadingStep((prev) => {
           if (prev < loadingSteps.length - 1) {
@@ -104,7 +101,7 @@ export default function SettingsPage() {
 
       return () => clearInterval(interval);
     }
-  }, [loading, shouldUseProgressiveLoading, loadingSteps.length]);
+  }, [loading, isMobile, loadingSteps.length]);
 
   // Обработчики навигации и операций
   const handleBack = () => {
@@ -117,7 +114,7 @@ export default function SettingsPage() {
     router.push("/admin");
   };
 
-  // ✅ Обработчик для перехода к управлению Badge
+  // Обработчик для перехода к управлению Badge
   const handleBadgeManagement = () => {
     router.push("/admin/header-badges");
   };
@@ -163,9 +160,7 @@ export default function SettingsPage() {
       });
 
       if (success) {
-        await new Promise((resolve) =>
-          setTimeout(resolve, getOptimalDelay("import"))
-        );
+        await new Promise((resolve) => setTimeout(resolve, 500));
       }
     } catch (error) {
       console.error("Ошибка импорта:", error);
@@ -182,9 +177,7 @@ export default function SettingsPage() {
     setActiveOperation("export");
     try {
       await exportSettings();
-      await new Promise((resolve) =>
-        setTimeout(resolve, getOptimalDelay("export"))
-      );
+      await new Promise((resolve) => setTimeout(resolve, 500));
     } catch (error) {
       console.error("Ошибка экспорта:", error);
       alert("Ошибка при экспорте настроек.");
@@ -204,9 +197,7 @@ export default function SettingsPage() {
     setActiveOperation("reset");
     try {
       await resetSettings();
-      await new Promise((resolve) =>
-        setTimeout(resolve, getOptimalDelay("save") * 2)
-      );
+      await new Promise((resolve) => setTimeout(resolve, 1000));
     } catch (error) {
       console.error("Ошибка сброса:", error);
       alert("Ошибка при сбросе настроек.");
@@ -219,9 +210,7 @@ export default function SettingsPage() {
     setActiveOperation("saving");
     try {
       await saveSettings();
-      await new Promise((resolve) =>
-        setTimeout(resolve, getOptimalDelay("save"))
-      );
+      await new Promise((resolve) => setTimeout(resolve, 500));
     } catch (error) {
       console.error("Ошибка сохранения:", error);
       alert("Ошибка при сохранении настроек.");
@@ -235,7 +224,7 @@ export default function SettingsPage() {
     return (
       <SettingsPageSkeleton
         isMobile={isMobile}
-        useProgressiveLoading={shouldUseProgressiveLoading()}
+        useProgressiveLoading={isMobile}
         loadingSteps={loadingSteps}
         currentStep={currentLoadingStep}
       />
@@ -322,50 +311,52 @@ export default function SettingsPage() {
             />
           </div>
 
-          {/* ✅ Badge Management Quick Access */}
-          <div className="mb-4 sm:mb-6">
-            <Card className="border-purple-200 bg-gradient-to-r from-purple-50 to-blue-50 hover:shadow-md transition-shadow">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-purple-900">
-                  <BadgeIcon className="h-5 w-5" />
-                  Управление Badge
-                </CardTitle>
-                <CardDescription className="text-purple-700">
-                  Настройка и управление значками в навигации
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <Button
-                    onClick={handleBadgeManagement}
-                    className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 transform hover:scale-105 transition-all"
-                  >
-                    <Plus className="h-4 w-4" />
-                    {isMobile
-                      ? "Управление Badge"
-                      : "Создать и настроить Badge"}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() =>
-                      router.push("/admin/header-badges?tab=analytics")
-                    }
-                    className="border-purple-300 text-purple-700 hover:bg-purple-50 hover:border-purple-400 transition-all"
-                  >
-                    <BarChart3 className="h-4 w-4 mr-2" />
-                    {isMobile ? "Аналитика" : "Посмотреть аналитику"}
-                  </Button>
-                </div>
-                <div className="mt-3 p-3 bg-white/50 rounded-lg">
-                  <p className="text-xs text-purple-600 leading-relaxed">
-                    {isMobile
-                      ? "💡 Создавайте и настраивайте Badge для навигации"
-                      : "💡 Создавайте персонализированные Badge для элементов навигации с таргетингом по ролям и устройствам. Отслеживайте клики и эффективность."}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          {/* Badge Management Quick Access */}
+          {!isMobile && (
+            <div className="mb-4 sm:mb-6">
+              <Card className="border-purple-200 bg-gradient-to-r from-purple-50 to-blue-50 hover:shadow-md transition-shadow">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-purple-900">
+                    <BadgeIcon className="h-5 w-5" />
+                    Управление Badge
+                  </CardTitle>
+                  <CardDescription className="text-purple-700">
+                    Настройка и управление значками в навигации
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <Button
+                      onClick={handleBadgeManagement}
+                      className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 transform hover:scale-105 transition-all"
+                    >
+                      <Plus className="h-4 w-4" />
+                      {isTablet
+                        ? "Управление Badge"
+                        : "Создать и настроить Badge"}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() =>
+                        router.push("/admin/header-badges?tab=analytics")
+                      }
+                      className="border-purple-300 text-purple-700 hover:bg-purple-50 hover:border-purple-400 transition-all"
+                    >
+                      <BarChart3 className="h-4 w-4 mr-2" />
+                      {isTablet ? "Аналитика" : "Посмотреть аналитику"}
+                    </Button>
+                  </div>
+                  <div className="mt-3 p-3 bg-white/50 rounded-lg">
+                    <p className="text-xs text-purple-600 leading-relaxed">
+                      {isTablet
+                        ? "💡 Создавайте и настраивайте Badge для навигации"
+                        : "💡 Создавайте персонализированные Badge для элементов навигации с таргетингом по ролям и устройствам. Отслеживайте клики и эффективность."}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
 
           {/* PWA статус в настройках */}
           <div className="mb-4 sm:mb-6">
@@ -373,7 +364,7 @@ export default function SettingsPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-blue-900">
                   <Smartphone className="h-5 w-5" />
-                  Progressive Web App
+                  <span className="truncate">Progressive Web App</span>
                   <PWAStatus showDetails={false} />
                 </CardTitle>
                 <CardDescription className="text-blue-700">
@@ -382,29 +373,31 @@ export default function SettingsPage() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <PWAInfo />
-                  <PWAStats />
+                  <PWAInfo isMobile={isMobile} isTablet={isTablet} />
+                  <PWAStats isMobile={isMobile} isTablet={isTablet}/>
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          <div
-            className={cn(
-              "transition-all duration-300",
-              "mb-4 sm:mb-6 md:mb-8"
-            )}
-          >
-            <SettingsQuickActions
-              hasUnsavedChanges={hasUnsavedChanges}
-              lastSaved={lastSaved}
-              onSave={handleSave}
-              onImport={handleImport}
-              onExport={handleExport}
-              onReset={handleReset}
-              saving={saving}
-            />
-          </div>
+          {!isMobile && (
+            <div
+              className={cn(
+                "transition-all duration-300",
+                "mb-4 sm:mb-6 md:mb-8"
+              )}
+            >
+              <SettingsQuickActions
+                hasUnsavedChanges={hasUnsavedChanges}
+                lastSaved={lastSaved}
+                onSave={handleSave}
+                onImport={handleImport}
+                onExport={handleExport}
+                onReset={handleReset}
+                saving={saving}
+              />
+            </div>
+          )}
 
           <div
             className={cn(
@@ -444,7 +437,7 @@ export default function SettingsPage() {
           </div>
         )}
 
-        {/* ✅ Плавающая кнопка Badge для мобильных устройств */}
+        {/* Плавающая кнопка Badge для мобильных устройств */}
         {isMobile && !hasUnsavedChanges && (
           <div className="fixed bottom-4 right-4 z-50 animate-in slide-in-from-bottom-4 duration-300">
             <Button

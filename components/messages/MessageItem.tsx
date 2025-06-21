@@ -1,11 +1,8 @@
 // components/messages/MessageItem.tsx
-"use client";
-
-import React from 'react';
-import { Badge } from '@/components/ui/badge';
+import React, { memo } from 'react';
 import { Id } from '@/convex/_generated/dataModel';
 
-export interface MessageItemProps {
+interface MessageItemProps {
   message: any;
   isSelected: boolean;
   isChecked: boolean;
@@ -14,71 +11,71 @@ export interface MessageItemProps {
   onToggle: () => void;
 }
 
-export function MessageItem({
+const MessageItem: React.FC<MessageItemProps> = memo(({
   message,
   isSelected,
   isChecked,
   currentUserId,
   onSelect,
   onToggle
-}: MessageItemProps) {
+}) => {
   const isUnread = !message.readAt?.[currentUserId];
+  const date = new Date(message._creationTime);
+  const formattedDate = date.toLocaleDateString('ru-RU', {
+    month: 'short',
+    day: 'numeric'
+  });
 
   return (
-    <div
-      className={`p-4 border-b cursor-pointer hover:bg-gray-50 ${
-        isSelected ? "bg-blue-50 border-blue-200" : ""
-      } ${isChecked ? "bg-blue-100" : ""}`}
+    <div 
+      className={`
+        p-3 transition-colors cursor-pointer
+        ${isSelected ? 'bg-blue-50 border-l-4 border-blue-500' : 'hover:bg-gray-50'}
+      `}
       onClick={onSelect}
     >
       <div className="flex items-start gap-3">
-        <input
-          type="checkbox"
-          checked={isChecked}
-          onChange={(e) => {
+        <div 
+          className="mt-1 flex-shrink-0" 
+          onClick={(e) => {
             e.stopPropagation();
             onToggle();
           }}
-          className="mt-1"
-        />
+        >
+          <input
+            type="checkbox"
+            checked={isChecked}
+            onChange={() => {}}
+            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+          />
+        </div>
 
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <span
-              className={`text-sm ${isUnread ? "font-semibold" : "font-normal"}`}
-            >
-              {message.senderName}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-baseline justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className={`font-medium truncate ${isUnread ? 'text-gray-900' : 'text-gray-700'}`}>
+                {message.senderName}
+              </span>
+              {isUnread && (
+                <span className="flex-shrink-0 inline-block h-2 w-2 rounded-full bg-blue-500"></span>
+              )}
+            </div>
+            <span className="text-xs text-gray-500 whitespace-nowrap">
+              {formattedDate}
             </span>
-            {isUnread && (
-              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-            )}
-            <Badge
-              variant={
-                message.priority === "urgent"
-                  ? "destructive"
-                  : "outline"
-              }
-              className="text-xs text-blue-600"
-            >
-              {message.type}
-            </Badge>
           </div>
-
-          <h4
-            className={`text-sm truncate ${isUnread ? "font-medium" : "font-normal"}`}
-          >
-            {message.subject || "Без темы"}
+          
+          <h4 className={`truncate mt-1 text-sm ${isUnread ? 'font-semibold text-gray-900' : 'text-gray-700'}`}>
+            {message.subject || 'Без темы'}
           </h4>
-
-          <p className="text-xs text-gray-500 truncate mt-1">
-            {message.content}
-          </p>
-
-          <p className="text-xs text-gray-400 mt-2">
-            {new Date(message._creationTime).toLocaleString("ru")}
+          
+          <p className="text-xs text-gray-500 mt-1 truncate">
+            {message.content.substring(0, 100)}
           </p>
         </div>
       </div>
     </div>
   );
-}
+});
+
+export default MessageItem;

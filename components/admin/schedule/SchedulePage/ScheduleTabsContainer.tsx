@@ -193,7 +193,7 @@ const ScheduleTabsContainer = memo(function ScheduleTabsContainer({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="px-4 sm:px-6 lg:px-8 py-8">
         {/* Заголовок с анимацией */}
         <div className="mb-10">
           <div className="flex flex-col sm:flex-row items-center gap-6 mb-6">

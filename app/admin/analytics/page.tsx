@@ -11,7 +11,6 @@ import { MetricsOverview } from "@/components/analytics/MetricsOverview";
 import { AnalyticsTabs } from "@/components/analytics/AnalyticsTabs";
 import { QuickActions } from "@/components/analytics/QuickActions";
 import { SummaryAndRecommendations } from "@/components/analytics/SummaryAndRecommendations";
-import { LoadingSpinner } from "@/components/analytics/LoadingSpinner";
 
 export default function AnalyticsPage() {
   const [period, setPeriod] = useState("month");
@@ -19,12 +18,6 @@ export default function AnalyticsPage() {
 
   // Получаем данные используя ваш рабочий хук
   const { data, loading, users, products, revenue, activity, isAvailable } = useAnalyticsData(period);
-  const { isLoading: availabilityLoading } = useAnalyticsAvailability();
-
-  // Показываем загрузку только если загружается доступность
-  if (availabilityLoading) {
-    return <LoadingSpinner size="lg" text="Проверка доступности аналитики..." />;
-  }
 
   return (
     <div className="space-y-6">

@@ -320,7 +320,7 @@ export default function MemberDashboard() {
               </div>
               <div className="text-center md:text-start">
                 <h1 className="text-3xl md:text-4xl font-bold text-gray-900">
-                  Добро пожаловать, {user.name || user.email.split("@")[0]}! 👋
+                  Добро пожаловать, <br />{user.name || user.email.split("@")[0]}! 👋
                 </h1>
                 <p className="text-lg text-gray-600">
                   Ваш путь к здоровью и отличной форме

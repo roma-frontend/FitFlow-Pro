@@ -22,7 +22,7 @@ export default function CTASection({ authStatus, onDashboardRedirect }: CTASecti
   const router = useRouter();
 
   return (
-    <div className="text-center mb-16">
+    <div className="flex flex-col items-center text-center mb-16">
       {authStatus?.authenticated ? (
         <div className="bg-gradient-to-r from-blue-50 to-green-50 border-2 border-dashed border-blue-300 rounded-2xl p-8">
           <h2 className="text-4xl font-bold text-gray-900 mb-4">

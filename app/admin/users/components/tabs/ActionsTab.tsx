@@ -208,9 +208,9 @@ export const ActionsTab = React.memo(() => {
                   }`}
                 >
                   <Icon className="h-6 w-6" />
-                  <div className="text-center">
+                  <div className="text-center text-balance">
                     <div className="font-semibold">{action.title}</div>
-                    <div className="text-xs opacity-90 mt-1 text-wrap">
+                    <div className="text-xs opacity-90 mt-1">
                       {action.description}
                     </div>
                   </div>
@@ -397,7 +397,7 @@ export const ActionsTab = React.memo(() => {
                 variant="outline"
                 className="w-full justify-start"
               >
-                <FileText className="h-4 w-4 mr-2" />
+                <FileText className="h-4 w-4 mr-2 " />
                 Экспорт всех пользователей (CSV)
               </Button>
 

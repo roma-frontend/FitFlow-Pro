@@ -545,7 +545,7 @@ export const CreateUserDialog = React.memo(() => {
 
           {/* Дебаг информация в development режиме */}
           {process.env.NODE_ENV === 'development' && (
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-xs">
+            <div className="bg-gray-200 text-gray-600 border border-gray-200 rounded-lg p-3 text-xs">
               <p><strong>Режим:</strong> {isEditing ? 'Редактирование' : 'Создание'}</p>
               <p><strong>ID пользователя:</strong> {state.editingUser?.id || 'нет'}</p>
               <p><strong>Показать диалог:</strong> {state.showCreateDialog ? 'да' : 'нет'}</p>

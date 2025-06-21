@@ -20,7 +20,7 @@ export default function HeroSection({ authStatus, onDashboardRedirect }: HeroSec
       <div className="flex items-center justify-center mb-6">
         <div className="flex flex-col items-center gap-3">
           <div className={combineAnimations(
-            "hidden md:flex w-12 h-12 bg-gradient-to-r from-blue-600 to-green-600 rounded-xl flex items-center justify-center",
+            "hidden md:flex w-12 h-12 bg-gradient-to-r from-blue-600 to-green-600 rounded-xl items-center justify-center",
             ANIMATION_CLASSES.transition.all,
             ANIMATION_CLASSES.hover.scale
           )}>
@@ -31,6 +31,7 @@ export default function HeroSection({ authStatus, onDashboardRedirect }: HeroSec
               {authStatus?.authenticated ? (
                 <>
                   Добро пожаловать,{" "}
+                  <br />
                   <span className="bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">
                     {authStatus.user?.name}!
                   </span>

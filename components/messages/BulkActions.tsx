@@ -1,5 +1,6 @@
-// components/messages/BulkActions.tsx (исправленная версия)
-import React from 'react';
+// components/messages/BulkActions.tsx
+import React, { memo } from 'react';
+import { Button } from '@/components/ui/button';
 
 interface BulkActionsProps {
   selectedCount: number;
@@ -9,76 +10,59 @@ interface BulkActionsProps {
   onExport: () => void;
   onSelectAll: () => void;
   onDeselectAll: () => void;
+  isMobile: boolean;
 }
 
-export function BulkActions({
+const BulkActions: React.FC<BulkActionsProps> = memo(({
   selectedCount,
   onMarkAsRead,
   onArchive,
   onDelete,
   onExport,
   onSelectAll,
-  onDeselectAll
-}: BulkActionsProps) {
+  onDeselectAll,
+  isMobile
+}) => {
   return (
-    <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-white border border-gray-200 rounded-lg shadow-lg p-4 z-40">
-      <div className="flex items-center gap-4">
-        <span className="text-sm font-medium">
-          Выбрано: {selectedCount}
-        </span>
-
-        <div className="flex items-center gap-2">
-          <button
-            onClick={onMarkAsRead}
-            className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
-            title="Отметить как прочитанное"
-          >
+    <div className={`
+      fixed ${isMobile ? "bottom-0 left-0 right-0" : "sticky bottom-4 left-4 right-4"} 
+      z-50 bg-white border border-gray-200 rounded-lg shadow-lg p-3
+      transition-all duration-300
+    `}>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="text-sm font-medium">
+          Выбрано: <span className="font-bold">{selectedCount}</span> сообщ.
+        </div>
+        
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" onClick={onMarkAsRead}>
             Прочитано
-          </button>
-
-          <button
-            onClick={onArchive}
-            className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
-            title="Архивировать"
-          >
+          </Button>
+          <Button variant="outline" size="sm" onClick={onArchive}>
             Архив
-          </button>
-
-          <button
-            onClick={onExport}
-            className="px-3 py-1 text-sm bg-green-100 text-green-700 rounded hover:bg-green-200"
-            title="Экспортировать выбранные"
-          >
-            Экспорт
-          </button>
-
-          <button
-            onClick={onDelete}
-            className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
-            title="Удалить"
-          >
+          </Button>
+          <Button variant="destructive" size="sm" onClick={onDelete}>
             Удалить
-          </button>
-
-          <div className="border-l border-gray-300 h-6 mx-2"></div>
-
-          <button
-            onClick={onSelectAll}
-            className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50"
-            title="Выбрать все"
-          >
-            Все
-          </button>
-
-          <button
-            onClick={onDeselectAll}
-            className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50"
-            title="Снять выделение"
-          >
-            Отмена
-          </button>
+          </Button>
+          
+          {!isMobile && (
+            <Button variant="secondary" size="sm" onClick={onExport}>
+              Экспорт
+            </Button>
+          )}
+          
+          <div className="flex gap-2 border-l border-gray-200 pl-2">
+            <Button variant="ghost" size="sm" onClick={onSelectAll}>
+              Выбрать все
+            </Button>
+            <Button variant="ghost" size="sm" onClick={onDeselectAll}>
+              Отменить
+            </Button>
+          </div>
         </div>
       </div>
     </div>
   );
-}
+});
+
+export default BulkActions;

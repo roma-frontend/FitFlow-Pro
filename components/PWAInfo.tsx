@@ -11,9 +11,11 @@ interface PWAInfoProps {
   compact?: boolean;
   showActions?: boolean;
   className?: string;
+  isMobile: boolean,
+  isTablet: boolean
 }
 
-export function PWAInfo({ compact = false, showActions = false, className }: PWAInfoProps) {
+export function PWAInfo({ compact = false, showActions = false, className, isMobile, isTablet }: PWAInfoProps) {
   const { canInstall, isInstalled, isOnline } = usePWA();
 
   if (compact) {

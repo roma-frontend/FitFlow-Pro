@@ -10,13 +10,13 @@ const Header = memo(({ mode }: HeaderProps) => {
   const router = useRouter();
 
   const handleIconClick = () => {
-    router.push('/'); // переход на главную страницу
+    router.push('/');
   };
 
   return (
     <div className="text-center mb-12">
       <div className="bg-white/70 backdrop-blur-md rounded-3xl border border-gray-200/50 p-8 shadow-lg">
-        <div className="flex items-center justify-center mb-6">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-0 items-center justify-center mb-6">
           <div 
             className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center mr-4 shadow-lg cursor-pointer hover:scale-105 transition-transform duration-200"
             onClick={handleIconClick}

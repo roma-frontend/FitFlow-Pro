@@ -352,7 +352,7 @@ export function PersonalizedStats() {
         return (
           <Card key={stat.id} className="hover:shadow-md transition-shadow">
             <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex flex-wrap gap-2 items-center justify-between mb-4">
                 <div className={`w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center`}>
                   <Icon className={`h-6 w-6 ${stat.color}`} />
                 </div>
