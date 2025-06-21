@@ -50,7 +50,7 @@ export function WelcomeHeader({
           <div className="flex flex-col md:flex-row items-center gap-4">
             <Badge
               variant="secondary"
-              className="bg-white/20 text-white border-white/30"
+              className="bg-white/20 text-white border-white/30 truncate"
             >
               {roleTexts.roleDisplayName}
             </Badge>

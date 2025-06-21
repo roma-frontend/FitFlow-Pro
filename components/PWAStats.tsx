@@ -86,7 +86,7 @@ export function PWAStats() {
             <Smartphone className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <Badge variant={isInstalled ? 'default' : 'outline'} className='text-blue-600'>
+            <Badge variant={isInstalled ? 'special' : 'outline'} className='text-blue-600'>
               {isInstalled ? 'Установлено' : 'Веб-версия'}
             </Badge>
           </CardContent>

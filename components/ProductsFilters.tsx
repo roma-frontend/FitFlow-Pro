@@ -186,12 +186,12 @@ export default function ProductsFilters() {
             </Select>
           </div>
 
-          <div className="flex flex-col md:flex-row gap-2">
+          <div className="flex flex-col xl:flex-row gap-2">
             <Button
               variant={sortOrder === 'asc' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setSortOrder('asc')}
-              className="flex-1"
+              className="flex-1 p-3"
             >
               По возрастанию
             </Button>
@@ -199,7 +199,7 @@ export default function ProductsFilters() {
               variant={sortOrder === 'desc' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setSortOrder('desc')}
-              className="flex-1"
+              className="flex-1 p-3"
             >
               По убыванию
             </Button>

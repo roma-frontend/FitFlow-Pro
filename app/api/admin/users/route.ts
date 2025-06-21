@@ -1,17 +1,11 @@
-// app/api/admin/users/route.ts - УЛУЧШЕННАЯ ВЕРСИЯ
+// app/api/admin/users/route.ts - Исправленная версия для Next.js 15
+
 import { NextRequest, NextResponse } from 'next/server';
 import { ConvexHttpClient } from "convex/browser";
+import { cookies } from 'next/headers';
 
-// Инициализация Convex клиента с проверкой
-let convex: ConvexHttpClient;
-try {
-  if (!process.env.NEXT_PUBLIC_CONVEX_URL) {
-    throw new Error('NEXT_PUBLIC_CONVEX_URL is not defined');
-  }
-  convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL);
-} catch (error) {
-  console.error('❌ Ошибка инициализации Convex:', error);
-}
+// Инициализация Convex клиента
+const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
 // Функция для создания стандартного error response
 function createErrorResponse(message: string, status: number = 500, details?: any) {
@@ -27,29 +21,71 @@ function createErrorResponse(message: string, status: number = 500, details?: an
   return addNoCacheHeaders(response);
 }
 
-// Функция для получения сессии из cookies
+// Функция для добавления заголовков против кэширования
+function addNoCacheHeaders(response: NextResponse) {
+  response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  response.headers.set('Pragma', 'no-cache');
+  response.headers.set('Expires', '0');
+  response.headers.set('Surrogate-Control', 'no-store');
+  response.headers.set('Vercel-CDN-Cache-Control', 'no-store');
+  
+  // CORS заголовки
+  response.headers.set('Access-Control-Allow-Origin', '*');
+  response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  
+  return response;
+}
+
+// Улучшенная функция для получения сессии
 async function getSessionFromRequest(request: NextRequest) {
   try {
-    const sessionId = request.cookies.get('session_id')?.value;
-    const sessionIdDebug = request.cookies.get('session_id_debug')?.value;
-    const authToken = request.cookies.get('auth_token')?.value;
+    // В Next.js 15 cookies() возвращает Promise
+    const cookieStore = await cookies();
+    const sessionId = cookieStore.get('session_id')?.value;
+    const sessionIdDebug = cookieStore.get('session_id_debug')?.value;
+    const authToken = cookieStore.get('auth_token')?.value;
     
     console.log('🔍 Проверка аутентификации:', {
       hasSessionId: !!sessionId,
       hasSessionIdDebug: !!sessionIdDebug,
-      hasAuthToken: !!authToken
+      hasAuthToken: !!authToken,
+      headers: Object.fromEntries(request.headers.entries())
     });
 
-    if (!sessionId && !sessionIdDebug && !authToken) {
-      return null;
+    // Проверяем Authorization header
+    const authHeader = request.headers.get('authorization');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      console.log('📋 Найден Bearer token в заголовке');
+      
+      try {
+        // Пытаемся получить пользователя из Convex по токену
+        const userByToken = await convex.query("users:getUserBySessionToken", { 
+          token 
+        }).catch(() => null);
+        
+        if (userByToken) {
+          return {
+            user: {
+              id: userByToken._id,
+              email: userByToken.email,
+              role: userByToken.role,
+              name: userByToken.name
+            }
+          };
+        }
+      } catch (error) {
+        console.log('⚠️ Ошибка проверки Bearer token:', error);
+      }
     }
 
-    // Если есть JWT токен, пытаемся его декодировать
+    // Проверяем JWT токен
     if (authToken) {
       try {
         const { jwtVerify } = await import('jose');
         const secret = new TextEncoder().encode(
-          process.env.JWT_SECRET || process.env.NEXT_PUBLIC_JWT_SECRET || 'your-secret-key'
+          process.env.JWT_SECRET || 'your-secret-key'
         );
         
         const { payload } = await jwtVerify(authToken, secret);
@@ -70,40 +106,70 @@ async function getSessionFromRequest(request: NextRequest) {
       }
     }
 
-    // Если есть session_id, проверяем через API или базу данных
+    // Проверяем сессию в Convex
     if (sessionId || sessionIdDebug) {
-      console.log('🔄 Используем fallback сессию');
-      return {
-        user: {
-          id: 'temp-user-id',
-          email: 'temp@example.com',
-          role: 'admin',
-          name: 'Temp User'
+      const activeSessionId = sessionId || sessionIdDebug;
+      console.log('🔄 Проверяем сессию в Convex:', activeSessionId);
+      
+      try {
+        // Получаем пользователя по session ID из Convex
+        const userBySession = await convex.query("users:getUserBySessionId", { 
+          sessionId: activeSessionId 
+        }).catch(() => null);
+        
+        if (userBySession) {
+          console.log('✅ Пользователь найден по сессии');
+          return {
+            user: {
+              id: userBySession._id,
+              email: userBySession.email,
+              role: userBySession.role,
+              name: userBySession.name
+            }
+          };
         }
-      };
+      } catch (error) {
+        console.log('⚠️ Ошибка проверки сессии в Convex:', error);
+      }
     }
 
+    // Для production environment - проверяем альтернативные методы
+    if (process.env.NODE_ENV === 'production') {
+      // Проверяем X-User-Data header (может быть установлен middleware)
+      const userDataHeader = request.headers.get('x-user-data');
+      if (userDataHeader) {
+        try {
+          const userData = JSON.parse(decodeURIComponent(userDataHeader));
+          if (userData && userData.id && userData.email && userData.role) {
+            console.log('✅ Пользователь из X-User-Data header');
+            return { user: userData };
+          }
+        } catch (error) {
+          console.log('⚠️ Ошибка парсинга X-User-Data:', error);
+        }
+      }
+
+      // В production для демо/тестирования можно временно вернуть тестового пользователя
+      // ВАЖНО: Убрать в реальном production!
+      if (process.env.ALLOW_DEMO_AUTH === 'true') {
+        console.log('⚠️ Используется DEMO режим аутентификации');
+        return {
+          user: {
+            id: 'demo-admin-id',
+            email: 'admin@demo.com',
+            role: 'admin',
+            name: 'Demo Admin'
+          }
+        };
+      }
+    }
+
+    console.log('❌ Не удалось аутентифицировать пользователя');
     return null;
   } catch (error) {
     console.error('💥 Ошибка получения сессии:', error);
     return null;
   }
-}
-
-// Функция для добавления заголовков против кэширования
-function addNoCacheHeaders(response: NextResponse) {
-  response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-  response.headers.set('Pragma', 'no-cache');
-  response.headers.set('Expires', '0');
-  response.headers.set('Surrogate-Control', 'no-store');
-  response.headers.set('Vercel-CDN-Cache-Control', 'no-store');
-  
-  // CORS заголовки
-  response.headers.set('Access-Control-Allow-Origin', '*');
-  response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  
-  return response;
 }
 
 // OPTIONS для CORS
@@ -322,7 +388,7 @@ export async function PUT(request: NextRequest) {
       return createErrorResponse('Недостаточно прав', 403);
     }
 
-    // ✅ ИСПРАВЛЕНИЕ: Получаем ID из тела запроса, а не из searchParams
+    // Получаем ID из тела запроса
     let body;
     try {
       body = await request.json();
@@ -332,7 +398,7 @@ export async function PUT(request: NextRequest) {
 
     const { id: userId, updates } = body;
 
-    // ✅ ИСПРАВЛЕНИЕ: Проверяем ID из тела запроса
+    // Проверяем ID из тела запроса
     if (!userId) {
       return createErrorResponse('ID пользователя обязателен в теле запроса', 400, {
         expected: 'Ожидается поле "id" в JSON теле запроса',
@@ -342,7 +408,7 @@ export async function PUT(request: NextRequest) {
 
     console.log('📍 ID пользователя для обновления:', userId);
 
-    // ✅ ИСПРАВЛЕНИЕ: Валидируем updates
+    // Валидируем updates
     if (!updates || typeof updates !== 'object') {
       return createErrorResponse('Поле "updates" обязательно', 400, {
         expected: 'Ожидается поле "updates" с объектом изменений',
