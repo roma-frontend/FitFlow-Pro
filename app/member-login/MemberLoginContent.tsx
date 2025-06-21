@@ -14,7 +14,7 @@ import { DevelopmentTools } from "@/components/auth/DevelopmentTools";
 import { OtherAuthOptions } from "@/components/auth/OtherAuthOptions";
 import { ForgotPasswordForm } from "@/components/auth/ForgotPasswordForm";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Shield, Zap, Users, Sparkles, CheckCircle, ArrowRight } from "lucide-react";
+import { Shield, Zap, Users, Sparkles, CheckCircle, ArrowRight, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function MemberLoginContent() {
@@ -30,12 +30,28 @@ export default function MemberLoginContent() {
     validationStates,
     isValidating,
     isFormReady,
+    isRedirecting,
     handleFieldChange,
     handleSubmit,
     toggleMode,
     fillFormData,
     clearForm,
   } = useAuthForm();
+
+  // Показываем индикатор перенаправления
+  if (isRedirecting) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center p-4">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4">
+            <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
+          </div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Вход выполнен успешно!</h2>
+          <p className="text-gray-600">Перенаправляем на дашборд...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (showForgotPassword) {
     return (
@@ -313,7 +329,7 @@ export default function MemberLoginContent() {
               <div className="flex flex-col sm:flex-row items-center justify-center gap-6 text-sm text-gray-600">
                 <div className="flex items-center">
                   <span className="w-2 h-2 bg-green-500 rounded-full mr-2" />
-                                    <span>Бесплатная регистрация</span>
+                  <span>Бесплатная регистрация</span>
                 </div>
                 <div className="flex items-center">
                   <span className="w-2 h-2 bg-blue-500 rounded-full mr-2" />

@@ -1,4 +1,4 @@
-// app/member-dashboard/page.tsx - компонентная версия
+// app/member-dashboard/page.tsx - отладочная версия
 "use client";
 
 import { useState, useEffect } from "react";
@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, Heart, Zap, Home, Target } from "lucide-react";
 
-// Импортируем наши новые компоненты
+// Импортируем компоненты
 import {MemberHeader} from "@/components/member/MemberHeader";
 import QuickActions from "@/components/member/QuickActions";
 import MemberProgress from "@/components/member/MemberProgress";
@@ -46,13 +46,23 @@ interface FaceIdStatus {
 
 export default function MemberDashboard() {
   const router = useRouter();
-  const { user, loading, logout } = useAuth();
+  const { user, loading, logout, refreshUser } = useAuth();
   const { get, post } = useApiRequest();
   const { toast } = useToast();
+  
+  // Добавляем отладочную информацию
+  useEffect(() => {
+    console.log("🔍 MemberDashboard отладка:", {
+      user,
+      loading,
+      timestamp: new Date().toISOString()
+    });
+  }, [user, loading]);
 
   // Состояния
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [workoutsLoading, setWorkoutsLoading] = useState(true);
+  const [authChecked, setAuthChecked] = useState(false);
   const [stats, setStats] = useState({
     upcoming: 0,
     completed: 0,
@@ -68,9 +78,43 @@ export default function MemberDashboard() {
   });
   const [faceIdLoading, setFaceIdLoading] = useState(true);
 
+  // Проверяем авторизацию при загрузке
+  useEffect(() => {
+    const checkAuth = async () => {
+      console.log("🔐 MemberDashboard: начало проверки авторизации");
+      
+      // Проверяем localStorage на наличие сохраненных данных
+      const storedUser = localStorage.getItem('auth_user');
+      const storedToken = localStorage.getItem('auth_token');
+      
+      console.log("📦 MemberDashboard: данные из localStorage:", {
+        hasUser: !!storedUser,
+        hasToken: !!storedToken
+      });
+      
+      // Если нет пользователя и загрузка завершена
+      if (!loading && !user) {
+        console.log("❌ MemberDashboard: нет пользователя после загрузки");
+        
+        // Пробуем обновить данные пользователя
+        if (storedUser) {
+          console.log("🔄 MemberDashboard: пробуем refreshUser");
+          await refreshUser();
+        }
+      }
+      
+      setAuthChecked(true);
+    };
+    
+    if (!loading) {
+      checkAuth();
+    }
+  }, [loading, user, refreshUser]);
+
   // Загружаем данные только если пользователь авторизован
   useEffect(() => {
     if (user && (user.role === "member" || user.role === "client")) {
+      console.log("✅ MemberDashboard: пользователь авторизован, загружаем данные");
       fetchWorkouts();
       checkFaceIdStatus();
     }
@@ -213,12 +257,15 @@ export default function MemberDashboard() {
   const nextWorkout = upcomingWorkouts.length > 0 ? upcomingWorkouts[0] : null;
 
   // Состояния загрузки
-  if (loading) {
+  if (loading || !authChecked) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Загрузка дашборда...</p>
+          <p className="text-sm text-gray-500 mt-2">
+            {loading ? "Проверка авторизации..." : "Загрузка данных..."}
+          </p>
         </div>
       </div>
     );
@@ -226,6 +273,12 @@ export default function MemberDashboard() {
 
   // Проверка доступа
   if (!user || (user.role !== "member" && user.role !== "client")) {
+    console.log("🚫 MemberDashboard: отказ в доступе", {
+      hasUser: !!user,
+      userRole: user?.role,
+      expectedRoles: ["member", "client"]
+    });
+    
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 flex items-center justify-center">
         <Card className="p-8 text-center max-w-md">
@@ -251,6 +304,7 @@ export default function MemberDashboard() {
     );
   }
 
+  // Основной контент дашборда
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50">
       {/* Хедер */}
@@ -294,7 +348,7 @@ export default function MemberDashboard() {
           <QuickActions stats={stats} />
         </div>
 
-               {/* ✅ ОСНОВНОЙ КОНТЕНТ - Восстановленная секция тренировок */}
+        {/* Основной контент - секция тренировок */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
           {/* ЛЕВАЯ КОЛОНКА - Ближайшие тренировки */}
           <div className="lg:col-span-2">

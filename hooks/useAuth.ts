@@ -44,7 +44,7 @@ const getDashboardUrl = (role: string): string => {
     'member': '/member-dashboard',
     'staff': '/staff-dashboard'
   };
-  
+
   return dashboardUrls[role] || '/dashboard';
 };
 
@@ -77,7 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [authStatus, setAuthStatus] = useState<AuthStatus | null>(null);
   const router = useRouter();
   const pathname = usePathname();
-  
+
   // 🔧 Предотвращаем множественные вызовы checkSession
   const checkingSession = useRef(false);
   const lastCheckTime = useRef(0);
@@ -90,12 +90,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const storedToken = localStorage.getItem('auth_token');
         const storedUser = localStorage.getItem('auth_user');
-        
+
         console.log('🔍 AuthProvider: загружаем сохраненные данные...', {
           hasToken: !!storedToken,
           hasUser: !!storedUser
         });
-        
+
         if (storedToken && storedUser) {
           const parsedUser = JSON.parse(storedUser);
           console.log('✅ AuthProvider: восстановлены данные пользователя:', parsedUser);
@@ -108,7 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.error('❌ AuthProvider: ошибка загрузки сохраненных данных:', error);
       }
     };
-    
+
     loadStoredAuth();
   }, []);
 
@@ -126,7 +126,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       hasUser: !!user,
       initialCheckDone: initialCheckDone.current
     });
-    
+
     // Проверяем сессию только если:
     // 1. Нет пользователя И не было начальной проверки
     // 2. ИЛИ мы на странице логина (для проверки уже авторизованных)
@@ -139,20 +139,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // 🔧 Throttled версия checkSession
   const checkSessionThrottled = async (): Promise<void> => {
     const now = Date.now();
-    
+
     if (checkingSession.current) {
       console.log('⏳ AuthProvider: проверка сессии уже выполняется, пропускаем...');
       return;
     }
-    
+
     if (now - lastCheckTime.current < CHECK_THROTTLE) {
       console.log('⏳ AuthProvider: throttling, слишком частые проверки, пропускаем...');
       return;
     }
-    
+
     checkingSession.current = true;
     lastCheckTime.current = now;
-    
+
     try {
       await checkSession();
     } finally {
@@ -164,7 +164,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const checkSession = async (): Promise<void> => {
     try {
       console.log('🔍 AuthProvider: проверяем сессию через /api/auth/check...');
-      
+
       const response = await fetch('/api/auth/check', {
         method: 'GET',
         credentials: 'include',
@@ -181,10 +181,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (response.ok) {
         const data = await response.json();
         console.log('🔍 AuthProvider: данные от API:', data);
-        
+
         if (data.authenticated && data.user) {
           console.log('✅ AuthProvider: пользователь авторизован:', data.user);
-          
+
           const userData: User = {
             id: data.user.id,
             role: data.user.role,
@@ -194,13 +194,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             createdAt: data.user.createdAt,
             updatedAt: data.user.updatedAt
           };
-          
+
           setUser(userData);
-          
+
           // 🔧 НОВОЕ: Сохраняем в localStorage
           localStorage.setItem('auth_user', JSON.stringify(userData));
           console.log('💾 AuthProvider: данные пользователя сохранены в localStorage');
-          
+
           // Сохраняем токен если есть
           if (data.token) {
             setToken(data.token);
@@ -239,74 +239,140 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('auth_user');
   };
 
-  const login = async (email: string, password: string): Promise<boolean> => {
-    try {
-      setLoading(true);
-      console.log('🔐 AuthProvider: попытка входа для:', email);
+  const login = async (email: string, password: string, role?: string): Promise<boolean> => {
+  try {
+    setLoading(true);
+    console.log('🔐 AuthProvider: попытка входа для:', email, 'роль:', role);
+    
+    // Определяем endpoint на основе роли или пути
+    let endpoint = '/api/auth/login';
+    
+    // Если роль указана явно как member или client, используем специальный endpoint
+    if (role === 'member' || role === 'client') {
+      endpoint = '/api/auth/member-login';
+      console.log('👥 AuthProvider: используем endpoint для участников:', endpoint);
+    } else if (!role && typeof window !== 'undefined') {
+      // Если роль не указана, проверяем текущий путь
+      const currentPath = window.location.pathname;
+      if (currentPath.includes('member-login')) {
+        endpoint = '/api/auth/member-login';
+        console.log('👥 AuthProvider: определили member-login по пути:', currentPath);
+      }
+    }
+    
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify({ email, password }),
+    });
+
+    const data = await response.json();
+    console.log('🔐 AuthProvider: результат входа:', { 
+      status: response.status, 
+      success: data.success,
+      hasUser: !!data.user,
+      userRole: data.user?.role 
+    });
+
+    if (!response.ok) {
+      console.error('❌ AuthProvider: ошибка входа:', data.error || 'Unknown error');
+      return false;
+    }
+
+    if (data.success && data.user) {
+      console.log('✅ AuthProvider: вход успешен:', data.user);
       
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await response.json();
-      console.log('🔐 AuthProvider: результат входа:', data);
-
-      if (data.success && data.user) {
-        console.log('✅ AuthProvider: вход успешен:', data.user);
-        
-        const userData: User = {
-          id: data.user.id || data.user.userId,
-          role: data.user.role,
-          email: data.user.email,
-          name: data.user.name,
-          avatar: data.user.avatar,
-          createdAt: data.user.createdAt,
-          updatedAt: data.user.updatedAt
-        };
-        
-        setUser(userData);
-        
-        // 🔧 НОВОЕ: Сохраняем в localStorage
-        localStorage.setItem('auth_user', JSON.stringify(userData));
+      // Создаем объект пользователя с правильной структурой
+      const userData: User = {
+        id: data.user.userId || data.user.id,
+        role: data.user.role,
+        email: data.user.email,
+        name: data.user.name,
+        avatar: data.user.avatar,
+        createdAt: data.user.createdAt || new Date().toISOString(),
+        updatedAt: data.user.updatedAt || new Date().toISOString()
+      };
+      
+      console.log('👤 AuthProvider: созданный объект пользователя:', userData);
+      
+      // ВАЖНО: Сначала сохраняем в localStorage
+      try {
+        const userJson = JSON.stringify(userData);
+        localStorage.setItem('auth_user', userJson);
         console.log('💾 AuthProvider: данные пользователя сохранены в localStorage');
         
-        // Сохраняем токен если он есть
-        if (data.token) {
-          setToken(data.token);
-          localStorage.setItem('auth_token', data.token);
-          console.log('💾 AuthProvider: токен сохранен в localStorage');
-        }
-        
-        return true;
+        // Проверяем что сохранилось
+        const savedUser = localStorage.getItem('auth_user');
+        console.log('✅ AuthProvider: проверка сохранения:', !!savedUser);
+      } catch (storageError) {
+        console.error('❌ AuthProvider: ошибка сохранения в localStorage:', storageError);
       }
-
-      return false;
-    } catch (error) {
-      console.error('❌ AuthProvider: ошибка входа:', error);
-      return false;
-    } finally {
-      setLoading(false);
+      
+      // Сохраняем токен если он есть
+      if (data.token) {
+        try {
+          localStorage.setItem('auth_token', data.token);
+          setToken(data.token);
+          console.log('💾 AuthProvider: токен сохранен в localStorage');
+        } catch (tokenError) {
+          console.error('❌ AuthProvider: ошибка сохранения токена:', tokenError);
+        }
+      }
+      
+      // ВАЖНО: Устанавливаем пользователя в состояние ПОСЛЕ сохранения в localStorage
+      setUser(userData);
+      
+      // Принудительно обновляем authStatus
+      const newAuthStatus = {
+        authenticated: true,
+        user: {
+          id: userData.id,
+          role: userData.role,
+          email: userData.email,
+          name: userData.name
+        },
+        dashboardUrl: getDashboardUrl(userData.role)
+      };
+      setAuthStatus(newAuthStatus);
+      
+      // Перенаправляем на соответствующий дашборд
+      const dashboardUrl = getDashboardUrl(userData.role);
+      console.log('🚀 AuthProvider: перенаправление на:', dashboardUrl);
+      
+      // Используем setTimeout для гарантии обновления состояния
+      setTimeout(() => {
+        router.push(dashboardUrl);
+      }, 200); // Увеличиваем задержку до 200мс
+      
+      return true;
     }
-  };
+
+    console.log('❌ AuthProvider: вход неуспешен, нет данных пользователя');
+    return false;
+  } catch (error) {
+    console.error('❌ AuthProvider: критическая ошибка входа:', error);
+    return false;
+  } finally {
+    setLoading(false);
+  }
+};
 
   const logout = async (): Promise<void> => {
     try {
       setLoading(true);
       console.log('🚪 AuthProvider: выполняем выход...');
-      
+
       // Сначала очищаем состояние и localStorage
       clearAuthData();
       setAuthStatus({ authenticated: false });
-      
+
       // Очищаем все данные из хранилищ
       localStorage.clear();
       sessionStorage.clear();
-      
+
       const response = await fetch('/api/auth/logout', {
         method: 'POST',
         credentials: 'include',
@@ -314,11 +380,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           'Authorization': `Bearer ${token}`
         } : {}
       });
-  
+
       if (response.ok) {
         console.log('✅ AuthProvider: выход успешен');
       }
-      
+
       // Всегда перенаправляем на главную
       router.push("/");
     } catch (error) {
@@ -395,7 +461,7 @@ export function useFaceAuth() {
 
       if (data.success && data.user) {
         console.log('✅ useFaceAuth: Face ID вход успешен:', data.user);
-        
+
         // 🔧 НОВОЕ: Сохраняем данные в localStorage
         const userData = {
           id: data.user.id || data.user.userId,
@@ -404,11 +470,11 @@ export function useFaceAuth() {
           name: data.user.name
         };
         localStorage.setItem('auth_user', JSON.stringify(userData));
-        
+
         if (data.token) {
           localStorage.setItem('auth_token', data.token);
         }
-        
+
         return true;
       } else {
         console.log('❌ useFaceAuth: Face ID вход неуспешен:', data.message || 'Unknown error');
@@ -506,7 +572,7 @@ export function useAuth(): AuthContextType {
 // Упрощенный хук для главной страницы (для обратной совместимости)
 export function useAuthStatus() {
   const { authStatus, loading, logout: contextLogout } = useAuth();
-  
+
   return {
     authStatus,
     isLoading: loading,
@@ -517,7 +583,7 @@ export function useAuthStatus() {
 // Остальные хуки остаются без изменений...
 export function useRole() {
   const { user } = useAuth();
-  
+
   return {
     isAdmin: user?.role === 'admin' || user?.role === 'super-admin',
     isSuperAdmin: user?.role === 'super-admin',
@@ -532,10 +598,10 @@ export function useRole() {
 
 export function usePermissions() {
   const { user } = useAuth();
-  
+
   const checkPermission = (resource: string, action: string): boolean => {
     if (!user) return false;
-    
+
     try {
       const { hasPermission } = require('@/lib/permissions');
       return hasPermission(user.role, resource, action);
@@ -546,12 +612,12 @@ export function usePermissions() {
   };
 
   const checkObjectAccess = (
-    resource: string, 
-    action: string, 
+    resource: string,
+    action: string,
     objectOwnerId?: string
   ): boolean => {
     if (!user) return false;
-    
+
     try {
       const { canAccessObject } = require('@/lib/permissions');
       return canAccessObject(user.role, user.id, objectOwnerId, resource, action);
@@ -571,7 +637,7 @@ export function usePermissions() {
 // Хук для получения информации о пользователе
 export function useUser() {
   const { user, loading } = useAuth();
-  
+
   return {
     user,
     loading,
@@ -587,7 +653,7 @@ export function useUser() {
 export function useNavigation() {
   const router = useRouter()
   const { authStatus } = useAuth();
-  
+
   const handleDashboardRedirect = () => {
     if (authStatus?.dashboardUrl) {
       router.push(authStatus.dashboardUrl);
@@ -610,7 +676,7 @@ export function useApiRequest() {
   const { token } = useAuth();
 
   const apiRequest = async (
-    endpoint: string, 
+    endpoint: string,
     options: RequestInit = {}
   ): Promise<Response> => {
     const headers = {
