@@ -13,12 +13,7 @@ interface CacheStats {
   cacheCount: number;
 }
 
-interface PWAStatsProps {
-  isMobile: boolean,
-  isTablet: boolean
-}
-
-export function PWAStats({isMobile, isTablet}: PWAStatsProps) {
+export function PWAStats() {
   const { isInstalled, isOnline } = usePWA();
   const [cacheStats, setCacheStats] = useState<CacheStats>({ totalSize: 0, cacheCount: 0 });
   const [isLoading, setIsLoading] = useState(true);
