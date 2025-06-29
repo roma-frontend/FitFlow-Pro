@@ -4,7 +4,7 @@
 
 
 import StaffLogoutLoader from "@/app/staff-login/components/StaffLogoutLoader";
-import React, { Suspense, useState } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import ManagerHeader from "@/components/manager/ManagerHeader";
 import { ManagerProvider, useManager } from "@/contexts/ManagerContext";
@@ -27,7 +27,6 @@ import {
 import { getStatCards } from "@/app/manager/utils/getStatCards";
 import { useAuth } from "@/hooks/useAuth";
 import { useStaffAuth } from "@/hooks/useStaffAuth";
-import StaffLoginLoader from "../staff-login/components/StaffLoginLoader";
 
 function ManagerDashboardContent() {
   useWelcomeToast();
@@ -124,18 +123,11 @@ function ManagerDashboardContent() {
 }
 
 export default function ManagerDashboard() {
-  const { loaderData } = useStaffAuth()
   return (
     <ManagerProvider>
       <div className="min-h-[100svh] bg-gray-50">
         <ManagerHeader />
-        <Suspense fallback={<StaffLoginLoader
-          userRole={loaderData?.userRole || "manager"}
-          userName={loaderData?.userName || "Менеджер"}
-          dashboardUrl={loaderData?.dashboardUrl || "/manager-dashboard"}
-        />}>
-          <ManagerDashboardContent />
-        </Suspense>
+        <ManagerDashboardContent />
       </div>
     </ManagerProvider>
   );

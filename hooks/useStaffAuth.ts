@@ -179,7 +179,7 @@ export function useStaffAuth() {
         });
 
         // Показываем лоадер вместо мгновенного редиректа
-        setShowLoader(true);
+        router.replace(destination);
 
         // Убираем isLoading чтобы форма исчезла
         setIsLoading(false);
