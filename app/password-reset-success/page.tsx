@@ -7,7 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, ArrowRight, Loader2 } from 'lucide-react';
 
-// Компонент с логикой, который использует useSearchParams
 function PasswordResetSuccessContent() {
   const [countdown, setCountdown] = useState(5);
   const router = useRouter();

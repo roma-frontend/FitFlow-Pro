@@ -26,6 +26,7 @@ import {
 } from "@/app/manager/utils/statusHelpers";
 import { getStatCards } from "@/app/manager/utils/getStatCards";
 import { useAuth } from "@/hooks/useAuth";
+import { useStaffAuth } from "@/hooks/useStaffAuth";
 
 function ManagerDashboardContent() {
   useWelcomeToast();
@@ -33,8 +34,8 @@ function ManagerDashboardContent() {
   const { user, loading: authLoading, refreshUser } = useAuth();
   const { stats, trainers, bookings, loading, refreshData } = useManager();
   const [refreshing, setRefreshing] = useState(false);
-    const [showLogoutLoader, setShowLogoutLoader] = useState(false);
-  
+  const { showLogoutLoader } = useStaffAuth();
+
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -43,16 +44,16 @@ function ManagerDashboardContent() {
   };
 
   const statCards = getStatCards(stats);
-  
-    if (showLogoutLoader) {
-      return (
-        <StaffLogoutLoader
-          userRole={user?.role || "manager"}
-          userName={user?.name || "Менеджер"}
-          redirectUrl="/"
-        />
-      );
-    }
+
+  if (showLogoutLoader) {
+    return (
+      <StaffLogoutLoader
+        userRole={user?.role || "manager"}
+        userName={user?.name || "Менеджер"}
+        redirectUrl="/"
+      />
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
