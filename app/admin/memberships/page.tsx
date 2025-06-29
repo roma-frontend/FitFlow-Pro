@@ -1,7 +1,7 @@
 // app/admin/memberships/page.tsx
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, Suspense  } from 'react';
 import { useRouter } from 'next/navigation';
 
 // UI компоненты
@@ -38,6 +38,10 @@ import {
   Eye,
   Settings
 } from 'lucide-react';
+import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
+interface AdminMembershipsDemoContentProps {
+  router: AppRouterInstance;
+}
 
 // Демо-данные абонементов
 const membershipPlanTemplates = [
@@ -134,8 +138,11 @@ const demoCurrentMembership = {
   }
 };
 
-export default function AdminMembershipsDemo() {
-  const router = useRouter();
+
+
+
+
+function AdminMembershipsDemoContent({ router }: AdminMembershipsDemoContentProps) {
   const [selectedTab, setSelectedTab] = useState('current');
 
   // Функция для получения шаблона плана
@@ -541,4 +548,19 @@ export default function AdminMembershipsDemo() {
       </div>
     </div>
   );
+}
+
+function AdminMembershipsDemoWrapper() {
+  const router = useRouter();
+  
+  return (
+    <Suspense fallback={<div className="min-h-[100svh] bg-gray-50 animate-pulse" />}>
+      <AdminMembershipsDemoContent router={router} />
+    </Suspense>
+  );
+}
+
+
+export default function AdminMembershipsDemo() {
+  return <AdminMembershipsDemoWrapper />;
 }

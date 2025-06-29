@@ -1,8 +1,8 @@
-// app/manager-dashboard/page.tsx - ИСПРАВЛЕННАЯ ВЕРСИЯ
+// app/manager-dashboard/page.tsx - ФИНАЛЬНАЯ ИСПРАВЛЕННАЯ ВЕРСИЯ
 
 "use client";
 
-
+import { Suspense } from "react";
 import StaffLogoutLoader from "@/app/staff-login/components/StaffLogoutLoader";
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -28,6 +28,49 @@ import { getStatCards } from "@/app/manager/utils/getStatCards";
 import { useAuth } from "@/hooks/useAuth";
 import { useStaffAuth } from "@/hooks/useStaffAuth";
 
+// Компонент-скелетон для загрузки
+function DashboardSkeleton() {
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-pulse">
+      {/* Заголовок */}
+      <div className="mb-8">
+        <div className="h-8 bg-gray-200 rounded w-1/3 mb-2"></div>
+        <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+      </div>
+
+      {/* Статистические карточки */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="bg-white p-6 rounded-lg border">
+            <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+            <div className="h-8 bg-gray-200 rounded w-1/2"></div>
+          </div>
+        ))}
+      </div>
+
+      {/* Основной контент */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 space-y-6">
+          <div className="bg-white p-6 rounded-lg border">
+            <div className="h-6 bg-gray-200 rounded w-1/4 mb-4"></div>
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-20 bg-gray-200 rounded"></div>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="space-y-6">
+          <div className="bg-white p-6 rounded-lg border">
+            <div className="h-6 bg-gray-200 rounded w-1/2 mb-4"></div>
+            <div className="h-40 bg-gray-200 rounded"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ManagerDashboardContent() {
   useWelcomeToast();
   const router = useRouter();
@@ -35,7 +78,6 @@ function ManagerDashboardContent() {
   const { stats, trainers, bookings, loading, refreshData } = useManager();
   const [refreshing, setRefreshing] = useState(false);
   const { showLogoutLoader } = useStaffAuth();
-
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -122,7 +164,8 @@ function ManagerDashboardContent() {
   );
 }
 
-export default function ManagerDashboard() {
+// Промежуточный компонент для правильной работы провайдеров и Suspense
+function ManagerDashboardPage() {
   return (
     <ManagerProvider>
       <div className="min-h-[100svh] bg-gray-50">
@@ -130,5 +173,17 @@ export default function ManagerDashboard() {
         <ManagerDashboardContent />
       </div>
     </ManagerProvider>
+  );
+}
+
+export default function ManagerDashboard() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-[100svh] bg-gray-50">
+        <DashboardSkeleton />
+      </div>
+    }>
+      <ManagerDashboardPage />
+    </Suspense>
   );
 }

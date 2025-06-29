@@ -1,7 +1,7 @@
 // app/manager/bookings/create/page.tsx
 "use client";
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import ManagerHeader from '@/components/manager/ManagerHeader';
 import { ManagerProvider, useManager } from '@/contexts/ManagerContext';
@@ -28,6 +28,51 @@ import {
   Phone,
   Mail
 } from "lucide-react";
+
+// Компонент загрузки
+function LoadingFallback() {
+  return (
+    <div className="min-h-[100svh] bg-gray-50">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-1/3 mb-4"></div>
+          <div className="h-4 bg-gray-200 rounded w-1/2 mb-8"></div>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-6">
+              <div className="bg-white p-6 rounded-lg border">
+                <div className="h-6 bg-gray-200 rounded w-1/4 mb-4"></div>
+                <div className="space-y-3">
+                  <div className="h-10 bg-gray-200 rounded"></div>
+                  <div className="h-10 bg-gray-200 rounded"></div>
+                </div>
+              </div>
+              
+              <div className="bg-white p-6 rounded-lg border">
+                <div className="h-6 bg-gray-200 rounded w-1/4 mb-4"></div>
+                <div className="space-y-3">
+                  <div className="h-10 bg-gray-200 rounded"></div>
+                  <div className="h-10 bg-gray-200 rounded"></div>
+                  <div className="h-10 bg-gray-200 rounded"></div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="space-y-6">
+              <div className="bg-white p-6 rounded-lg border">
+                <div className="h-6 bg-gray-200 rounded w-1/2 mb-4"></div>
+                <div className="space-y-3">
+                  <div className="h-20 bg-gray-200 rounded"></div>
+                  <div className="h-20 bg-gray-200 rounded"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function CreateBookingContent() {
   const router = useRouter();
@@ -330,7 +375,7 @@ function CreateBookingContent() {
                   </div>
                   
                   <div>
-                                        <Label htmlFor="notes">Заметки</Label>
+                    <Label htmlFor="notes">Заметки</Label>
                     <Textarea
                       id="notes"
                       value={formData.notes}
@@ -490,11 +535,19 @@ function CreateBookingContent() {
   );
 }
 
-export default function CreateBooking() {
+// Обертка для всей страницы
+function CreateBookingPage() {
   return (
-      <ManagerProvider>
-        <CreateBookingContent />
-      </ManagerProvider>
+    <ManagerProvider>
+      <CreateBookingContent />
+    </ManagerProvider>
   );
 }
 
+export default function CreateBooking() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <CreateBookingPage />
+    </Suspense>
+  );
+}

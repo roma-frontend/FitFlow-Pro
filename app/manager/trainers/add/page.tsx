@@ -728,10 +728,20 @@ function AddTrainerContent() {
   );
 }
 
+import { Suspense } from 'react'
+
+function AddTrainerPage() {
+  return (
+    <ManagerProvider>
+      <AddTrainerContent />
+    </ManagerProvider>
+  );
+}
+
 export default function AddTrainer() {
   return (
-      <ManagerProvider>
-        <AddTrainerContent />
-      </ManagerProvider>
+    <Suspense fallback={<div className="min-h-[100svh] bg-gray-50 animate-pulse" />}>
+      <AddTrainerPage />
+    </Suspense>
   );
 }

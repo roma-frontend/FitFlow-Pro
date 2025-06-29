@@ -1,9 +1,9 @@
-// app/trainer-dashboard/page.tsx - ИСПРАВЛЕННАЯ ВЕРСИЯ
+// app/trainer-dashboard/page.tsx - ФИНАЛЬНАЯ ИСПРАВЛЕННАЯ ВЕРСИЯ
 
 "use client";
 
 import { useState, useEffect, lazy, Suspense } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import TrainerHeader from '@/components/trainer/TrainerHeader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BarChart3, Users, Calendar, MessageSquare } from "lucide-react";
@@ -40,21 +40,6 @@ function TabSkeleton() {
   );
 }
 
-// Компонент для работы с searchParams (обернут в Suspense)
-function SearchParamsHandler({ onTabChange }: { onTabChange: (tab: string) => void }) {
-  const { useSearchParams } = require('next/navigation');
-  const searchParams = useSearchParams();
-
-  useEffect(() => {
-    const tab = searchParams?.get('tab');
-    if (tab && ['overview', 'clients', 'schedule', 'messages'].includes(tab)) {
-      onTabChange(tab);
-    }
-  }, [searchParams, onTabChange]);
-
-  return null;
-}
-
 // Компонент с проверкой загрузки данных
 function DashboardContent() {
   const {
@@ -65,25 +50,26 @@ function DashboardContent() {
     loadingStep,
   } = useTrainerDataQuery();
   const [activeTab, setActiveTab] = useState("overview");
-  const { showLogoutLoader } = useStaffAuth()
-  const { user } = useAuth()
-
-
-
+  const { showLogoutLoader } = useStaffAuth();
+  const { user } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
 
-  // Обработчик изменения таба из URL
-  const handleTabFromUrl = (tab: string) => {
-    setActiveTab(tab);
-  };
+  // Обработка изменения таба из URL при загрузке
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab && ['overview', 'clients', 'schedule', 'messages'].includes(tab)) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
 
   // Обновляем URL при смене таба
   const handleTabChange = (newTab: string) => {
     setActiveTab(newTab);
 
     // Создаем новый URL с параметрами
-    const params = new URLSearchParams(window.location.search);
+    const params = new URLSearchParams(searchParams.toString());
 
     if (newTab === 'overview') {
       params.delete('tab');
@@ -100,8 +86,6 @@ function DashboardContent() {
     router.replace(newPath, { scroll: false });
   };
 
-
-
   if (showLogoutLoader) {
     return (
       <StaffLogoutLoader
@@ -114,11 +98,6 @@ function DashboardContent() {
 
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Обработчик URL параметров в Suspense */}
-      <Suspense fallback={null}>
-        <SearchParamsHandler onTabChange={handleTabFromUrl} />
-      </Suspense>
-
       <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-8">
         {/* Навигационные табы */}
         <div className="hidden sm:block">
@@ -191,20 +170,33 @@ function DashboardContent() {
           </TabsContent>
         </div>
       </Tabs>
-
     </main>
   );
 }
 
-export default function TrainerDashboard() {
+// Компонент-обертка для всей страницы
+function TrainerDashboardPage() {
   useWelcomeToast();
 
   return (
     <TrainerProvider>
       <div className="min-h-[100svh] bg-gray-50">
         <TrainerHeader />
-        <DashboardContent />
+        <Suspense fallback={
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="animate-pulse">
+              <div className="h-12 bg-gray-200 rounded w-1/3 mb-8"></div>
+              <TabSkeleton />
+            </div>
+          </div>
+        }>
+          <DashboardContent />
+        </Suspense>
       </div>
     </TrainerProvider>
   );
+}
+
+export default function TrainerDashboard() {
+  return <TrainerDashboardPage />;
 }

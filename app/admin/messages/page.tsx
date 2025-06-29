@@ -1,6 +1,7 @@
 // app/admin/messages/page.tsx
 "use client";
 
+import { Suspense } from 'react';
 import React, { useState, useCallback } from "react";
 import { useMessages } from "@/hooks/useMessages";
 import { Id } from "@/convex/_generated/dataModel";
@@ -24,7 +25,7 @@ interface NewMessageState {
   scheduledAt?: string;
 }
 
-export default function MessagesPage() {
+function MessagesPageContent() {
   const isMobile = useMediaQuery("(max-width: 768px)");
   const isTablet = useMediaQuery("(min-width: 769px) and (max-width: 1023px)");
   
@@ -304,5 +305,13 @@ export default function MessagesPage() {
         />
       )}
     </>
+  );
+}
+
+export default function MessagesPage() {
+  return (
+    <Suspense fallback={<MessagesPageSkeleton />}>
+      <MessagesPageContent />
+    </Suspense>
   );
 }
