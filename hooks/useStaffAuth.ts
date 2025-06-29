@@ -17,7 +17,8 @@ export function useStaffAuth() {
   const [showForgotPassword, setShowForgotPassword] = useState<boolean>(false);
   const [resetEmail, setResetEmail] = useState<string>("");
   const [resetSent, setResetSent] = useState<boolean>(false);
-  
+  const [showLogoutLoader, setShowLogoutLoader] = useState(false);
+
   // Новые состояния для лоадера
   const [showLoader, setShowLoader] = useState(false);
   const [loaderData, setLoaderData] = useState<{
@@ -30,6 +31,21 @@ export function useStaffAuth() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectPath = searchParams.get("redirect");
+
+  const handleStaffLogout = useCallback(async () => {
+    setShowLogoutLoader(true);
+
+    // Можно добавить прогресс-бар через setTimeout/interval
+    setTimeout(async () => {
+      // Очистка localStorage/sessionStorage и вызов API logout
+      await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+      localStorage.clear();
+      sessionStorage.clear();
+
+
+      router.push("/")
+    }, 1500);
+  }, []);
 
   // Проверка авторизации при загрузке
   useEffect(() => {
@@ -149,7 +165,7 @@ export function useStaffAuth() {
 
         const returnUrl = sessionStorage.getItem("returnUrl");
         const destination = returnUrl || data.dashboardUrl || redirectPath || getDashboardForRole(data.user.role);
-        
+
         // Очищаем returnUrl если использовали
         if (returnUrl) {
           sessionStorage.removeItem("returnUrl");
@@ -161,10 +177,10 @@ export function useStaffAuth() {
           userName: data.user.name || data.user.email,
           dashboardUrl: destination
         });
-        
+
         // Показываем лоадер вместо мгновенного редиректа
         setShowLoader(true);
-        
+
         // Убираем isLoading чтобы форма исчезла
         setIsLoading(false);
 
@@ -229,7 +245,7 @@ export function useStaffAuth() {
 
         const returnUrl = sessionStorage.getItem("returnUrl");
         const destination = returnUrl || "/admin";
-        
+
         if (returnUrl) {
           sessionStorage.removeItem("returnUrl");
         }
@@ -240,7 +256,7 @@ export function useStaffAuth() {
           userName: result.user.name || result.user.email,
           dashboardUrl: destination
         });
-        
+
         // Показываем лоадер
         setShowLoader(true);
         setIsLoading(false);
@@ -325,11 +341,15 @@ export function useStaffAuth() {
     showForgotPassword,
     resetEmail,
     resetSent,
-    
+
     // Новые состояния для лоадера
     showLoader,
     loaderData,
 
+    showLogoutLoader,
+    handleStaffLogout,
+
+    setShowLogoutLoader,
     setShowForgotPassword,
     setResetEmail,
     setResetSent,

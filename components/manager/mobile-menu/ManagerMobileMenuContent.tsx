@@ -1,7 +1,6 @@
 // components/manager/mobile-menu/ManagerMobileMenuContent.tsx
 "use client";
 
-import { motion } from "framer-motion";
 import { ManagerNavigationItem } from "../types/manager-navigation";
 import ManagerNavigationSection from "./sections/ManagerNavigationSection";
 import ManagerUserSection from "./sections/ManagerUserSection";

@@ -1,7 +1,6 @@
 // components/manager/mobile-menu/sections/ManagerUserSection.tsx
 "use client";
 
-import { motion } from "framer-motion";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { getAvatarUrl } from "@/utils/image-utils";
@@ -12,6 +11,7 @@ interface ManagerUserSectionProps {
 }
 
 export default function ManagerUserSection({ user }: ManagerUserSectionProps) {
+  if (!user) return null;
   return (
     <div 
       className="mb-6 p-5 bg-gradient-to-br from-white/15 via-white/10 to-white/5 backdrop-blur-md rounded-2xl border border-white/20 relative overflow-hidden group"

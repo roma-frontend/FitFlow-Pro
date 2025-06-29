@@ -7,7 +7,7 @@ import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ManagerMobileMenuContent from "./ManagerMobileMenuContent";
 import { ManagerNavigationItem } from "../types/manager-navigation";
-import { ManagerStats } from "@/contexts/ManagerContext"; // ✅ Импортируем правильный тип
+import { ManagerStats } from "@/contexts/ManagerContext";
 
 interface ManagerMobileMenuProps {
   isOpen: boolean;

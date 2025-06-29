@@ -12,8 +12,8 @@ import { TrainerStats } from '@/components/trainer/components/TrainerStats';
 import { useTrainerDataQuery } from '@/hooks/useTrainerDataQuery';
 import { useAuth } from '@/hooks/useAuth';
 import { useWelcomeToast } from '@/hooks/useWelcomeToast';
+import StaffLogoutLoader from '../staff-login/components/StaffLogoutLoader';
 import { useStaffAuth } from '@/hooks/useStaffAuth';
-import FitnessLoader from '@/components/ui/FitnessLoader';
 
 // Ленивая загрузка компонентов
 const TrainerOverview = lazy(() => import('@/components/trainer/TrainerOverview'));
@@ -63,11 +63,13 @@ function DashboardContent() {
     stats,
     isLoading,
     loadingStep,
-    error,
-    refetch
   } = useTrainerDataQuery();
   const [activeTab, setActiveTab] = useState("overview");
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const { showLogoutLoader } = useStaffAuth()
+  const { user } = useAuth()
+
+
+
   const router = useRouter();
   const pathname = usePathname();
 
@@ -98,50 +100,18 @@ function DashboardContent() {
     router.replace(newPath, { scroll: false });
   };
 
-  // Показываем ошибку если есть
-  if (error) {
+
+
+  if (showLogoutLoader) {
     return (
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="p-6 bg-red-50 border border-red-200 rounded-lg">
-          <h3 className="text-red-800 font-semibold mb-2">Ошибка загрузки данных</h3>
-          <p className="text-red-600 mb-4">{error}</p>
-          <button
-            onClick={refetch}
-            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 mr-2"
-          >
-            Повторить загрузку
-          </button>
-          <button
-            onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
-          >
-            Перезагрузить страницу
-          </button>
-        </div>
-      </main>
+      <StaffLogoutLoader
+        userRole={user?.role || "trainer"}
+        userName={user?.name || "Тренер"}
+        redirectUrl="/"
+      />
     );
   }
 
-  if (isLoading) {
-    return (
-      <div className="min-h-[100svh] bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 lg:bg-gradient-to-br lg:from-blue-50 lg:via-white lg:to-indigo-50 flex items-center justify-center p-4">
-          <FitnessLoader
-            isMobile={false}
-            theme="member"
-            size="xl"
-            variant="strength"
-            text="Загружаем данные дашборда..."
-            showProgress={true}
-            motivationalTexts={[
-              "Подготавливаем форму дашборда...",
-            ]}
-            className="drop-shadow-2xl"
-          />
-      </div>
-    )
-  }
-
-  // Основной контент дашборда
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Обработчик URL параметров в Suspense */}
@@ -228,6 +198,7 @@ function DashboardContent() {
 
 export default function TrainerDashboard() {
   useWelcomeToast();
+
   return (
     <TrainerProvider>
       <div className="min-h-[100svh] bg-gray-50">

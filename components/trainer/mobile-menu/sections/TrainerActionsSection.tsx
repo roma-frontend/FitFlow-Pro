@@ -15,6 +15,8 @@ import {
   BarChart3,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useLoaderStore } from "@/stores/loaderStore";
+import { useState } from "react";
 
 interface TrainerActionsSectionProps {
   onNavigation: (href: string) => void;
@@ -28,7 +30,9 @@ export default function TrainerActionsSection({
   isLoading,
   onClose,
 }: TrainerActionsSectionProps) {
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
+  const showLoader = useLoaderStore((state) => state.showLoader);
+  const [isOpen, setIsOpen] = useState(false);
 
   const handleAction = (action: () => void) => {
     action();
@@ -36,8 +40,13 @@ export default function TrainerActionsSection({
   };
 
   const handleLogout = async () => {
+    setIsOpen(false);
+    showLoader("logout", {
+      userRole: user?.role || "trainer",
+      userName: user?.name || "Тренер",
+      redirectUrl: "/"
+    });
     await logout();
-    onClose();
   };
 
   const quickActions = [

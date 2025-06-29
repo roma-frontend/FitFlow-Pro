@@ -2,6 +2,8 @@
 
 "use client";
 
+
+import StaffLogoutLoader from "@/app/staff-login/components/StaffLogoutLoader";
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import ManagerHeader from "@/components/manager/ManagerHeader";
@@ -23,12 +25,16 @@ import {
   getBookingStatusText
 } from "@/app/manager/utils/statusHelpers";
 import { getStatCards } from "@/app/manager/utils/getStatCards";
+import { useAuth } from "@/hooks/useAuth";
 
 function ManagerDashboardContent() {
   useWelcomeToast();
   const router = useRouter();
+  const { user, loading: authLoading, refreshUser } = useAuth();
   const { stats, trainers, bookings, loading, refreshData } = useManager();
   const [refreshing, setRefreshing] = useState(false);
+    const [showLogoutLoader, setShowLogoutLoader] = useState(false);
+  
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -37,6 +43,16 @@ function ManagerDashboardContent() {
   };
 
   const statCards = getStatCards(stats);
+  
+    if (showLogoutLoader) {
+      return (
+        <StaffLogoutLoader
+          userRole={user?.role || "manager"}
+          userName={user?.name || "Менеджер"}
+          redirectUrl="/"
+        />
+      );
+    }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

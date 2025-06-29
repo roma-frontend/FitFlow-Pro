@@ -12,8 +12,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/useAuth";
-import { useState, useCallback, useMemo } from "react";
-import { User as UserType } from "@/types/user";
+import { useState, useCallback, useMemo, useContext } from "react";
+import { useLoaderStore } from "@/stores/loaderStore";
 
 interface WelcomeHeaderProps {
   roleTexts: {
@@ -36,6 +36,7 @@ export function WelcomeHeader({
   const { user, logout } = useAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [avatarError, setAvatarError] = useState(false);
+  const showLoader = useLoaderStore((state) => state.showLoader);
 
   // Если пользователь уже вышел, не рендерим компонент
   if (!user) return null;
@@ -49,10 +50,15 @@ export function WelcomeHeader({
     return user?.photoUrl && !avatarError;
   }, [user?.photoUrl, avatarError]);
 
+
   const handleLogout = async () => {
-    setIsLoggingOut(true);
-    await logout();
-  };
+  showLoader("logout", {
+    userRole: user?.role || "admin" || "super-admin",
+    userName: user?.name || "Пользователь",
+    redirectUrl: "/"
+  });
+  await logout();
+};
 
   const handleAvatarError = useCallback(() => {
     setAvatarError(true);
@@ -62,8 +68,8 @@ export function WelcomeHeader({
   const AvatarComponent = useMemo(() => (
     <Avatar className="h-12 w-12 ring-2 ring-white/30 hover:ring-white/50 transition-all duration-200">
       {hasAvatar ? (
-        <AvatarImage 
-          src={user.photoUrl || undefined} 
+        <AvatarImage
+          src={user.photoUrl || undefined}
           alt={user.name || "User"}
           onError={handleAvatarError}
           className="object-cover"
@@ -80,8 +86,8 @@ export function WelcomeHeader({
   const DropdownAvatarComponent = useMemo(() => (
     <Avatar className="h-10 w-10">
       {hasAvatar ? (
-        <AvatarImage 
-          src={user.photoUrl || undefined} 
+        <AvatarImage
+          src={user.photoUrl || undefined}
           alt={user.name || "User"}
           onError={handleAvatarError}
           className="object-cover"

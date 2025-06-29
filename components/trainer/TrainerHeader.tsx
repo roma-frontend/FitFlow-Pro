@@ -3,7 +3,7 @@
 
 "use client";
 
-import { useState, useEffect, memo } from "react";
+import { useState, useEffect, memo, useMemo } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { useTrainerDataQuery } from "@/hooks/useTrainerDataQuery";
@@ -23,6 +23,7 @@ import TrainerUserMenu from "./components/TrainerUserMenu";
 import TrainerNotifications from "./components/TrainerNotifications";
 import TrainerMobileMenu from "./mobile-menu/TrainerMobileMenu";
 import { TrainerNavigationItem } from "./types/trainer-navigation";
+import { useLoaderStore } from "@/stores/loaderStore";
 
 // ✅ Мемоизированный логотип
 const TrainerLogo = memo(({ router }: { router: any }) => (
@@ -56,10 +57,10 @@ const TrainerLogo = memo(({ router }: { router: any }) => (
 TrainerLogo.displayName = 'TrainerLogo';
 
 // ✅ Мемоизированная навигация для десктопа
-const TrainerDesktopNavigation = memo(({ 
-  navigationItems, 
-  pathname, 
-  router 
+const TrainerDesktopNavigation = memo(({
+  navigationItems,
+  pathname,
+  router
 }: {
   navigationItems: TrainerNavigationItem[];
   pathname: string;
@@ -84,10 +85,9 @@ const TrainerDesktopNavigation = memo(({
             variant={isActive ? "default" : "ghost"}
             onClick={() => router.push(item.href)}
             className={combineAnimations(
-              `relative flex items-center gap-2 px-3 py-2 transition-all duration-200 ${
-                isActive
-                  ? "bg-white/20 text-white shadow-md"
-                  : "text-white/90 hover:text-white hover:bg-white/10"
+              `relative flex items-center gap-2 px-3 py-2 transition-all duration-200 ${isActive
+                ? "bg-white/20 text-white shadow-md"
+                : "text-white/90 hover:text-white hover:bg-white/10"
               }`,
               ANIMATION_CLASSES.transition.colors
             )}
@@ -97,11 +97,10 @@ const TrainerDesktopNavigation = memo(({
               {item.label}
             </span>
             {item.badge && (
-              <div className={`ml-1 text-xs px-2 py-1 rounded-full ${
-                isActive
+              <div className={`ml-1 text-xs px-2 py-1 rounded-full ${isActive
                   ? "bg-white/20 text-white"
                   : "bg-white/20 text-white/90"
-              }`}>
+                }`}>
                 {item.badge}
               </div>
             )}
@@ -116,25 +115,52 @@ TrainerDesktopNavigation.displayName = 'TrainerDesktopNavigation';
 
 export default function TrainerHeader() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
   const [showDebug, setShowDebug] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
-  
-  const { logout, isLoading: authLoading } = useAuth();
-  
+  const { user: authUser, logout, isLoading: authLoading } = useAuth();useAuth
+  const [initializing, setInitializing] = useState(false);
+
+  const showLoader = useLoaderStore((state) => state.showLoader);
+
+  const user = useMemo(() => {
+      if (!authUser) return null;
+      
+      return {
+        id: authUser.id,
+        name: authUser.name,
+        firstName: authUser.name,
+        email: authUser.email,
+        role: authUser.role,
+        avatar: authUser.avatar || authUser.avatarUrl,
+        isVerified: authUser.isVerified,
+        rating: authUser.rating,
+        createdAt: authUser.createdAt,
+      };
+    }, [authUser]);
+
   // ✅ Используем хук для данных тренера
-  const { 
-    messageStats, 
-    workoutStats, 
+  const {
+    messageStats,
+    workoutStats,
     stats,
-    isLoading: dataLoading, 
-    error, 
-    loadingStep, 
-    refetch 
+    isLoading: dataLoading,
+    error,
+    loadingStep,
+    refetch
   } = useTrainerDataQuery();
 
   const handleLogout = async () => {
-    await logout();
+      setIsLoggingOut(true);
+      setInitializing(true);
+      showLoader("logout", {
+          userRole: user?.role || "manager",
+          userName: user?.name || "Менеджер",
+          redirectUrl: "/"
+        });
+        await logout();
   };
 
   // ✅ Навигационные элементы с данными из хука
@@ -228,7 +254,7 @@ export default function TrainerHeader() {
               </Button>
 
               {/* Уведомления */}
-              <TrainerNotifications 
+              <TrainerNotifications
                 messageStats={messageStats}
                 workoutStats={workoutStats}
                 stats={stats}
@@ -238,7 +264,7 @@ export default function TrainerHeader() {
               />
 
               {/* ✅ ИСПРАВЛЕНО: НЕ передаем user через пропсы */}
-              <TrainerUserMenu 
+              <TrainerUserMenu
                 messageStats={messageStats}
                 workoutStats={workoutStats}
                 stats={stats}
@@ -251,7 +277,7 @@ export default function TrainerHeader() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="xl:hidden text-white hover:bg-white/10 hover:text-white p-2 h-8 w-8 sm:h-9 sm:w-9"
+                className="md:hidden text-white hover:bg-white/10 hover:text-white p-2 h-8 w-8 sm:h-9 sm:w-9"
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 disabled={authLoading}
               >

@@ -8,7 +8,6 @@ import { useUnifiedData } from "@/contexts/UnifiedDataContext";
 import { useRoleTexts, getContextualHints } from "@/lib/roleTexts";
 import { SuperAdminProvider } from "@/contexts/SuperAdminContext";
 import { QueryProvider } from "@/components/providers/QueryProvider";
-import FitnessLoader from '@/components/ui/FitnessLoader';
 
 import { useWelcomeToast } from "@/hooks/useWelcomeToast";
 
@@ -32,23 +31,9 @@ import {
 } from "lucide-react";
 import { GlobalNotifications } from "@/components/admin/layout/GlobalNotifications";
 import { PersonalizedTooltips } from "@/components/admin/layout/PersonalizedTooltips";
+import StaffLogoutLoader from "../staff-login/components/StaffLogoutLoader";
 
-// Хук для определения мобильного устройства
-const useIsMobile = () => {
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const checkIsMobile = () => {
-      setIsMobile(window.innerWidth < 1024);
-    };
-
-    checkIsMobile();
-    window.addEventListener('resize', checkIsMobile);
-    return () => window.removeEventListener('resize', checkIsMobile);
-  }, []);
-
-  return isMobile;
-};
+import StaffLoginLoader from "../staff-login/components/StaffLoginLoader";
 
 function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   useWelcomeToast();
@@ -56,7 +41,6 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const userRole = user?.role;
   const roleTexts = useRoleTexts(userRole);
-  const isMobile = useIsMobile();
 
   const {
     events,
@@ -70,6 +54,10 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [showLogoutLoader, setShowLogoutLoader] = useState(false);
+
+  const isInitializing = authLoading || !user;
+
 
   // Получаем контекстные подсказки
   const hints = getContextualHints(userRole);
@@ -273,46 +261,24 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     };
   }, [scheduleError, isOnline, userRole, roleTexts]);
 
-  // Если пользователь не авторизован после загрузки
-  if (!authLoading && !user) {
-    if (isMobile) {
-      return (
-        <FitnessLoader
-          isMobile={true}
-          theme="staff"
-          size="lg"
-          variant="heartbeat"
-          text="До новых встреч!"
-          showProgress={false}
-          motivationalTexts={[
-            "Требуется авторизация...",
-            "Перенаправление на страницу входа...",
-            "Пожалуйста, войдите в систему"
-          ]}
-        />
-      );
-    }
+  if (isInitializing) {
+    return (
+      <StaffLoginLoader
+        userRole={user?.role || "admin"}
+        userName={user?.name || "Пользователь"}
+        dashboardUrl="/admin"
+      />
+    );
   }
 
-  // Если нет навигационных элементов, показываем ошибку
-  if (isInitialized && navigationItems.length === 0) {
-    if (isMobile) {
-      return (
-        <FitnessLoader
-          isMobile={true}
-          theme="staff"
-          size="lg"
-          variant="yoga"
-          text="Ошибка загрузки"
-          showProgress={false}
-          motivationalTexts={[
-            "Ошибка загрузки навигации...",
-            "Проверяем настройки...",
-            "Попробуйте обновить страницу"
-          ]}
-        />
-      );
-    }
+  if (showLogoutLoader) {
+    return (
+      <StaffLogoutLoader
+        userRole={user?.role || "admin"}
+        userName={user?.name || "Пользователь"}
+        redirectUrl="/"
+      />
+    );
   }
 
   return (
@@ -366,6 +332,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
 
       {/* Персонализированные всплывающие подсказки */}
       <PersonalizedTooltips userRole={userRole ?? ''} />
+      {children}
     </div>
   );
 }

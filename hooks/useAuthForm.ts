@@ -306,8 +306,6 @@ export function useAuthForm() {
       if (!isLogin) {
         setLoading(false);
       }
-      // Для входа не сбрасываем loading сразу, пока не произойдет перенаправление
-      // loading будет сброшен автоматически при смене страницы
     }
   };
 

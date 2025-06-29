@@ -65,10 +65,7 @@ const PAGES_WITHOUT_LOADER = [
 
 // Защищенные маршруты (где всегда нужны провайдеры)
 const PROTECTED_ROUTES = [
-    '/admin',
-    '/trainer-dashbaord',
-    '/member-dashboard',
-    '/manager-dashboard',
+    '',
 ];
 
 // Функция проверки лоадера

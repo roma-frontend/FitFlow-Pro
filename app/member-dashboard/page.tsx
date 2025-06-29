@@ -22,6 +22,7 @@ import MiniProgress from "@/components/member/MiniProgress";
 import SidebarCards from "@/components/member/SidebarCards";
 import TipsSection from "@/components/member/TipsSection";
 import FitnessLoader from "@/components/ui/FitnessLoader";
+import StaffLogoutLoader from "../staff-login/components/StaffLogoutLoader";
 
 interface Workout {
   id: string;
@@ -307,24 +308,13 @@ export default function MemberDashboard() {
 
 
   // Показываем загрузку если идет первоначальная загрузка auth, проверка доступа или процесс выхода
-  if (loading || !authChecked || isLoggingOut) {
+  if (isLoggingOut) {
     return (
-      <div className="min-h-[100svh] bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 lg:bg-gradient-to-br lg:from-blue-50 lg:via-white lg:to-indigo-50 flex items-center justify-center p-4">
-        {isLoggingOut && (
-          <FitnessLoader
-            isMobile={false}
-            theme="member"
-            size="xl"
-            variant="strength"
-            text="Выходим из системы..."
-            showProgress={true}
-            motivationalTexts={[
-              "Направляемся на главную страницу...",
-            ]}
-            className="drop-shadow-2xl"
-          />
-        )}
-      </div>
+      <StaffLogoutLoader
+        userRole={user?.role || "member"}
+        userName={user?.name || "Пользователь"}
+        redirectUrl="/"
+      />
     );
   }
 

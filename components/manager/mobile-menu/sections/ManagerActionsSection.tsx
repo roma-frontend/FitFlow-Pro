@@ -13,6 +13,10 @@ import {
   FileText,
   BarChart3,
 } from "lucide-react";
+import { useState } from "react";
+import StaffLogoutLoader from "@/app/staff-login/components/StaffLogoutLoader";
+import { useAuth } from "@/hooks/useAuth";
+import { useLoaderStore } from "@/stores/loaderStore";
 
 interface ManagerActionsSectionProps {
   onNavigation: (href: string) => void;
@@ -23,18 +27,27 @@ interface ManagerActionsSectionProps {
 
 export default function ManagerActionsSection({
   onNavigation,
-  onLogout,
   isLoggingOut,
   onClose,
 }: ManagerActionsSectionProps) {
+
+  const [initializing, setInitializing] = useState(false); 
+  const showLoader = useLoaderStore((state) => state.showLoader);
+  const {logout, user} = useAuth()
+
   const handleAction = (href: string) => {
     onNavigation(href);
     onClose();
   };
 
-  const handleLogout = () => {
-    onClose();
-    onLogout();
+const handleLogout = async () => {
+    setInitializing(true);
+    showLoader("logout", {
+        userRole: user?.role || "manager",
+        userName: user?.name || "Менеджер",
+        redirectUrl: "/"
+      });
+      await logout();
   };
 
   const quickActions = [

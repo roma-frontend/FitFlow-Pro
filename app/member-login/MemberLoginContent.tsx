@@ -18,11 +18,13 @@ import { Shield, Zap, Users, Sparkles, CheckCircle, ArrowRight, Loader2, Eye, Lo
 import { useRouter } from "next/navigation";
 import SparklesButton from "./components/MemberLoginButton";
 import { Input } from "@/components/ui/input";
-import FitnessLoader from "@/components/ui/FitnessLoader";
+import StaffLoginLoader from "../staff-login/components/StaffLoginLoader";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function MemberLoginContent() {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const router = useRouter();
+  const { user } = useAuth();
 
   const {
     isLogin,
@@ -42,29 +44,17 @@ export default function MemberLoginContent() {
     redirectParam,
   } = useAuthForm();
 
-  // Показываем индикатор перенаправления
-  if (isRedirecting) {
+
+  if (isRedirecting!) {
     return (
-      <div className="min-h-[100svh] bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 lg:bg-gradient-to-br lg:from-blue-50 lg:via-white lg:to-indigo-50 flex items-center justify-center p-4">
-        <FitnessLoader
-          isMobile={false}
-          theme="member"
-          size="xl"
-          variant="cardio"
-          text="Начинаем вход в систему..."
-          showProgress={true}
-          motivationalTexts={[
-            "Вход выполнен...",
-            "Загружаем ваш профиль...",
-            "Настраиваем интерфейс...",
-            "Проверяем подключение...",
-            "Почти готово!"
-          ]}
-          className="drop-shadow-2xl"
-        />
-      </div>
+      <StaffLoginLoader
+        userRole={user?.role || "member"}
+        userName={user?.name || "Пользователь"}
+        dashboardUrl="/member-dashboard"
+      />
     );
   }
+
 
   if (showForgotPassword) {
     return (

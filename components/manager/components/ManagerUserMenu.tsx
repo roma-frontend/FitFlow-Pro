@@ -1,6 +1,7 @@
 // components/manager/components/ManagerUserMenu.tsx
 "use client";
 
+import { useLoaderStore } from "@/stores/loaderStore";
 import { useState, memo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -54,6 +55,9 @@ const ManagerUserMenu = memo(
     const [isOpen, setIsOpen] = useState(false);
     const { user, logout, isLoading: authLoading, refreshUser } = useAuth();
     const router = useRouter()
+
+    const showLoader = useLoaderStore((state) => state.showLoader);
+
     // ✅ Логирование для отладки
     useEffect(() => {
       console.log("🎯 ManagerUserMenu: состояние", {
@@ -75,8 +79,13 @@ const ManagerUserMenu = memo(
       }
     }, [authLoading, user, refreshUser]);
 
-    const handleLogout = async () => {
+     const handleLogout = async () => {
       setIsOpen(false);
+      showLoader("logout", {
+        userRole: user?.role || "manager",
+        userName: user?.name || "Менеджер",
+        redirectUrl: "/"
+      });
       await logout();
     };
 
@@ -195,6 +204,7 @@ const ManagerUserMenu = memo(
     ];
 
     return (
+      <div className="hidden md:block">
       <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
         <DropdownMenuTrigger asChild>
           <Button
@@ -501,6 +511,7 @@ const ManagerUserMenu = memo(
           </>
         </DropdownMenuContent>
       </DropdownMenu>
+      </div>
     );
   }
 );

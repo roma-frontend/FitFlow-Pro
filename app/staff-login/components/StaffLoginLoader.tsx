@@ -211,29 +211,6 @@ export default function StaffLoginLoader({ userRole, userName, dashboardUrl }: S
           </div>
         </div>
       </div>
-
-      {/* Добавляем глобальные стили для анимаций */}
-      <style jsx global>{`
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-          }
-          to {
-            opacity: 1;
-          }
-        }
-
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
     </div>
   );
 }

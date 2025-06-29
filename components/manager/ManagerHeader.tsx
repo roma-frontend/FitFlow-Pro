@@ -22,6 +22,7 @@ import ManagerUserMenu from "./components/ManagerUserMenu";
 import ManagerNotifications from "./components/ManagerNotifications";
 import ManagerMobileMenu from "./mobile-menu/ManagerMobileMenu";
 import { ManagerNavigationItem } from "./types/manager-navigation";
+import { useLoaderStore } from "@/stores/loaderStore";
 
 const ManagerLogo = memo(({ router }: { router: any }) => (
   <div
@@ -124,7 +125,9 @@ export default function ManagerHeader() {
   const pathname = usePathname();
   const { stats, loading } = useManager();
   const { user: authUser, logout, isLoading: authLoading } = useAuth();useAuth
-  const { toast } = useToast();
+  const [initializing, setInitializing] = useState(false);
+
+  const showLoader = useLoaderStore((state) => state.showLoader);
 
   // ✅ Мемоизируем объект пользователя для предотвращения лишних ререндеров
   const user = useMemo(() => {
@@ -143,12 +146,6 @@ export default function ManagerHeader() {
     };
   }, [authUser]);
 
-  // ✅ Функция выхода из системы через useAuth
-  const handleLogout = async () => {
-    setIsLoggingOut(true);
-
-    await logout();
-  };
 
   // ✅ Мемоизируем навигационные элементы
   const navigationItems: ManagerNavigationItem[] = useMemo(() => [
@@ -196,6 +193,17 @@ export default function ManagerHeader() {
       document.body.style.width = '';
     };
   }, [isMobileMenuOpen]);
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    setInitializing(true);
+    showLoader("logout", {
+        userRole: user?.role || "manager",
+        userName: user?.name || "Менеджер",
+        redirectUrl: "/"
+      });
+      await logout();
+  };
 
   const handleNavClick = (href: string) => {
     setIsMobileMenuOpen(false);
@@ -246,7 +254,7 @@ export default function ManagerHeader() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="xl:hidden text-white hover:bg-white/10 hover:text-white p-2 h-8 w-8 sm:h-9 sm:w-9"
+                className="md:hidden text-white hover:bg-white/10 hover:text-white p-2 h-8 w-8 sm:h-9 sm:w-9"
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 disabled={isLoggingOut || authLoading}
               >
@@ -272,23 +280,6 @@ export default function ManagerHeader() {
         onLogout={handleLogout}
         isLoggingOut={isLoggingOut}
       />
-
-      {/* Overlay для блокировки интерфейса во время выхода */}
-      {isLoggingOut && (
-        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 sm:p-6 shadow-xl flex items-center space-x-3 max-w-sm w-full">
-            <Loader2 className="h-5 w-5 sm:h-6 sm:w-6 animate-spin text-blue-600 flex-shrink-0" />
-            <div className="min-w-0">
-              <p className="font-medium text-gray-900 dark:text-gray-100 text-sm sm:text-base">
-                Выходим из системы...
-              </p>
-              <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-                Пожалуйста, подождите
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 }
