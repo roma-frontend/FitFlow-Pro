@@ -3,6 +3,8 @@
 import { memo } from 'react';
 import { Button } from "@/components/ui/button";
 import { useRouter } from 'next/navigation';
+import { GoogleLoginButton } from './GoogleLoginButton';
+import { Eye } from 'lucide-react';
 
 interface OtherAuthOptionsProps {
   loading: boolean;
@@ -15,6 +17,17 @@ export const OtherAuthOptions = memo(function OtherAuthOptions({ loading }: Othe
       <div className="text-center space-y-3">
         <p className="text-xs text-gray-500">Другие варианты входа</p>
         <div className="space-y-2">
+          <GoogleLoginButton isStaff={false} />
+
+          <Button
+          variant="outline"
+            onClick={() => router.push("/auth/face-auth")}
+            disabled={loading}
+            className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Eye className="h-5 w-5" />
+            <span className="font-medium">Face ID вход</span>
+          </Button>
           <Button
             variant="outline"
             onClick={() => (router.push("/staff-login"))}

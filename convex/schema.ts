@@ -32,6 +32,12 @@ export default defineSchema({
       timezone: v.optional(v.string()),
       theme: v.optional(v.string()),
     })),
+
+    googleId: v.optional(v.string()),
+    githubId: v.optional(v.string()),
+    avatar: v.optional(v.string()),
+    isVerified: v.optional(v.boolean()),
+
     emailNotifications: v.optional(v.boolean()),  // Дублирование для совместимости
     smsNotifications: v.optional(v.boolean()),
     pushNotifications: v.optional(v.boolean()),
@@ -41,7 +47,6 @@ export default defineSchema({
     allowMessages: v.optional(v.boolean()),       // Разрешить сообщения
     marketingEmails: v.optional(v.boolean()),
 
-    avatar: v.optional(v.string()),
     phone: v.optional(v.string()),
     department: v.optional(v.string()),
     // Поля для синхронизации
@@ -50,6 +55,7 @@ export default defineSchema({
     _isDirty: v.optional(v.boolean()),
   })
     .index("by_email", ["email"])
+    .index("by_googleId", ["googleId"])
     .index("by_role", ["role"])
     .index("by_active", ["isActive"])
     .index("by_face_recognition", ["faceRecognitionEnabled"])

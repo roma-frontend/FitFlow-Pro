@@ -20,6 +20,7 @@ import React from "react";
 import { DebugLogout } from "@/components/DebugLogout";
 import { AuthCleanupHandler } from "@/components/AuthCleanupHandler";
 import {GlobalLoader} from "@/components/GlobalLoader"
+import { NextAuthProvider } from "@/components/providers/NextAuthProvider";
 
 const inter = Inter({
   subsets: ["latin", "cyrillic"],
@@ -317,6 +318,7 @@ export default function RootLayout({
         <SpeedInsights />
         <ConvexClientProvider>
           <QueryProvider>
+            <NextAuthProvider>
             <AuthProvider>
               <OptimizedProviders>
                 <PWAWrapper>
@@ -344,6 +346,7 @@ export default function RootLayout({
                 </PWAWrapper>
               </OptimizedProviders>
             </AuthProvider>
+            </NextAuthProvider>
           </QueryProvider>
         </ConvexClientProvider>
       </body>

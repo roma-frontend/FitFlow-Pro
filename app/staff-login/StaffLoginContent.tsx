@@ -13,12 +13,13 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ShieldButtonV1 } from "./components/StaffLoginButton";
 import StaffLoginLoader from "./components/StaffLoginLoader";
+import { GoogleLoginButton } from "@/components/auth/GoogleLoginButton";
 
 export default function StaffLoginContent() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  
+
   const {
     isLoading,
     showForgotPassword,
@@ -97,7 +98,7 @@ export default function StaffLoginContent() {
       <div className="lg:hidden">
         <div className="min-h-[100svh] flex flex-col">
           <div className="flex-1 flex flex-col justify-center px-6 py-8">
-            
+
             {/* Логотип и заголовок */}
             <ShieldButtonV1 />
 
@@ -145,6 +146,11 @@ export default function StaffLoginContent() {
                       )}
                     </button>
                   </form>
+
+                  <GoogleLoginButton
+                    isStaff={true}
+                    className="mb-4 bg-white hover:bg-gray-50 text-gray-700 border-gray-300"
+                  />
 
                   {/* Забыли пароль */}
                   <div className="mt-4 text-center">
@@ -225,16 +231,16 @@ export default function StaffLoginContent() {
                 </div>
               </div>
 
-              {process.env.NODE_ENV === "development" && 
-              <div className="mt-4">
-                <button
-                  onClick={handleQuickLogin}
-                  disabled={isLoading}
-                  className="w-full p-2 bg-yellow-500/20 border border-yellow-400/30 rounded-xl text-yellow-300 text-xs hover:bg-yellow-500/30 transition-all"
-                >
-                  🚀 Quick Super Admin (DEV)
-                </button>
-              </div>
+              {process.env.NODE_ENV === "development" &&
+                <div className="mt-4">
+                  <button
+                    onClick={handleQuickLogin}
+                    disabled={isLoading}
+                    className="w-full p-2 bg-yellow-500/20 border border-yellow-400/30 rounded-xl text-yellow-300 text-xs hover:bg-yellow-500/30 transition-all"
+                  >
+                    🚀 Quick Super Admin (DEV)
+                  </button>
+                </div>
               }
 
               {/* Безопасность */}
@@ -261,7 +267,7 @@ export default function StaffLoginContent() {
       {/* Десктопная версия (оригинальная) */}
       <div className="hidden lg:block py-8 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
         <div className="max-w-6xl mx-auto">
-          
+
           {/* Заголовок страницы */}
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
@@ -274,7 +280,7 @@ export default function StaffLoginContent() {
 
           {/* Основной контент в виде "книги" */}
           <div className="grid lg:grid-cols-2 gap-8 items-start">
-            
+
             {/* Левая "страница" - Ваши компоненты */}
             <div className="order-1 space-y-6">
               <StaffLoginForm
@@ -295,7 +301,7 @@ export default function StaffLoginContent() {
 
             {/* Правая "страница" - Информация */}
             <div className="order-1 lg:order-2 space-y-6">
-              
+
               <StaffSecurityInfo />
 
               {/* Роли и возможности */}
@@ -317,7 +323,7 @@ export default function StaffLoginContent() {
                         Полный доступ ко всем функциям системы
                       </p>
                     </div>
-                    
+
                     <div className="p-3 bg-white/60 rounded-lg border border-blue-200">
                       <div className="flex items-center mb-2">
                         <Shield className="h-4 w-4 text-red-600 mr-2" />
@@ -327,7 +333,7 @@ export default function StaffLoginContent() {
                         Управление контентом и пользователями
                       </p>
                     </div>
-                    
+
                     <div className="p-3 bg-white/60 rounded-lg border border-blue-200">
                       <div className="flex items-center mb-2">
                         <TrendingUp className="h-4 w-4 text-green-600 mr-2" />
@@ -337,7 +343,7 @@ export default function StaffLoginContent() {
                         Управление программами и клиентами
                       </p>
                     </div>
-                    
+
                     <div className="p-3 bg-white/60 rounded-lg border border-blue-200">
                       <div className="flex items-center mb-2">
                         <Zap className="h-4 w-4 text-orange-600 mr-2" />
@@ -407,7 +413,7 @@ export default function StaffLoginContent() {
                         <p className="text-xs text-orange-700 mt-1">Последняя проверка: 2 мин назад</p>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-start">
                       <CheckCircle className="h-4 w-4 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
                       <div>

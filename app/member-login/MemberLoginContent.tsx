@@ -20,6 +20,7 @@ import { Shield, Zap, Users, Sparkles, CheckCircle, ArrowRight, Loader2, Eye, Lo
 import { useRouter } from "next/navigation";
 import SparklesButton from "./components/MemberLoginButton";
 import { Input } from "@/components/ui/input";
+import { GoogleLoginButton } from "@/components/auth/GoogleLoginButton";
 
 export default function MemberLoginContent() {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
@@ -68,7 +69,7 @@ export default function MemberLoginContent() {
     );
   }
 
-  if(error) {
+  if (error) {
     return (
       <div className="min-h-[100svh] bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 flex items-center justify-center p-4">
         <ErrorAlert error={error} />
@@ -172,6 +173,11 @@ export default function MemberLoginContent() {
                       )}
                     </button>
                   </form>
+
+                  <GoogleLoginButton
+                    isStaff={false}
+                    className="mb-4 bg-white hover:bg-gray-50 text-gray-700 border-gray-300"
+                  />
 
                   {/* Переключатель режима */}
                   <div className="mt-6 text-center">

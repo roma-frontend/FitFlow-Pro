@@ -22,6 +22,6 @@
       "@/*": ["./*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "middleware.ts", "app/admin/page.tsx", "app/login/page.tsx.disabled", "app/api/auth/staff-face-register/route.ts", "test-maildev.js", "lib/simple-auth.ts"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "middleware.ts", "app/admin/page.tsx", "app/login/page.tsx.disabled", "app/api/auth/staff-face-register/route.ts", "test-maildev.js", "lib/simple-auth.ts","types/**/*.d.ts" ],
   "exclude": ["node_modules"]
 }

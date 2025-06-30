@@ -458,10 +458,9 @@ const getRouteType = (pathname: string, userRole?: string): { type: string; need
       '/trainers', '/programs', '/consultation', '/trial-class', '/offline',
       '/test-page', '/test-login', '/test-users', '/debug-auth', '/test-cookies',
       '/create-test-user', '/admin-login', '/clear-cookies', '/make-admin',
-      '/create-real-admin', '/debug-dashboard', '/debug-password', '/test-auth-flow',
-      '/fix-password', '/demo-smart-login', '/test-qr-codes', '/final-debug',
-      '/quick-test', '/test-shop', '/debug-auth-status', '/test-calendar-sync',
-      '/password-reset-success', '/mobile-scanner', '/test-camera', '/auth/face-auth'
+      '/create-real-admin', '/debug-dashboard', '/debug-password',
+      '/fix-password', '/demo-smart-login', '/test-qr-codes',
+      '/password-reset-success', '/mobile-scanner', '/auth/face-auth',
     ]);
 
     if (publicRoutes.has(pathname)) {
