@@ -242,19 +242,11 @@ export default function ManagerHeader() {
                 />
               )}
 
-              {/* ✅ Показываем индикатор загрузки если нужно */}
-              {authLoading && (
-                <div className="flex items-center gap-2 text-white">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span className="text-sm hidden sm:inline">Загрузка...</span>
-                </div>
-              )}
-
               {/* Мобильное меню */}
               <Button
                 variant="ghost"
                 size="sm"
-                className="xl:hidden text-white hover:bg-white/10 hover:text-white p-2 h-8 w-8 sm:h-9 sm:w-9"
+                className="md:hidden text-white hover:bg-white/10 hover:text-white p-2 h-8 w-8 sm:h-9 sm:w-9"
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 disabled={isLoggingOut || authLoading}
               >

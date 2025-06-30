@@ -81,7 +81,7 @@ export default function StaffLogoutLoader({ userRole, userName, redirectUrl }: S
       useLoaderStore.getState().hideLoader();
       // Редирект
       window.location.href = redirectUrl || "/";
-    }, 1500); // или сколько нужно
+    }, 1500);
 
     return () => clearTimeout(timer);
   }, [redirectUrl]);
@@ -166,21 +166,22 @@ export default function StaffLogoutLoader({ userRole, userName, redirectUrl }: S
             className="drop-shadow-2xl"
           />
 
-          {/* Информация о роли */}
           <div className="mt-12 space-y-6">
-            <div className="bg-white/10 md:bg-gray-100/50 backdrop-blur-sm rounded-2xl p-6">
-              <h2 className="text-lg font-semibold text-white md:text-gray-800 mb-2">
+            <div className="bg-white/20 md:bg-gray-100/50 backdrop-blur-md rounded-2xl p-6 border border-white/30 md:border-gray-200/50 shadow-lg">
+              <h2 className="text-lg font-semibold text-white md:text-gray-800 mb-2 drop-shadow-sm">
                 {roleTexts.roleDisplayName}
               </h2>
-              <p className="text-sm text-white/80 md:text-gray-600">
+              <p className="text-sm text-white/90 md:text-gray-600 drop-shadow-sm">
                 {roleTexts.dashboardSubtitle}
               </p>
             </div>
-            {/* Детализированный прогресс */}
-            <div className="text-xs text-white/50 md:text-gray-400 space-y-1">
-              <p>Завершение сессии: {Math.min(progress * 1.2, 100).toFixed(0)}%</p>
-              <p>Очистка данных: {Math.min(progress * 1.1, 100).toFixed(0)}%</p>
-              <p>Безопасный выход: {Math.min(progress, 100).toFixed(0)}%</p>
+            
+            <div className="bg-black/20 md:bg-white/20 backdrop-blur-sm rounded-xl p-4 border border-white/20 md:border-gray-200/30">
+              <div className="text-xs text-white/80 md:text-gray-500 space-y-1">
+                <p className="drop-shadow-sm">Завершение сессии: {Math.min(progress * 1.2, 100).toFixed(0)}%</p>
+                <p className="drop-shadow-sm">Очистка данных: {Math.min(progress * 1.1, 100).toFixed(0)}%</p>
+                <p className="drop-shadow-sm">Безопасный выход: {Math.min(progress, 100).toFixed(0)}%</p>
+              </div>
             </div>
           </div>
         </div>
