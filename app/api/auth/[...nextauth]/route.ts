@@ -1,5 +1,5 @@
 // app/api/auth/[...nextauth]/route.ts
-import NextAuth, { NextAuthOptions } from "next-auth";
+import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { ConvexHttpClient } from "convex/browser";
@@ -7,7 +7,7 @@ import bcrypt from "bcryptjs";
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
-export const authOptions: NextAuthOptions = {
+const handler = NextAuth({
   debug: true, 
   providers: [
     // Google OAuth Provider
@@ -181,7 +181,7 @@ export const authOptions: NextAuthOptions = {
   },
 
   pages: {
-    // signIn: "/auth/signin",
+    signIn: "/auth/signin",
     error: "/auth/error",
   },
 
@@ -195,8 +195,6 @@ export const authOptions: NextAuthOptions = {
   },
 
   secret: process.env.NEXTAUTH_SECRET,
-};
-
-const handler = NextAuth(authOptions);
+});
 
 export { handler as GET, handler as POST };
