@@ -2,8 +2,8 @@
 import { getServerSession } from "next-auth";
 import { ConvexHttpClient } from "convex/browser";
 import { useEffect, useState } from "react";
-import { useSession } from "next-auth/react"; // ← Импорт из next-auth/react
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { useSession } from "next-auth/react";
+import { authOptions } from "@/lib/auth"; // ✅ Исправленный импорт
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
@@ -44,8 +44,6 @@ export async function syncAuthWithConvex() {
 // Hook для клиентской части
 export function useAuthSync() {
   const { data: session, status } = useSession();
-  
-  // ✅ ИСПРАВЛЕНИЕ: Добавляем типизацию для useState
   const [syncedUser, setSyncedUser] = useState<SyncedUser | null>(null);
   
   useEffect(() => {
