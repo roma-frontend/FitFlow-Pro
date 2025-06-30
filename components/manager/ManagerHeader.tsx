@@ -22,6 +22,7 @@ import ManagerUserMenu from "./components/ManagerUserMenu";
 import ManagerNotifications from "./components/ManagerNotifications";
 import ManagerMobileMenu from "./mobile-menu/ManagerMobileMenu";
 import { ManagerNavigationItem } from "./types/manager-navigation";
+import { useLoaderStore } from "@/stores/loaderStore";
 
 const ManagerLogo = memo(({ router }: { router: any }) => (
   <div
@@ -120,11 +121,12 @@ ManagerDesktopNavigation.displayName = 'ManagerDesktopNavigation';
 export default function ManagerHeader() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
   const { stats, loading } = useManager();
-  const { user: authUser, logout, isLoading: authLoading } = useAuth();useAuth
-  const { toast } = useToast();
+  const { user: authUser, logout, isLoading: authLoading } = useAuth();
+  const showLoader = useLoaderStore((state) => state.showLoader);
 
   // ✅ Мемоизируем объект пользователя для предотвращения лишних ререндеров
   const user = useMemo(() => {
@@ -143,11 +145,17 @@ export default function ManagerHeader() {
     };
   }, [authUser]);
 
-  // ✅ Функция выхода из системы через useAuth
   const handleLogout = async () => {
     setIsLoggingOut(true);
+    setIsOpen(false);
 
-    await logout();
+    showLoader("logout", {
+      userRole: user?.role || "manager",
+      userName: user?.name || user?.email || "Менеджер",
+      redirectUrl: "/"
+    });
+
+    await logout(true);
   };
 
   // ✅ Мемоизируем навигационные элементы

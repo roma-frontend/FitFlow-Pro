@@ -8,11 +8,8 @@ import { useUnifiedData } from "@/contexts/UnifiedDataContext";
 import { useRoleTexts, getContextualHints } from "@/lib/roleTexts";
 import { SuperAdminProvider } from "@/contexts/SuperAdminContext";
 import { QueryProvider } from "@/components/providers/QueryProvider";
-import FitnessLoader from '@/components/ui/FitnessLoader';
-
 import { useWelcomeToast } from "@/hooks/useWelcomeToast";
 
-// Импорт компонентов
 import { Sidebar } from "@/components/admin/layout/Sidebar";
 import { MobileHeader } from "@/components/admin/layout/MobileHeader";
 import { MobileMenu } from "@/components/admin/layout/MobileMenu";
@@ -272,48 +269,6 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
       icon: RefreshCw,
     };
   }, [scheduleError, isOnline, userRole, roleTexts]);
-
-  // Если пользователь не авторизован после загрузки
-  if (!authLoading && !user) {
-    if (isMobile) {
-      return (
-        <FitnessLoader
-          isMobile={true}
-          theme="staff"
-          size="lg"
-          variant="heartbeat"
-          text="До новых встреч!"
-          showProgress={false}
-          motivationalTexts={[
-            "Требуется авторизация...",
-            "Перенаправление на страницу входа...",
-            "Пожалуйста, войдите в систему"
-          ]}
-        />
-      );
-    }
-  }
-
-  // Если нет навигационных элементов, показываем ошибку
-  if (isInitialized && navigationItems.length === 0) {
-    if (isMobile) {
-      return (
-        <FitnessLoader
-          isMobile={true}
-          theme="staff"
-          size="lg"
-          variant="yoga"
-          text="Ошибка загрузки"
-          showProgress={false}
-          motivationalTexts={[
-            "Ошибка загрузки навигации...",
-            "Проверяем настройки...",
-            "Попробуйте обновить страницу"
-          ]}
-        />
-      );
-    }
-  }
 
   return (
     <div className="min-h-[100svh] bg-gradient-to-br from-gray-50 to-blue-50">

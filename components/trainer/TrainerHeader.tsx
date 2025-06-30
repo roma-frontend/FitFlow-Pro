@@ -251,7 +251,7 @@ export default function TrainerHeader() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="xl:hidden text-white hover:bg-white/10 hover:text-white p-2 h-8 w-8 sm:h-9 sm:w-9"
+                className="md:hidden text-white hover:bg-white/10 hover:text-white p-2 h-8 w-8 sm:h-9 sm:w-9"
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 disabled={authLoading}
               >

@@ -1,3 +1,5 @@
+// components/admin/dashboard/WelcomeHeader.tsx - ИСПРАВЛЕННАЯ ВЕРСИЯ
+
 "use client";
 
 import { Badge } from "@/components/ui/badge";
@@ -13,7 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/useAuth";
 import { useState, useCallback, useMemo } from "react";
-import { User as UserType } from "@/types/user";
+import { useLoaderStore } from "@/stores/loaderStore"; // ✅ ДОБАВИЛИ
 
 interface WelcomeHeaderProps {
   roleTexts: {
@@ -34,6 +36,7 @@ export function WelcomeHeader({
   onSettings,
 }: WelcomeHeaderProps) {
   const { user, logout } = useAuth();
+  const showLoader = useLoaderStore((state) => state.showLoader); // ✅ ДОБАВИЛИ
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [avatarError, setAvatarError] = useState(false);
 
@@ -49,9 +52,39 @@ export function WelcomeHeader({
     return user?.photoUrl && !avatarError;
   }, [user?.photoUrl, avatarError]);
 
+  // ✅ ИЗМЕНИЛИ: новая функция handleLogout с loader
   const handleLogout = async () => {
     setIsLoggingOut(true);
-    await logout();
+    
+    // ✅ ДОБАВИЛИ: Определяем роль и название для loader
+    const getUserRole = () => {
+      // Для админ дашборда может быть admin или super-admin
+      if (user?.role === "super-admin") return "super-admin";
+      if (user?.role === "admin") return "admin";
+      // Fallback для других ролей если компонент используется где-то еще
+      return user?.role || "admin";
+    };
+
+    const getUserRoleName = () => {
+      const role = getUserRole();
+      switch (role) {
+        case "super-admin": return "Супер-админ";
+        case "admin": return "Администратор";
+        case "manager": return "Менеджер";
+        case "trainer": return "Тренер";
+        default: return "Администратор"; // Default для админ дашборда
+      }
+    };
+
+    // ✅ ДОБАВИЛИ: Показываем loader
+    showLoader("logout", {
+      userRole: getUserRole(),
+      userName: user?.name || user?.email || getUserRoleName(),
+      redirectUrl: "/"
+    });
+    
+    // ✅ ИЗМЕНИЛИ: Выполняем logout с пропуском редиректа
+    await logout(true);
   };
 
   const handleAvatarError = useCallback(() => {
@@ -165,6 +198,7 @@ export function WelcomeHeader({
 
                 <DropdownMenuSeparator />
 
+                {/* ✅ ИЗМЕНИЛИ: Кнопка выхода с новой логикой */}
                 <DropdownMenuItem
                   onClick={handleLogout}
                   disabled={isLoggingOut}

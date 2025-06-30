@@ -1,8 +1,9 @@
 // components/manager/mobile-menu/sections/ManagerActionsSection.tsx
 "use client";
 
-import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
+import { useLoaderStore } from "@/stores/loaderStore";
 import {
   Plus,
   Calendar,
@@ -23,18 +24,30 @@ interface ManagerActionsSectionProps {
 
 export default function ManagerActionsSection({
   onNavigation,
-  onLogout,
   isLoggingOut,
   onClose,
 }: ManagerActionsSectionProps) {
+  
+  const { user, logout } = useAuth();
+  const showLoader = useLoaderStore((state) => state.showLoader);
+
   const handleAction = (href: string) => {
     onNavigation(href);
     onClose();
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     onClose();
-    onLogout();
+    
+    // Показываем loader
+    showLoader("logout", {
+      userRole: user?.role || "manager",
+      userName: user?.name || user?.email || "Менеджер",
+      redirectUrl: "/"
+    });
+    
+    // Выполняем logout
+    await logout(true);
   };
 
   const quickActions = [
@@ -96,9 +109,7 @@ export default function ManagerActionsSection({
             const IconComponent = action.icon;
             
             return (
-              <div
-              key={index}
-              >
+              <div key={index}>
                 <Button
                   onClick={() => handleAction(action.href)}
                   className={`w-full h-16 p-3 bg-gradient-to-br ${action.color} bg-opacity-20 hover:bg-opacity-30 text-white border border-white/20 hover:border-white/30 flex flex-col items-center justify-center gap-1 transition-all duration-200`}
@@ -127,9 +138,7 @@ export default function ManagerActionsSection({
             const IconComponent = action.icon;
             
             return (
-              <div
-              key={index}
-              >
+              <div key={index}>
                 <Button
                   variant="ghost"
                   className="w-full justify-start h-12 text-white hover:bg-white/10 border border-white/10 hover:border-white/20 group transition-all duration-200"
@@ -146,9 +155,8 @@ export default function ManagerActionsSection({
             );
           })}
 
-          {/* Выход из системы */}
-          <div
-          >
+          {/* ✅ ИЗМЕНИЛИ: Выход из системы с новой логикой */}
+          <div>
             <Button
               variant="ghost"
               className="w-full justify-start h-12 text-red-300 hover:text-red-200 hover:bg-red-500/20 border border-red-400/20 hover:border-red-400/30 group transition-all duration-200 mt-4"

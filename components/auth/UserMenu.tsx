@@ -1,3 +1,5 @@
+// components/auth/UserMenu.tsx - ИСПРАВЛЕННАЯ ВЕРСИЯ
+
 "use client";
 
 import { getProfileUrl } from "@/utils/roleHelpers";
@@ -24,18 +26,61 @@ import {
 import { useAuth, useRole } from "@/hooks/useAuth";
 import { getRoleLabel, getUserDashboardUrl } from "@/utils/roleHelpers";
 import { useRouter } from "next/navigation";
+import { useLoaderStore } from "@/stores/loaderStore"; // ✅ ДОБАВИЛИ
 
 export default function UserMenu() {
   const { user, logout } = useAuth();
   const { role, isAdmin } = useRole();
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
+  
+  // ✅ ДОБАВИЛИ: получаем функцию показа loader
+  const showLoader = useLoaderStore((state) => state.showLoader);
 
   if (!user) return null;
 
+  // ✅ ИЗМЕНИЛИ: новая функция handleLogout с loader и правильным определением роли
   const handleLogout = async () => {
-    await logout();
-    setIsOpen(false);
+    setIsOpen(false); // Закрываем меню сначала
+    
+    // ✅ ДОБАВИЛИ: Определяем роль пользователя для правильного отображения loader
+    const getUserRole = () => {
+      // Используем role из useRole hook или fallback на user.role
+      const userRole = role || user?.role;
+      
+      switch (userRole) {
+        case "super-admin": return "super-admin";
+        case "admin": return "admin";
+        case "manager": return "manager";
+        case "trainer": return "trainer";
+        case "client": return "client";
+        case "member": return "member";
+        default: return "user";
+      }
+    };
+
+    const getUserRoleName = () => {
+      const userRole = getUserRole();
+      switch (userRole) {
+        case "super-admin": return "Супер-админ";
+        case "admin": return "Администратор";
+        case "manager": return "Менеджер";
+        case "trainer": return "Тренер";
+        case "client": return "Клиент";
+        case "member": return "Участник";
+        default: return "Пользователь";
+      }
+    };
+
+    // ✅ ДОБАВИЛИ: Показываем loader с правильной ролью
+    showLoader("logout", {
+      userRole: getUserRole(),
+      userName: user?.name || user?.email || getUserRoleName(),
+      redirectUrl: "/"
+    });
+    
+    // ✅ ИЗМЕНИЛИ: Выполняем logout с пропуском редиректа
+    await logout(true);
   };
 
   const getInitials = (name: string) => {
@@ -152,6 +197,7 @@ export default function UserMenu() {
         <DropdownMenuSeparator className="my-2" />
 
         <div className="py-2">
+          {/* ✅ ИЗМЕНИЛИ: Кнопка logout теперь использует новую функцию */}
           <DropdownMenuItem
             onClick={handleLogout}
             className="flex items-center gap-3 px-4 py-2 hover:bg-red-50 cursor-pointer text-red-600"
