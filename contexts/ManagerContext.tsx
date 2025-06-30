@@ -184,168 +184,19 @@ export function ManagerProvider({ children }: { children: React.ReactNode }) {
       // Симуляция загрузки данных
       await new Promise(resolve => setTimeout(resolve, 1000));
 
-      // Мок данные для демонстрации
-      const mockStats: ManagerStats = {
-        totalTrainers: 12,
-        activeTrainers: 8,
-        totalClients: 245,
-        todayBookings: 18,
-        monthlyRevenue: 1250000,
-        newClients: 15,
-        completedSessions: 156,
-        averageRating: 4.7
-      };
-
-      const mockTrainers: Trainer[] = [
-        {
-          id: 'trainer-1',
-          name: 'Адам Петров',
-          email: 'adam@FitFlow-Pro.com',
-          phone: '+7 (999) 123-45-67',
-          avatar: '/avatars/trainer-adam.jpg',
-          specialization: ['Силовые тренировки', 'Кроссфит'],
-          status: 'active',
-          rating: 4.9,
-          totalClients: 35,
-          completedSessions: 287,
-          monthlyEarnings: 185000,
-          joinDate: '2022-03-15',
-          lastActive: new Date().toISOString(),
-          workingHours: {
-            start: '08:00',
-            end: '20:00',
-            days: ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб']
-          },
-          certifications: ['ACSM', 'CrossFit L2'],
-          nextSession: {
-            time: '14:00',
-            client: 'Мария Иванова'
-          }
-        },
-        {
-          id: 'trainer-2',
-          name: 'Елена Смирнова',
-          email: 'elena@FitFlow-Pro.com',
-          phone: '+7 (999) 234-56-78',
-          avatar: '/avatars/trainer-elena.jpg',
-          specialization: ['Йога', 'Пилатес', 'Стретчинг'],
-          status: 'busy',
-          rating: 4.8,
-          totalClients: 42,
-          completedSessions: 324,
-          monthlyEarnings: 156000,
-          joinDate: '2021-11-20',
-          lastActive: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-          workingHours: {
-            start: '09:00',
-            end: '18:00',
-            days: ['Пн', 'Ср', 'Пт', 'Сб', 'Вс']
-          },
-          certifications: ['RYT-200', 'Pilates Method Alliance'],
-          nextSession: {
-            time: '15:30',
-            client: 'Анна Козлова'
-          }
-        },
-        {
-          id: 'trainer-3',
-          name: 'Михаил Волков',
-          email: 'mikhail@FitFlow-Pro.com',
-          phone: '+7 (999) 345-67-89',
-          avatar: '/avatars/trainer-mikhail.jpg',
-          specialization: ['Бокс', 'Функциональный тренинг'],
-          status: 'active',
-          rating: 4.6,
-          totalClients: 28,
-          completedSessions: 198,
-          monthlyEarnings: 142000,
-          joinDate: '2023-01-10',
-          lastActive: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-          workingHours: {
-            start: '10:00',
-            end: '22:00',
-            days: ['Вт', 'Ср', 'Чт', 'Пт', 'Сб']
-          },
-          certifications: ['Boxing Coach', 'Functional Movement'],
-          nextSession: {
-            time: '16:00',
-            client: 'Сергей Петров'
-          }
-        }
-      ];
-
-      const mockClients: Client[] = [
-        {
-          id: 'client-1',
-          name: 'Мария Иванова',
-          email: 'maria@example.com',
-          phone: '+7 (999) 111-22-33',
-          avatar: '/avatars/client-maria.jpg',
-          membershipType: 'Premium',
-          joinDate: '2023-06-15',
-          lastVisit: new Date().toISOString(),
-          totalSessions: 45,
-          assignedTrainer: 'trainer-1',
-          status: 'active'
-        },
-        {
-          id: 'client-2',
-          name: 'Анна Козлова',
-          email: 'anna@example.com',
-          phone: '+7 (999) 222-33-44',
-          avatar: '/avatars/client-anna.jpg',
-          membershipType: 'Standard',
-          joinDate: '2023-08-20',
-          lastVisit: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-          totalSessions: 23,
-          assignedTrainer: 'trainer-2',
-          status: 'active'
-        }
-      ];
-
-      const mockBookings: Booking[] = [
-        {
-          id: 'booking-1',
-          trainerId: 'trainer-1',
-          trainerName: 'Адам Петров',
-          trainerAvatar: '/avatars/trainer-adam.jpg',
-          clientId: 'client-1',
-          clientName: 'Мария Иванова',
-          clientAvatar: '/avatars/client-maria.jpg',
-          clientPhone: '+7 (999) 111-22-33',
-          date: new Date().toISOString().split('T')[0],
-          time: '14:00',
-          duration: 60,
-          type: 'personal',
-          status: 'scheduled',
-          price: 2500,
-          service: 'Персональная тренировка',
-          notes: 'Работа над силовыми упражнениями'
-        },
-        {
-          id: 'booking-2',
-          trainerId: 'trainer-2',
-          trainerName: 'Елена Смирнова',
-          trainerAvatar: '/avatars/trainer-elena.jpg',
-          clientId: 'client-2',
-          clientName: 'Анна Козлова',
-          clientAvatar: '/avatars/client-anna.jpg',
-          clientPhone: '+7 (999) 222-33-44',
-          date: new Date().toISOString().split('T')[0],
-          time: '15:30',
-          duration: 90,
-          type: 'personal',
-          status: 'completed',
-          price: 3500,
-          service: 'Йога и стретчинг',
-          notes: 'Восстановительная тренировка'
-        }
-      ];
-
-      setStats(mockStats);
-      setTrainers(mockTrainers);
-      setClients(mockClients);
-      setBookings(mockBookings);
+      setStats({
+        totalTrainers: 0,
+        activeTrainers: 0,
+        totalClients: 0,
+        todayBookings: 0,
+        monthlyRevenue: 0,
+        newClients: 0,
+        completedSessions: 0,
+        averageRating: 0,
+      })
+      setTrainers([]);
+      setClients([]);
+      setBookings([]);
     } catch (error) {
       console.error('Ошибка загрузки данных:', error);
     } finally {
