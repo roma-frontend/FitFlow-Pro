@@ -217,7 +217,7 @@ export default function SeedPlansPage() {
                 {/* Кнопка перехода к абонементам */}
                 <button
                   onClick={handleGoToMemberships}
-                  className="group p-2.5 hover:bg-purple-50 rounded-xl transition-all duration-200 hidden sm:block transform hover:scale-105 active:scale-95 hover:shadow-lg"
+                  className="group p-2.5 hover:bg-purple-50 rounded-xl transition-all duration-200  transform hover:scale-105 active:scale-95 hover:shadow-lg"
                   aria-label="Абонементы"
                 >
                   <Package className="h-5 w-5 text-gray-600 group-hover:text-purple-600 transition-colors" />
@@ -239,7 +239,7 @@ export default function SeedPlansPage() {
                   className="group p-2.5 hover:bg-blue-50 rounded-xl transition-all duration-200 transform hover:scale-105 active:scale-95 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                   aria-label="Проверить планы"
                 >
-                  <Eye className="h-5 w-5 text-gray-600 group-hover:text-blue-600 transition-colors" />
+                  <Eye className="h-5 w-5 text-gray-600 group-hover:text-blue-600 hidden sm:block transition-colors" />
                 </button>
 
                 {/* Кнопка создания планов */}

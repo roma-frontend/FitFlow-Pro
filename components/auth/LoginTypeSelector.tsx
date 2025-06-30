@@ -77,7 +77,7 @@ export default function LoginTypeSelectorV2({ variant = "desktop" }: { variant?:
         size="sm"
         className={combineAnimations(
           buttonClasses,
-          "bg-blue-500/30 border-2 border-blue-500/50 flex items-center gap-1.5 group"
+          "bg-blue-500/30 border-1 border-blue-500/50 flex items-center gap-1.5 group"
         )}
         onClick={() => setIsOpen(!isOpen)}
       >

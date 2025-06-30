@@ -171,7 +171,7 @@ export function CurrentMembershipCard({
                     </div>
 
                     {/* Даты в новом стиле */}
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid md:grid-cols-2 gap-4">
                         <motion.div
                             initial={{ opacity: 0, x: -20 }}
                             animate={{ opacity: 1, x: 0 }}
@@ -229,7 +229,7 @@ export function CurrentMembershipCard({
                                 <Sparkles className="h-4 w-4 text-yellow-500 ml-auto" />
                             </div>
                             
-                            <div className="grid grid-cols-3 gap-4">
+                            <div className="grid md:grid-cols-3 gap-4">
                                 <div className="text-center group">
                                     <div className="bg-white rounded-xl p-3 shadow-sm group-hover:shadow-md transition-all duration-300">
                                         <motion.p
@@ -276,7 +276,7 @@ export function CurrentMembershipCard({
                     )}
 
                     {/* Действия с новым дизайном */}
-                    <div className="flex gap-3 pt-2">
+                    <div className="flex flex-wrap gap-3 pt-2">
                         {isExpiringSoon && (
                             <motion.div
                                 initial={{ opacity: 0, scale: 0.9 }}
