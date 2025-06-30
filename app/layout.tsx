@@ -1,4 +1,5 @@
 // app/layout.tsx - Финальная версия с полной PWA интеграцией
+
 import { Analytics } from "@vercel/analytics/next"
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import { Inter } from "next/font/google";
@@ -18,6 +19,7 @@ import "@/styles/badge-animations.css";
 import React from "react";
 import { DebugLogout } from "@/components/DebugLogout";
 import { AuthCleanupHandler } from "@/components/AuthCleanupHandler";
+import {GlobalLoader} from "@/components/GlobalLoader"
 
 const inter = Inter({
   subsets: ["latin", "cyrillic"],
@@ -319,7 +321,7 @@ export default function RootLayout({
               <OptimizedProviders>
                 <PWAWrapper>
                   <div className="min-h-[100svh] flex flex-col bg-background text-foreground">
-                    <main className="flex-1 relative">{children}
+                    <main className="flex-1 relative"><GlobalLoader />{children}
                       {(process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_DEBUG === 'true') && (
                         <DebugLogout />
                       )}
