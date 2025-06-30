@@ -16,7 +16,6 @@ import {
 } from './header/components';
 import { Logo } from '../MainHeader';
 import { useAuth } from '@/hooks/useAuth';
-import { on } from 'events';
 
 interface MemberHeaderProps {
   user?: User;

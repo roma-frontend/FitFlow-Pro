@@ -306,28 +306,6 @@ export default function MemberDashboard() {
   const nextWorkout = upcomingWorkouts.length > 0 ? upcomingWorkouts[0] : null;
 
 
-  // Показываем загрузку если идет первоначальная загрузка auth, проверка доступа или процесс выхода
-  if (loading || !authChecked || isLoggingOut) {
-    return (
-      <div className="min-h-[100svh] bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 lg:bg-gradient-to-br lg:from-blue-50 lg:via-white lg:to-indigo-50 flex items-center justify-center p-4">
-        {isLoggingOut && (
-          <FitnessLoader
-            isMobile={false}
-            theme="member"
-            size="xl"
-            variant="strength"
-            text="Выходим из системы..."
-            showProgress={true}
-            motivationalTexts={[
-              "Направляемся на главную страницу...",
-            ]}
-            className="drop-shadow-2xl"
-          />
-        )}
-      </div>
-    );
-  }
-
   // 🔧 ИСПРАВЛЕННАЯ проверка доступа - НЕ показываем если идет процесс выхода
   if (!isLoggingOut && (accessDenied || !user || (user.role !== "member" && user.role !== "client"))) {
     console.log("🚫 MemberDashboard: показываем отказ в доступе", {

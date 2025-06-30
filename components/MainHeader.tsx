@@ -367,7 +367,7 @@ export default function MainHeader() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="md:hidden text-white hover:bg-white/10 p-2 hover:text-white"
+                  className="lg:hidden text-white hover:bg-white/10 p-2 hover:text-white"
                   onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 >
                   {isMobileMenuOpen ? (

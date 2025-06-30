@@ -43,11 +43,10 @@ export function UserProfileDropdown({
       if (onLogout) {
         await onLogout();
       } else {
-        await logout(true); // ✅ Пропускаем редирект - это делает StaffLogoutLoader
+        await logout(true); 
       }
     } catch (error) {
       console.error('Ошибка выхода:', error);
-      // ✅ ДОБАВИЛИ: Скрываем loader при ошибке
       useLoaderStore.getState().hideLoader();
     } finally {
       setIsLoggingOut(false);
