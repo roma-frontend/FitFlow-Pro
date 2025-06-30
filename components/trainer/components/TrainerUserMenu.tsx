@@ -37,6 +37,7 @@ import {
 } from "lucide-react";
 import type { MessageStats, WorkoutStats, SystemStats } from "@/types/trainer";
 import { useRouter } from "next/navigation";
+import { useLoaderStore } from "@/stores/loaderStore";
 
 interface TrainerUserMenuProps {
   messageStats: MessageStats;
@@ -60,6 +61,8 @@ const TrainerUserMenu = memo(({
   const { user, logout, isLoading: authLoading, refreshUser } = useAuth();
   const router = useRouter()
 
+  const showLoader = useLoaderStore((state) => state.showLoader);
+
   // ✅ Добавляем логирование для отладки
   useEffect(() => {
     console.log('🎯 TrainerUserMenu: состояние', {
@@ -82,6 +85,14 @@ const TrainerUserMenu = memo(({
 
   const handleLogout = async () => {
     setIsOpen(false);
+    
+    // Показываем loader перед logout
+    showLoader("logout", {
+      userRole: user?.role || "trainer",
+      userName: user?.name || user?.email || "Тренер",
+      redirectUrl: "/"
+    });
+    
     await logout();
   };
 

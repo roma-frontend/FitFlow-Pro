@@ -27,8 +27,8 @@ interface AuthContextType {
   loading: boolean;
   isLoading: boolean;
   authStatus: AuthStatus | null;
-  login: (email: string, password: string, redirectUrl?: string) => Promise<boolean>; // 🔧 Добавлен redirectUrl параметр
-  logout: () => Promise<void>;
+  login: (email: string, password: string, redirectUrl?: string) => Promise<boolean>;
+  logout: (skipRedirect?: boolean) => Promise<void>;
   refreshUser: () => Promise<void>;
   setAuthStatus: (status: AuthStatus | null) => void;
 }
@@ -470,122 +470,131 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const logout = async (): Promise<void> => {
-  try {
-    setLoading(true);
-    console.log('🚪 AuthProvider: НАЧАЛО logout...');
-
-    // 🔥 НОВОЕ: Устанавливаем флаг для Vercel
-    if (typeof window !== 'undefined') {
-      sessionStorage.setItem('logout_in_progress', 'true');
-    }
-
-    // 🔥 КРИТИЧНО: Сначала очищаем React состояние
-    setUser(null);
-    setToken(null);
-    setAuthStatus({ authenticated: false });
-
-    // 🔥 НОВОЕ: Триггерим события logout
-    if (typeof window !== 'undefined') {
-      // Dispatch событий
-      window.dispatchEvent(new Event('auth-logout'));
-      document.dispatchEvent(new Event('auth-logout'));
-      
-      // PostMessage для Service Worker
-      if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-        navigator.serviceWorker.controller.postMessage({
-          type: 'LOGOUT'
-        });
-      }
-      
-      // PostMessage для window
-      window.postMessage({ type: 'CLEAR_AUTH_STORAGE' }, window.location.origin);
-      
-      // BroadcastChannel
-      if ('BroadcastChannel' in window) {
-        const channel = new BroadcastChannel('auth_channel');
-        channel.postMessage({ type: 'logout' });
-        channel.close();
-      }
-    }
-
-    // Функция очистки
-    const clearAuthData = () => {
-      const keys = ['auth_user', 'auth_token', 'user', 'token', 'authToken', 'userToken'];
-      
-      keys.forEach(key => {
-        try {
-          localStorage.removeItem(key);
-          sessionStorage.removeItem(key);
-          // Двойная очистка
-          localStorage.setItem(key, '');
-          localStorage.removeItem(key);
-        } catch (e) {
-          console.error(`Error clearing ${key}:`, e);
-        }
-      });
-    };
-
-    // Немедленная очистка
-    clearAuthData();
-
-    // Вызываем API
+  const logout = async (skipRedirect: boolean = false): Promise<void> => {
     try {
-      const response = await fetch('/api/auth/logout', {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          'Cache-Control': 'no-cache',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      setLoading(true);
+      console.log('🚪 AuthProvider: НАЧАЛО logout...', { skipRedirect });
+  
+      // 🔥 НОВОЕ: Устанавливаем флаг для Vercel
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('logout_in_progress', 'true');
+      }
+  
+      // 🔥 КРИТИЧНО: Сначала очищаем React состояние
+      setUser(null);
+      setToken(null);
+      setAuthStatus({ authenticated: false });
+  
+      // 🔥 НОВОЕ: Триггерим события logout
+      if (typeof window !== 'undefined') {
+        // Dispatch событий
+        window.dispatchEvent(new Event('auth-logout'));
+        document.dispatchEvent(new Event('auth-logout'));
+        
+        // PostMessage для Service Worker
+        if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+          navigator.serviceWorker.controller.postMessage({
+            type: 'LOGOUT'
+          });
         }
-      });
-
-      if (!response.ok) {
-        console.warn('⚠️ API logout вернул ошибку, но продолжаем');
+        
+        // PostMessage для window
+        window.postMessage({ type: 'CLEAR_AUTH_STORAGE' }, window.location.origin);
+        
+        // BroadcastChannel
+        if ('BroadcastChannel' in window) {
+          const channel = new BroadcastChannel('auth_channel');
+          channel.postMessage({ type: 'logout' });
+          channel.close();
+        }
       }
-    } catch (apiError) {
-      console.warn('⚠️ Ошибка API logout, но продолжаем:', apiError);
-    }
-
-    // Повторная очистка после API
-    clearAuthData();
-
-    // Задержка перед редиректом для гарантии очистки
-    await new Promise(resolve => setTimeout(resolve, 100));
-
-    // Финальная очистка
-    clearAuthData();
-    
-    // Убираем флаг
-    sessionStorage.removeItem('logout_in_progress');
-
-    // 🔥 ВАЖНО: Используем window.location для полной перезагрузки
-    window.location.href = "/";
-
-  } catch (error) {
-    console.error('❌ AuthProvider: критическая ошибка logout:', error);
-    
-    // При ошибке все равно очищаем
-    if (typeof window !== 'undefined') {
+  
+      // Функция очистки
+      const clearAuthData = () => {
+        const keys = ['auth_user', 'auth_token', 'user', 'token', 'authToken', 'userToken'];
+        
+        keys.forEach(key => {
+          try {
+            localStorage.removeItem(key);
+            sessionStorage.removeItem(key);
+            // Двойная очистка
+            localStorage.setItem(key, '');
+            localStorage.removeItem(key);
+          } catch (e) {
+            console.error(`Error clearing ${key}:`, e);
+          }
+        });
+      };
+  
+      // Немедленная очистка
+      clearAuthData();
+  
+      // Вызываем API
       try {
-        localStorage.clear();
-        sessionStorage.clear();
-      } catch (e) {
-        console.error('❌ Даже clear() не сработал:', e);
+        const response = await fetch('/api/auth/logout', {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+          }
+        });
+  
+        if (!response.ok) {
+          console.warn('⚠️ API logout вернул ошибку, но продолжаем');
+        }
+      } catch (apiError) {
+        console.warn('⚠️ Ошибка API logout, но продолжаем:', apiError);
       }
+  
+      // Повторная очистка после API
+      clearAuthData();
+  
+      // Задержка перед редиректом для гарантии очистки
+      await new Promise(resolve => setTimeout(resolve, 100));
+  
+      // Финальная очистка
+      clearAuthData();
+      
+      // Убираем флаг
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('logout_in_progress');
+      }
+  
+      // ✅ ИСПРАВЛЕНО: Редирект только если НЕ пропускаем
+      if (!skipRedirect) {
+        console.log('🔄 AuthProvider: Выполняем редирект...');
+        window.location.href = "/";
+      } else {
+        console.log('⏭️ AuthProvider: Пропускаем редирект (используется loader)');
+      }
+  
+    } catch (error) {
+      console.error('❌ AuthProvider: критическая ошибка logout:', error);
+      
+      // При ошибке все равно очищаем
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.clear();
+          sessionStorage.clear();
+        } catch (e) {
+          console.error('❌ Даже clear() не сработал:', e);
+        }
+      }
+      
+      setUser(null);
+      setToken(null);
+      setAuthStatus({ authenticated: false });
+      
+      // ✅ ИСПРАВЛЕНО: Редирект только если НЕ пропускаем
+      if (!skipRedirect) {
+        window.location.href = "/";
+      }
+    } finally {
+      setLoading(false);
     }
-    
-    setUser(null);
-    setToken(null);
-    setAuthStatus({ authenticated: false });
-    
-    // Полная перезагрузка
-    window.location.href = "/";
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   const refreshUser = async (): Promise<void> => {
     console.log('🔄 AuthProvider: принудительное обновление пользователя...');

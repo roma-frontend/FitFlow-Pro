@@ -13,6 +13,5 @@ export const useLoaderStore = create<LoaderState>((set) => ({
     loaderType: null,
     loaderProps: undefined,
     showLoader: (type, props) => set({ loaderType: type, loaderProps: props }),
-    hideLoader: () => set({ loaderType: null, loaderProps: undefined }
-    ),
+    hideLoader: () => set({ loaderType: null, loaderProps: undefined })
 }));
