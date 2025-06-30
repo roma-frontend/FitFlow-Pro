@@ -1,10 +1,12 @@
-// hooks/useAuthForm.ts
+// hooks/useAuthForm.ts - ПОЛНАЯ ИСПРАВЛЕННАЯ ВЕРСИЯ
+
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { useLoaderStore } from "@/stores/loaderStore"; // ✅ ДОБАВИЛИ
 import { validateEmailFormat, validateName, validatePassword } from "@/utils/authValidation";
 
 interface ValidationState {
@@ -50,6 +52,10 @@ export function useAuthForm() {
   const redirectParam = searchParams.get('redirect');
   
   const { login: authLogin, user: authUser, loading: authLoading } = useAuth();
+
+  // ✅ ДОБАВИЛИ: функции для управления loader
+  const showLoader = useLoaderStore((state) => state.showLoader);
+  const hideLoader = useLoaderStore((state) => state.hideLoader);
 
   // Инициализация формы при смене режима
   useEffect(() => {
@@ -202,7 +208,7 @@ export function useAuthForm() {
     [error]
   );
 
-  // 🔧 ИСПРАВЛЕННАЯ функция handleSubmit без дублирующего redirect
+  // ✅ ИСПРАВЛЕНО: handleSubmit с правильной обработкой loader
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -220,8 +226,16 @@ export function useAuthForm() {
       }
 
       if (isLogin) {
-        console.log("🔐 Используем login из useAuth для входа участника с redirect:", redirectParam);
+        console.log("🔐 Вход участника с loader, redirectParam:", redirectParam);
         
+        // ✅ ПОКАЗЫВАЕМ loader перед входом
+        showLoader("login", {
+          userRole: "member",
+          userName: formData.email.split('@')[0] || "Участник",
+          dashboardUrl: redirectParam || "/member-dashboard"
+        });
+        
+        // ✅ authLogin теперь сам управляет loader (показывает 1.5 сек, затем скрывает и делает редирект)
         const success = await authLogin(
           formData.email.trim().toLowerCase(),
           formData.password,
@@ -229,28 +243,34 @@ export function useAuthForm() {
         );
 
         if (success) {
-          console.log("✅ Успешный вход через useAuth - перенаправление обрабатывается автоматически");
+          console.log("✅ Успешный вход участника - loader управляется в useAuth");
           
           // 🎉 Устанавливаем флаг для показа приветствия
           sessionStorage.setItem('show_welcome_toast', 'true');
           sessionStorage.setItem('welcome_user_role', 'member');
           
-          // Устанавливаем флаг перенаправления для UI
           setIsRedirecting(true);
           
-          // 🔧 УБИРАЕМ ДУБЛИРУЮЩЕЕ ПЕРЕНАПРАВЛЕНИЕ
-          // useAuth уже обработал redirect и выполнил правильное перенаправление
-          // Не добавляем router.replace() здесь!
+          // ✅ НЕ скрываем loader здесь - это делает useAuth через setTimeout
           
           return { 
             success: true,
-            message: "Перенаправление обрабатывается автоматически"
+            message: "Перенаправление..."
           };
         } else {
+          // ✅ При ошибке loader уже скрыт в useAuth
           throw new Error("Неверный email или пароль");
         }
       } else {
-        // Регистрация - оставляем прямой вызов API
+        // ✅ РЕГИСТРАЦИЯ
+        console.log("📝 Регистрация участника с loader");
+        
+        showLoader("login", {
+          userRole: "member",
+          userName: formData.name || "Новый участник",
+          dashboardUrl: "/member-dashboard"
+        });
+
         const endpoint = "/api/auth/member-register";
         const payload = {
           name: formData.name.trim(),
@@ -274,6 +294,9 @@ export function useAuthForm() {
         if (response.ok && data.success) {
           console.log("✅ Успешная регистрация");
           
+          // ✅ Скрываем loader после регистрации
+          hideLoader();
+          
           setRegistrationSuccess(true);
           setRegistrationEmail(formData.email);
           
@@ -284,17 +307,23 @@ export function useAuthForm() {
           
           return { success: true };
         } else {
+          // ✅ Скрываем loader при ошибке
+          hideLoader();
           throw new Error(data.error || `Ошибка ${response.status}`);
         }
       }
     } catch (error) {
       console.error("💥 Ошибка:", error);
+      
+      // ✅ КРИТИЧНО: Всегда скрываем loader при ошибке
+      hideLoader();
+      
       const errorMessage =
         error instanceof Error
           ? error.message
           : "Не удалось выполнить операцию";
       setError(errorMessage);
-      setIsRedirecting(false); // 🔧 Сбрасываем флаг при ошибке
+      setIsRedirecting(false);
       toast({
         variant: "destructive",
         title: "Ошибка",
@@ -306,8 +335,7 @@ export function useAuthForm() {
       if (!isLogin) {
         setLoading(false);
       }
-      // Для входа не сбрасываем loading сразу, пока не произойдет перенаправление
-      // loading будет сброшен автоматически при смене страницы
+      // ✅ Для входа loading управляется в useAuth
     }
   };
 

@@ -1,8 +1,11 @@
+// hooks/useAuth.tsx - ИСПРАВЛЕННАЯ ВЕРСИЯ с правильным loader
+
 "use client";
 
 import React, { useState, useEffect, ReactNode, useRef } from 'react';
 import { User } from '@/lib/simple-auth';
 import { useRouter, usePathname } from 'next/navigation';
+import { useLoaderStore } from "@/stores/loaderStore"; // ✅ ДОБАВИЛИ
 
 export interface AuthStatus {
   authenticated: boolean;
@@ -27,7 +30,7 @@ interface AuthContextType {
   loading: boolean;
   isLoading: boolean;
   authStatus: AuthStatus | null;
-  login: (email: string, password: string, redirectUrl?: string) => Promise<boolean>;
+  login: (email: string, password: string, redirectPath?: string) => Promise<boolean>;
   logout: (skipRedirect?: boolean) => Promise<void>;
   refreshUser: () => Promise<void>;
   setAuthStatus: (status: AuthStatus | null) => void;
@@ -78,10 +81,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
 
-  // 🔧 Предотвращаем множественные вызовы checkSession
+  // ✅ ДОБАВИЛИ: функции для управления loader
+  const hideLoader = useLoaderStore((state) => state.hideLoader);
+
+  // Предотвращаем множественные вызовы checkSession
   const checkingSession = useRef(false);
   const lastCheckTime = useRef(0);
-  const CHECK_THROTTLE = 1000; // 1 секунда между проверками
+  const CHECK_THROTTLE = 1000;
   const initialCheckDone = useRef(false);
 
   useEffect(() => {
@@ -134,13 +140,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const handleForceUpdate = (event: CustomEvent) => {
       console.log('🔄 Force auth update received');
       
-      // Очищаем состояние немедленно
       setUser(null);
       setToken(null);
       setAuthStatus({ authenticated: false });
       setLoading(false);
       
-      // Проверяем localStorage
       const storedUser = localStorage.getItem('auth_user');
       const storedToken = localStorage.getItem('auth_token');
       
@@ -148,7 +152,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.log('✅ Auth cleared successfully');
       } else {
         console.warn('⚠️ Auth data still in localStorage after force update');
-        // Повторная попытка очистки
         localStorage.removeItem('auth_user');
         localStorage.removeItem('auth_token');
       }
@@ -161,7 +164,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  // 🔧 Throttled версия checkSession
   const checkSessionThrottled = async (): Promise<void> => {
     const now = Date.now();
 
@@ -221,12 +223,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           };
 
           setUser(userData);
-
-          // 🔧 НОВОЕ: Сохраняем в localStorage
           localStorage.setItem('auth_user', JSON.stringify(userData));
           console.log('💾 AuthProvider: данные пользователя сохранены в localStorage');
 
-          // Сохраняем токен если есть
           if (data.token) {
             setToken(data.token);
             localStorage.setItem('auth_token', data.token);
@@ -234,21 +233,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
         } else {
           console.log('❌ AuthProvider: пользователь не авторизован');
-          // 🔧 ИСПРАВЛЕНИЕ: Очищаем только если это не главная страница или нет сохраненного пользователя
           if (pathname !== '/' && !user) {
             clearAuthData();
           }
         }
       } else {
         console.log('❌ AuthProvider: ошибка ответа от API:', response.status);
-        // При ошибке 401 - очищаем данные
         if (response.status === 401) {
           clearAuthData();
         }
       }
     } catch (error) {
       console.error('❌ AuthProvider: ошибка проверки сессии:', error);
-      // При сетевой ошибке не очищаем данные
     } finally {
       setLoading(false);
       console.log('🏁 AuthProvider: проверка сессии завершена');
@@ -256,92 +252,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const clearAuthData = () => {
-    console.log('🧹 clearAuthData: НАЧАЛО очистки', {
-      hasUser: !!localStorage.getItem('auth_user'),
-      hasToken: !!localStorage.getItem('auth_token'),
-      environment: process.env.NODE_ENV,
-      userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : 'unknown'
-    });
+    console.log('🧹 clearAuthData: НАЧАЛО очистки');
 
-    // Сначала очищаем состояние
     setUser(null);
     setToken(null);
 
-    // 🔧 ПРИНУДИТЕЛЬНАЯ очистка конкретных ключей
     try {
-      // Способ 1: Явное удаление ключей
-      localStorage.removeItem('auth_user');
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('user');
-      localStorage.removeItem('token');
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('userToken');
+      const keysToRemove = ['auth_user', 'auth_token', 'user', 'token', 'authToken', 'userToken'];
+      keysToRemove.forEach(key => {
+        localStorage.removeItem(key);
+        sessionStorage.removeItem(key);
+      });
 
-      // Способ 2: Попытка clear() для остальных данных
       localStorage.clear();
       sessionStorage.clear();
 
-      console.log('🧹 clearAuthData: ПОСЛЕ removeItem', {
-        hasUser: !!localStorage.getItem('auth_user'),
-        hasToken: !!localStorage.getItem('auth_token')
-      });
-
-      // Способ 3: Принудительная проверка и повторное удаление
-      if (localStorage.getItem('auth_user')) {
-        console.warn('⚠️ auth_user все еще существует, повторная попытка...');
-        localStorage.removeItem('auth_user');
-
-        // Крайняя мера - перезапись пустым значением
-        if (localStorage.getItem('auth_user')) {
-          localStorage.setItem('auth_user', '');
-          localStorage.removeItem('auth_user');
-        }
-      }
-
-      if (localStorage.getItem('auth_token')) {
-        console.warn('⚠️ auth_token все еще существует, повторная попытка...');
-        localStorage.removeItem('auth_token');
-
-        if (localStorage.getItem('auth_token')) {
-          localStorage.setItem('auth_token', '');
-          localStorage.removeItem('auth_token');
-        }
-      }
-
+      console.log('🧹 clearAuthData: очистка завершена');
     } catch (error) {
       console.error('❌ clearAuthData: ошибка очистки localStorage:', error);
-
-      // Fallback: попытка принудительного удаления через цикл
-      try {
-        const keysToRemove = ['auth_user', 'auth_token', 'user', 'token', 'authToken', 'userToken'];
-        keysToRemove.forEach(key => {
-          try {
-            localStorage.removeItem(key);
-          } catch (e) {
-            console.error(`❌ Не удалось удалить ${key}:`, e);
-          }
-        });
-      } catch (fallbackError) {
-        console.error('❌ clearAuthData: даже fallback не сработал:', fallbackError);
-      }
     }
-
-    console.log('🧹 clearAuthData: ФИНАЛЬНАЯ проверка', {
-      hasUser: !!localStorage.getItem('auth_user'),
-      hasToken: !!localStorage.getItem('auth_token'),
-      allKeys: Object.keys(localStorage).filter(key => key.includes('auth') || key.includes('user') || key.includes('token'))
-    });
   };
 
+  // ✅ ИСПРАВЛЕНО: login с правильной обработкой loader
   const login = async (email: string, password: string, redirectUrl?: string): Promise<boolean> => {
     try {
       setLoading(true);
       console.log('🔐 AuthProvider: попытка входа для:', email, 'redirectUrl:', redirectUrl);
 
-      // Определяем endpoint на основе роли или пути
+      // Определяем endpoint на основе текущего пути
       let endpoint = '/api/auth/login';
-
-      // Если находимся на странице member-login, используем специальный endpoint
       if (typeof window !== 'undefined') {
         const currentPath = window.location.pathname;
         if (currentPath.includes('member-login')) {
@@ -359,7 +298,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({
           email,
           password,
-          redirectUrl // 🔧 Передаем redirectUrl в API
+          redirectUrl
         }),
       });
 
@@ -372,23 +311,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         redirectUrl: data.redirectUrl || data.dashboardUrl
       });
 
-      // 🔍 ДЕТАЛЬНЫЙ ЛОГ ДАННЫХ ОТ API
-      console.log('🔍 useAuth: ПОЛНЫЕ данные от API:', {
-        redirectUrl: data.redirectUrl,
-        dashboardUrl: data.dashboardUrl,
-        originalRedirectParam: redirectUrl,
-        calculatedDashboard: data.user ? getDashboardUrl(data.user.role) : 'no user'
-      });
-
       if (!response.ok) {
         console.error('❌ AuthProvider: ошибка входа:', data.error || 'Unknown error');
+        // ✅ ИСПРАВЛЕНО: скрываем loader при ошибке
+        hideLoader();
         return false;
       }
 
       if (data.success && data.user) {
         console.log('✅ AuthProvider: вход успешен:', data.user);
 
-        // Создаем объект пользователя с правильной структурой
+        // Создаем объект пользователя
         const userData: User = {
           id: data.user.userId || data.user.id,
           role: data.user.role,
@@ -401,20 +334,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         console.log('👤 AuthProvider: созданный объект пользователя:', userData);
 
-        // ВАЖНО: Сначала сохраняем в localStorage
+        // Сохраняем в localStorage
         try {
           const userJson = JSON.stringify(userData);
           localStorage.setItem('auth_user', userJson);
           console.log('💾 AuthProvider: данные пользователя сохранены в localStorage');
 
-          // Проверяем что сохранилось
           const savedUser = localStorage.getItem('auth_user');
           console.log('✅ AuthProvider: проверка сохранения:', !!savedUser);
         } catch (storageError) {
           console.error('❌ AuthProvider: ошибка сохранения в localStorage:', storageError);
         }
 
-        // Сохраняем токен если он есть
+        // Сохраняем токен
         if (data.token) {
           try {
             localStorage.setItem('auth_token', data.token);
@@ -425,10 +357,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
         }
 
-        // ВАЖНО: Устанавливаем пользователя в состояние ПОСЛЕ сохранения в localStorage
+        // Устанавливаем пользователя в состояние
         setUser(userData);
 
-        // Принудительно обновляем authStatus
+        // Обновляем authStatus
         const newAuthStatus = {
           authenticated: true,
           user: {
@@ -441,74 +373,70 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         };
         setAuthStatus(newAuthStatus);
 
-        // 🔧 ОБРАБАТЫВАЕМ REDIRECT - используем URL из ответа API, который уже обработал redirect
+        // ✅ ИСПРАВЛЕНО: Задержка перед скрытием loader и редиректом
         const targetUrl = data.redirectUrl || data.dashboardUrl || getDashboardUrl(userData.role);
-        console.log('🔍 useAuth: ДЕТАЛЬНАЯ ЛОГИКА REDIRECT:', {
-          'data.redirectUrl': data.redirectUrl,
-          'data.dashboardUrl': data.dashboardUrl,
-          'getDashboardUrl(userData.role)': getDashboardUrl(userData.role),
-          'FINAL targetUrl': targetUrl,
-          'originalRedirectParam': redirectUrl
-        });
-        console.log('🚀 AuthProvider: перенаправление на:', targetUrl);
+        console.log('🎯 AuthProvider: целевой URL:', targetUrl);
 
-        // Используем setTimeout для гарантии обновления состояния
+        // Задержка для показа loader, затем скрытие и редирект
         setTimeout(() => {
-          router.push(targetUrl);
-        }, 200);
+          console.log('🎯 AuthProvider: скрываем loader и делаем редирект');
+          hideLoader(); // Скрываем loader
+          router.push(targetUrl); // Делаем редирект
+        }, 1500); // ✅ 1.5 секунды показываем loader
 
         return true;
       }
 
       console.log('❌ AuthProvider: вход неуспешен, нет данных пользователя');
+      // ✅ ИСПРАВЛЕНО: скрываем loader при неуспешном входе
+      hideLoader();
       return false;
     } catch (error) {
       console.error('❌ AuthProvider: критическая ошибка входа:', error);
+      // ✅ ИСПРАВЛЕНО: скрываем loader при ошибке
+      hideLoader();
       return false;
     } finally {
       setLoading(false);
     }
   };
 
+  // ✅ logout остается без изменений (уже правильный)
   const logout = async (skipRedirect: boolean = false): Promise<void> => {
     try {
       setLoading(true);
       console.log('🚪 AuthProvider: НАЧАЛО logout...', { skipRedirect });
-  
-      // 🔥 НОВОЕ: Устанавливаем флаг для Vercel
+
+      // Устанавливаем флаг для Vercel
       if (typeof window !== 'undefined') {
         sessionStorage.setItem('logout_in_progress', 'true');
       }
-  
-      // 🔥 КРИТИЧНО: Сначала очищаем React состояние
+
+      // Сначала очищаем React состояние
       setUser(null);
       setToken(null);
       setAuthStatus({ authenticated: false });
-  
-      // 🔥 НОВОЕ: Триггерим события logout
+
+      // Триггерим события logout
       if (typeof window !== 'undefined') {
-        // Dispatch событий
         window.dispatchEvent(new Event('auth-logout'));
         document.dispatchEvent(new Event('auth-logout'));
         
-        // PostMessage для Service Worker
         if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
           navigator.serviceWorker.controller.postMessage({
             type: 'LOGOUT'
           });
         }
         
-        // PostMessage для window
         window.postMessage({ type: 'CLEAR_AUTH_STORAGE' }, window.location.origin);
         
-        // BroadcastChannel
         if ('BroadcastChannel' in window) {
           const channel = new BroadcastChannel('auth_channel');
           channel.postMessage({ type: 'logout' });
           channel.close();
         }
       }
-  
+
       // Функция очистки
       const clearAuthData = () => {
         const keys = ['auth_user', 'auth_token', 'user', 'token', 'authToken', 'userToken'];
@@ -517,7 +445,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           try {
             localStorage.removeItem(key);
             sessionStorage.removeItem(key);
-            // Двойная очистка
             localStorage.setItem(key, '');
             localStorage.removeItem(key);
           } catch (e) {
@@ -525,10 +452,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
         });
       };
-  
+
       // Немедленная очистка
       clearAuthData();
-  
+
       // Вызываем API
       try {
         const response = await fetch('/api/auth/logout', {
@@ -540,20 +467,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             ...(token ? { 'Authorization': `Bearer ${token}` } : {})
           }
         });
-  
+
         if (!response.ok) {
           console.warn('⚠️ API logout вернул ошибку, но продолжаем');
         }
       } catch (apiError) {
         console.warn('⚠️ Ошибка API logout, но продолжаем:', apiError);
       }
-  
+
       // Повторная очистка после API
       clearAuthData();
-  
-      // Задержка перед редиректом для гарантии очистки
+
+      // Задержка перед редиректом
       await new Promise(resolve => setTimeout(resolve, 100));
-  
+
       // Финальная очистка
       clearAuthData();
       
@@ -561,19 +488,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (typeof window !== 'undefined') {
         sessionStorage.removeItem('logout_in_progress');
       }
-  
-      // ✅ ИСПРАВЛЕНО: Редирект только если НЕ пропускаем
+
+      // Редирект только если не пропускаем
       if (!skipRedirect) {
         console.log('🔄 AuthProvider: Выполняем редирект...');
         window.location.href = "/";
       } else {
         console.log('⏭️ AuthProvider: Пропускаем редирект (используется loader)');
       }
-  
+
     } catch (error) {
       console.error('❌ AuthProvider: критическая ошибка logout:', error);
       
-      // При ошибке все равно очищаем
       if (typeof window !== 'undefined') {
         try {
           localStorage.clear();
@@ -587,7 +513,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setToken(null);
       setAuthStatus({ authenticated: false });
       
-      // ✅ ИСПРАВЛЕНО: Редирект только если НЕ пропускаем
       if (!skipRedirect) {
         window.location.href = "/";
       }
@@ -598,11 +523,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshUser = async (): Promise<void> => {
     console.log('🔄 AuthProvider: принудительное обновление пользователя...');
-    initialCheckDone.current = false; // Сбрасываем флаг для повторной проверки
+    initialCheckDone.current = false;
     await checkSessionThrottled();
   };
 
-  // Функция для ручного обновления authStatus (для совместимости)
   const updateAuthStatus = (status: AuthStatus | null): void => {
     console.log('🔄 AuthProvider: ручное обновление authStatus:', status);
     setAuthStatus(status);
@@ -619,7 +543,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     refreshUser,
     setAuthStatus: updateAuthStatus
   };
-
+  
   return React.createElement(
     AuthContext.Provider,
     { value },
@@ -627,6 +551,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
+// Остальные хуки остаются без изменений...
 
 export function useFaceAuth() {
   const { authStatus, login, logout } = useAuth();
@@ -660,7 +585,6 @@ export function useFaceAuth() {
       if (data.success && data.user) {
         console.log('✅ useFaceAuth: Face ID вход успешен:', data.user);
 
-        // 🔧 НОВОЕ: Сохраняем данные в localStorage
         const userData = {
           id: data.user.id || data.user.userId,
           role: data.user.role,
@@ -758,7 +682,6 @@ export function useFaceAuth() {
   };
 }
 
-// Основной хук для использования контекста аутентификации
 export function useAuth(): AuthContextType {
   const context = React.useContext(AuthContext);
   if (!context) {
@@ -767,7 +690,6 @@ export function useAuth(): AuthContextType {
   return context;
 }
 
-// Упрощенный хук для главной страницы (для обратной совместимости)
 export function useAuthStatus() {
   const { authStatus, loading, logout: contextLogout } = useAuth();
 
@@ -778,7 +700,6 @@ export function useAuthStatus() {
   };
 }
 
-// Остальные хуки остаются без изменений...
 export function useRole() {
   const { user } = useAuth();
 
@@ -832,7 +753,6 @@ export function usePermissions() {
   };
 }
 
-// Хук для получения информации о пользователе
 export function useUser() {
   const { user, loading } = useAuth();
 
@@ -847,7 +767,6 @@ export function useUser() {
   };
 }
 
-// Хук для навигации (интегрируем с существующей системой)
 export function useNavigation() {
   const router = useRouter()
   const { authStatus } = useAuth();
@@ -869,7 +788,6 @@ export function useNavigation() {
   };
 }
 
-// Хук для API запросов с автоматической авторизацией
 export function useApiRequest() {
   const { token } = useAuth();
 

@@ -38,7 +38,6 @@ export default function StaffLoginContent() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     await handleStaffLogin({ email, password });
-    // Результат обрабатывается внутри хука, здесь ничего не возвращаем
   };
 
   // Обертка для StaffLoginForm onSubmit

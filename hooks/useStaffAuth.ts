@@ -18,7 +18,6 @@ export function useStaffAuth() {
   const [resetEmail, setResetEmail] = useState<string>("");
   const [resetSent, setResetSent] = useState<boolean>(false);
   
-  // Новые состояния для лоадера
   const [showLoader, setShowLoader] = useState(false);
   const [loaderData, setLoaderData] = useState<{
     userRole: UserRole;

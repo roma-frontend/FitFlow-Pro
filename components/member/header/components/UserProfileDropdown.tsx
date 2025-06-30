@@ -1,4 +1,5 @@
-// components/member/header/components/UserProfileDropdown.tsx
+// components/member/header/components/UserProfileDropdown.tsx - ИСПРАВЛЕННАЯ ВЕРСИЯ
+
 "use client";
 
 import React, { useState } from 'react';
@@ -14,28 +15,40 @@ import {
 } from "@/components/ui/dropdown-menu";
 import type { UserProfileDropdownProps } from '../types';
 import { useAuth } from '@/hooks/useAuth';
+import { useLoaderStore } from "@/stores/loaderStore";
 
 export function UserProfileDropdown({
-  user,
   onNavigation,
   onLogout,
 }: UserProfileDropdownProps & { onLogout?: () => void }) {
 
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const { logout, user } = useAuth();
+  
+  // ✅ ДОБАВИЛИ: функцию показа loader
+  const showLoader = useLoaderStore((state) => state.showLoader);
 
+  // ✅ ИСПРАВЛЕНО: handleLogout с loader
   const handleLogout = async () => {
     try {
       setIsLoggingOut(true);
       
-      // Используем переданный onLogout или fallback к useAuth
+      showLoader("logout", {
+        userRole: user?.role || "member",
+        userName: user?.name || user?.email || "Участник",
+        redirectUrl: "/"
+      });
+      
+      // ✅ ИСПРАВЛЕНО: Используем logout с пропуском редиректа
       if (onLogout) {
         await onLogout();
       } else {
-        const { logout } = useAuth();
-        await logout();
+        await logout(true); // ✅ Пропускаем редирект - это делает StaffLogoutLoader
       }
     } catch (error) {
       console.error('Ошибка выхода:', error);
+      // ✅ ДОБАВИЛИ: Скрываем loader при ошибке
+      useLoaderStore.getState().hideLoader();
     } finally {
       setIsLoggingOut(false);
     }
@@ -120,6 +133,7 @@ export function UserProfileDropdown({
         
         <DropdownMenuSeparator className="my-2" />
         
+        {/* ✅ ИСПРАВЛЕНО: Кнопка logout с новой логикой */}
         <DropdownMenuItem 
           className="flex items-center space-x-3 p-3 rounded-lg cursor-pointer text-red-600 hover:bg-red-50"
           onClick={handleLogout}

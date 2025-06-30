@@ -11,6 +11,8 @@ import { AuthModeToggle } from "@/components/auth/AuthModeToggle";
 import { FormStatusIndicator } from "@/components/auth/FormStatusIndicator";
 import { SecurityInfo } from "@/components/auth/SecurityInfo";
 import { DevelopmentTools } from "@/components/auth/DevelopmentTools";
+import { useLoaderStore } from "@/stores/loaderStore";
+import StaffLoginLoader from "@/app/staff-login/components/StaffLoginLoader";
 import { OtherAuthOptions } from "@/components/auth/OtherAuthOptions";
 import { ForgotPasswordForm } from "@/components/auth/ForgotPasswordForm";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,11 +20,11 @@ import { Shield, Zap, Users, Sparkles, CheckCircle, ArrowRight, Loader2, Eye, Lo
 import { useRouter } from "next/navigation";
 import SparklesButton from "./components/MemberLoginButton";
 import { Input } from "@/components/ui/input";
-import FitnessLoader from "@/components/ui/FitnessLoader";
 
 export default function MemberLoginContent() {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const router = useRouter();
+  const { loaderType, loaderProps } = useLoaderStore();
 
   const {
     isLogin,
@@ -42,29 +44,16 @@ export default function MemberLoginContent() {
     redirectParam,
   } = useAuthForm();
 
-  // Показываем индикатор перенаправления
-  if (isRedirecting) {
+  if ((loaderType === "login" && loaderProps) || isRedirecting) {
     return (
-      <div className="min-h-[100svh] bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 lg:bg-gradient-to-br lg:from-blue-50 lg:via-white lg:to-indigo-50 flex items-center justify-center p-4">
-        <FitnessLoader
-          isMobile={false}
-          theme="member"
-          size="xl"
-          variant="cardio"
-          text="Начинаем вход в систему..."
-          showProgress={true}
-          motivationalTexts={[
-            "Вход выполнен...",
-            "Загружаем ваш профиль...",
-            "Настраиваем интерфейс...",
-            "Проверяем подключение...",
-            "Почти готово!"
-          ]}
-          className="drop-shadow-2xl"
-        />
-      </div>
+      <StaffLoginLoader
+        userRole={loaderProps?.userRole || "member"}
+        userName={loaderProps?.userName || "Участник"}
+        dashboardUrl={loaderProps?.dashboardUrl || "/member-dashboard"}
+      />
     );
   }
+
 
   if (showForgotPassword) {
     return (

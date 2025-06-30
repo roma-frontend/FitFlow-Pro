@@ -108,69 +108,69 @@ export default function FitnessLoader({
   };
 
   if (isMobile) {
-    // МОБИЛЬНАЯ ВЕРСИЯ - полноэкранный градиентный лоадер
+    // ✅ ИСПРАВЛЕНО: МОБИЛЬНАЯ ВЕРСИЯ с лучшей видимостью текста
     return (
       <div className={cn(`min-h-[100svh] bg-gradient-to-br ${currentTheme.bg} flex items-center justify-center p-4`, className)}>
         <div className="text-center text-white">
           {/* Логотип/лоадер */}
           <div className="mb-6">
-            <div className="w-20 h-20 mx-auto bg-white/20 rounded-3xl flex items-center justify-center backdrop-blur-sm mb-4">
+            <div className="w-20 h-20 mx-auto bg-white/30 rounded-3xl flex items-center justify-center backdrop-blur-md mb-4 border border-white/20 shadow-lg">
               {renderVariant()}
             </div>
           </div>
 
-          {/* Основной текст */}
-          <h2 className="text-xl font-semibold mb-2">{text}</h2>
+          {/* ✅ ИСПРАВЛЕНО: Основной текст с лучшей видимостью */}
+          <h2 className="text-xl font-semibold mb-2 text-white drop-shadow-lg">{text}</h2>
           
-          {/* Мотивационный текст */}
+          {/* ✅ ИСПРАВЛЕНО: Мотивационный текст с тенью для лучшей читаемости */}
           {mounted && motivationalTexts.length > 0 && (
-            <p className="text-sm text-white/80 mb-4 transition-all duration-500 ease-in-out">
+            <p className="text-sm text-white/95 mb-4 transition-all duration-500 ease-in-out drop-shadow-md max-w-sm mx-auto leading-relaxed">
               {motivationalTexts[currentTextIndex]}
             </p>
           )}
           
           {/* Fallback для SSR */}
           {!mounted && motivationalTexts.length > 0 && (
-            <p className="text-sm text-white/80 mb-4">
+            <p className="text-sm text-white/95 mb-4 drop-shadow-md max-w-sm mx-auto leading-relaxed">
               {motivationalTexts[0]}
             </p>
           )}
 
-          {/* Прогресс бар для мобильных */}
+          {/* ✅ ИСПРАВЛЕНО: Прогресс бар с лучшей видимостью */}
           {mounted && showProgress && (
             <div className="w-64 mx-auto mb-4">
-              <div className="h-1 bg-white/20 rounded-full overflow-hidden backdrop-blur-sm">
+              <div className="h-2 bg-white/25 rounded-full overflow-hidden backdrop-blur-sm border border-white/20">
                 <div 
-                  className="h-full bg-white/80 rounded-full transition-all duration-300 ease-out"
+                  className="h-full bg-white/90 rounded-full transition-all duration-300 ease-out shadow-sm"
                   style={{ width: `${progress}%` }}
                 />
               </div>
-              <p className="text-xs text-white/60 mt-2">{Math.round(progress)}%</p>
+              <p className="text-xs text-white/90 mt-2 font-medium drop-shadow-sm">{Math.round(progress)}%</p>
             </div>
           )}
 
           {/* Fallback прогресс */}
           {!mounted && showProgress && (
             <div className="w-64 mx-auto mb-4">
-              <div className="h-1 bg-white/20 rounded-full overflow-hidden backdrop-blur-sm">
-                <div className="h-full bg-white/80 rounded-full w-0" />
+              <div className="h-2 bg-white/25 rounded-full overflow-hidden backdrop-blur-sm border border-white/20">
+                <div className="h-full bg-white/90 rounded-full w-0" />
               </div>
-              <p className="text-xs text-white/60 mt-2">0%</p>
+              <p className="text-xs text-white/90 mt-2 font-medium drop-shadow-sm">0%</p>
             </div>
           )}
 
-          {/* Анимированные точки */}
+          {/* ✅ ИСПРАВЛЕНО: Анимированные точки с лучшей видимостью */}
           <div className="flex items-center justify-center gap-2">
-            <div className="w-2 h-2 bg-white/60 rounded-full animate-bounce" />
-            <div className="w-2 h-2 bg-white/60 rounded-full animate-bounce animation-delay-200" />
-            <div className="w-2 h-2 bg-white/60 rounded-full animate-bounce animation-delay-400" />
+            <div className="w-2 h-2 bg-white/80 rounded-full animate-bounce shadow-sm" />
+            <div className="w-2 h-2 bg-white/80 rounded-full animate-bounce animation-delay-200 shadow-sm" />
+            <div className="w-2 h-2 bg-white/80 rounded-full animate-bounce animation-delay-400 shadow-sm" />
           </div>
         </div>
       </div>
     );
   }
 
-  // ДЕСКТОПНАЯ ВЕРСИЯ - компактный лоадер без фона (фон задается родителем)
+  // ДЕСКТОПНАЯ ВЕРСИЯ остается без изменений
   return (
     <div className={cn("flex flex-col items-center gap-6", className)}>
       {/* Основной лоадер */}
