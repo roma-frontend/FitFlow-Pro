@@ -70,7 +70,7 @@ function ManagerDashboardContent() {
           </Button>
           <Button
             onClick={() => router.push("/manager/trainers/add")}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
+            className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600"
           >
             <Plus className="h-4 w-4" />
             Добавить тренера

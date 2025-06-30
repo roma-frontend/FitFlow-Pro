@@ -188,7 +188,7 @@ const SideWidgets: React.FC<SideWidgetsProps> = ({ trainers }) => {
         </CardHeader>
         <CardContent className="space-y-3">
           <Button
-            className="w-full justify-start"
+            className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 w-full justify-start"
             onClick={() => router.push("/manager/trainers/add")}
           >
             <Plus className="mr-2 h-4 w-4" />

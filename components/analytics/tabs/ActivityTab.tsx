@@ -171,7 +171,7 @@ export function ActivityTab({ analytics, userStats, loading }: ActivityTabProps)
                     </div>
                     <div className="w-full bg-muted rounded-full h-2">
                       <div
-                        className="bg-blue-500 h-2 rounded-full"
+                        className="bg-gradient-to-r from-blue-500 to-indigo-500 h-2 rounded-full"
                         style={{
                           width: `${maxViews > 0 ? (page.views / maxViews) * 100 : 0}%`,
                         }}
@@ -232,7 +232,7 @@ export function ActivityTab({ analytics, userStats, loading }: ActivityTabProps)
                 </div>
                 <div className="w-full bg-muted rounded-full h-2">
                   <div
-                    className="bg-blue-500 h-2 rounded-full"
+                    className="bg-gradient-to-r from-blue-500 to-indigo-500 h-2 rounded-full"
                     style={{
                       width: `${100 - (analytics?.activity?.bounceRate || 0) * 100}%`,
                     }}
@@ -323,7 +323,7 @@ export function ActivityTab({ analytics, userStats, loading }: ActivityTabProps)
                     className="flex justify-between items-center p-2 bg-muted/50 rounded"
                   >
                     <span className="text-sm">{day}</span>
-                    <Badge variant="outline">
+                    <Badge variant="product">
                       {Math.round(Math.random() * 25 + 15)}% посещений
                     </Badge>
                   </div>
@@ -344,7 +344,7 @@ export function ActivityTab({ analytics, userStats, loading }: ActivityTabProps)
                     className="flex justify-between items-center p-2 bg-muted/50 rounded"
                   >
                     <span className="text-sm">{item.device}</span>
-                    <Badge variant="outline">{item.percent}%</Badge>
+                    <Badge variant="product">{item.percent}%</Badge>
                   </div>
                 ))}
               </div>
