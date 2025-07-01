@@ -1,7 +1,7 @@
 // components/auth/GoogleLoginButton.tsx
 "use client";
 
-import { signIn } from "next-auth/react";
+import { signIn, signOut } from "next-auth/react";
 import { useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useLoaderStore } from "@/stores/loaderStore";
@@ -11,11 +11,13 @@ import { useToast } from "@/hooks/use-toast";
 interface GoogleLoginButtonProps {
   isStaff?: boolean;
   className?: string;
+  disabled?: boolean;
 }
 
-export function GoogleLoginButton({ isStaff = false, className = "" }: GoogleLoginButtonProps) {
+export function GoogleLoginButton({ isStaff = false, className = "", disabled }: GoogleLoginButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
   const searchParams = useSearchParams();
+  const router = useRouter();
   const showLoader = useLoaderStore((state) => state.showLoader);
   const hideLoader = useLoaderStore((state) => state.hideLoader);
   const { toast } = useToast();
@@ -25,13 +27,6 @@ export function GoogleLoginButton({ isStaff = false, className = "" }: GoogleLog
   const handleGoogleLogin = async () => {
     try {
       setIsLoading(true);
-      
-      // Показываем loader
-      // showLoader("login", {
-      //   userRole: isStaff ? "staff" : "member",
-      //   userName: "Google User",
-      //   dashboardUrl: redirectParam || (isStaff ? "/staff-dashboard" : "/member-dashboard")
-      // });
 
       // Определяем callbackUrl
       let callbackUrl = isStaff ? "/staff-dashboard" : "/member-dashboard";
@@ -79,8 +74,8 @@ export function GoogleLoginButton({ isStaff = false, className = "" }: GoogleLog
   return (
     <button
       onClick={handleGoogleLogin}
-      disabled={isLoading}
-      className={`w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
+      disabled={disabled}
+      className={`w-full flex items-center justify-center gap-3 px-4 py-3 text-md border border-gray-300 rounded-2xl hover:bg-gray-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
     >
       {isLoading ? (
         <>

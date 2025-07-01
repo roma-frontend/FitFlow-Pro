@@ -147,10 +147,6 @@ export default function StaffLoginContent() {
                     </button>
                   </form>
 
-                  <GoogleLoginButton
-                    isStaff={true}
-                    className="mb-4 bg-white hover:bg-gray-50 text-gray-700 border-gray-300"
-                  />
 
                   {/* Забыли пароль */}
                   <div className="mt-4 text-center">
@@ -189,6 +185,10 @@ export default function StaffLoginContent() {
 
               {/* Быстрые действия */}
               <div className="mt-6 space-y-3">
+                <GoogleLoginButton
+                  isStaff={true}
+                  className="bg-white/20 backdrop-blur-sm border border-white/30 rounded-2xl hover:bg-white/30 transition-all text-white"
+                />
                 <button
                   onClick={() => router.push("/member-login")}
                   className="w-full flex items-center justify-center p-3 bg-white/20 backdrop-blur-sm border border-white/30 rounded-2xl hover:bg-white/30 transition-all text-white"

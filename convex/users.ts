@@ -21,7 +21,11 @@ export const create = mutation({
     createdAt: v.number(),
     createdBy: v.optional(v.string()),
     photoUrl: v.optional(v.string()),
+    avatar: v.optional(v.string()),
+    googleId: v.optional(v.string()),
+    isVerified: v.optional(v.boolean()),
     faceDescriptor: v.optional(v.array(v.number())),
+    updatedAt: v.optional(v.number()),
     // Дополнительные поля для тренеров
     phone: v.optional(v.string()),
     bio: v.optional(v.string()),
@@ -35,10 +39,22 @@ export const create = mutation({
       name: args.name,
       role: args.role,
       isActive: args.isActive,
-      createdBy: args.createdBy
+      createdBy: args.createdBy,
+      googleId: args.googleId,
+      isVerified: args.isVerified
     });
     
     try {
+      // Проверяем, что пользователь с таким email не существует
+      const existingUser = await ctx.db
+        .query("users")
+        .filter((q) => q.eq(q.field("email"), args.email))
+        .first();
+      
+      if (existingUser) {
+        throw new Error("Пользователь с таким email уже существует");
+      }
+      
       let createdByUserId: string | undefined = undefined;
       
       if (args.createdBy) {
@@ -71,7 +87,7 @@ export const create = mutation({
           email: args.email,
           phone: args.phone || '',
           password: args.password,
-          photoUrl: args.photoUrl,
+          photoUrl: args.photoUrl || args.avatar,
           bio: args.bio || '',
           specializations: args.specializations || [],
           experience: args.experience || 0,
@@ -87,7 +103,7 @@ export const create = mutation({
           status: args.isActive ? 'active' : 'inactive',
           role: args.role,
           createdAt: args.createdAt,
-          updatedAt: args.createdAt,
+          updatedAt: args.updatedAt || args.createdAt,
         });
         
         console.log('✅ Тренер создан в таблице trainers с ID:', trainerId);
@@ -103,8 +119,12 @@ export const create = mutation({
           role: args.role,
           isActive: args.isActive,
           createdAt: args.createdAt,
-          createdBy: createdByUserId, // ✅ Используем найденный ID или undefined
-          photoUrl: args.photoUrl,
+          updatedAt: args.updatedAt || args.createdAt,
+          createdBy: createdByUserId,
+          photoUrl: args.photoUrl || args.avatar,
+          avatar: args.avatar || args.photoUrl,
+          googleId: args.googleId,
+          isVerified: args.isVerified || false,
           faceDescriptor: args.faceDescriptor || [],
         });
         
@@ -113,6 +133,72 @@ export const create = mutation({
       }
     } catch (error) {
       console.error('❌ Ошибка вставки в БД:', error);
+      throw error;
+    }
+  },
+});
+
+export const update = mutation({
+  args: { 
+    userId: v.string(),
+    updates: v.object({
+      name: v.optional(v.string()),
+      email: v.optional(v.string()),
+      role: v.optional(v.string()),
+      isActive: v.optional(v.boolean()),
+      photoUrl: v.optional(v.string()),
+      avatar: v.optional(v.string()),
+      password: v.optional(v.string()),
+      googleId: v.optional(v.string()),
+      isVerified: v.optional(v.boolean()),
+      updatedAt: v.optional(v.number()),
+    })
+  },
+  handler: async (ctx, args) => {
+    console.log('📝 users:update вызван для:', args.userId);
+    
+    try {
+      // Получаем документ
+      const document = await ctx.db.get(args.userId as any);
+      if (!document) {
+        throw new Error("Пользователь не найден");
+      }
+      
+      // Фильтруем undefined значения
+      const filteredUpdates: any = {};
+      Object.entries(args.updates).forEach(([key, value]) => {
+        if (value !== undefined) {
+          filteredUpdates[key] = value;
+        }
+      });
+      
+      // Если обновляется email, проверяем уникальность
+      if (filteredUpdates.email && filteredUpdates.email !== (document as any).email) {
+        const emailExists = await ctx.db
+          .query("users")
+          .filter((q) => q.eq(q.field("email"), filteredUpdates.email))
+          .first();
+        
+        if (emailExists && emailExists._id !== args.userId) {
+          throw new Error("Email уже используется");
+        }
+      }
+      
+      // Добавляем timestamp если не указан
+      if (!filteredUpdates.updatedAt) {
+        filteredUpdates.updatedAt = Date.now();
+      }
+      
+      console.log('📝 Применяем обновления:', filteredUpdates);
+      
+      // Обновляем документ
+      await ctx.db.patch(args.userId as any, filteredUpdates);
+      
+      console.log('✅ Пользователь обновлен');
+      return { success: true, userId: args.userId };
+      
+    } catch (error) {
+      console.error('❌ Ошибка обновления:', error);
       throw error;
     }
   },

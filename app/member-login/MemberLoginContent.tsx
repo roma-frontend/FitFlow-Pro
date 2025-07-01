@@ -174,10 +174,6 @@ export default function MemberLoginContent() {
                     </button>
                   </form>
 
-                  <GoogleLoginButton
-                    isStaff={false}
-                    className="mb-4 bg-white hover:bg-gray-50 text-gray-700 border-gray-300"
-                  />
 
                   {/* Переключатель режима */}
                   <div className="mt-6 text-center">
@@ -214,6 +210,10 @@ export default function MemberLoginContent() {
 
               {/* Быстрые действия */}
               <div className="mt-6 space-y-3">
+                <GoogleLoginButton
+                  isStaff={false}
+                  className="bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all text-white"
+                />
                 <button
                   onClick={() => {
                     const faceAuthUrl = redirectParam

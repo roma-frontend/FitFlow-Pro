@@ -10,7 +10,7 @@ import bcrypt from "bcryptjs";
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
 export const authOptions: NextAuthOptions = {
-  debug: true, 
+  debug: true,
   providers: [
     // Google OAuth Provider
     GoogleProvider({
@@ -24,7 +24,7 @@ export const authOptions: NextAuthOptions = {
         }
       }
     }),
-    
+
     // Существующий Credentials Provider для обычного входа
     CredentialsProvider({
       name: "credentials",
@@ -38,8 +38,8 @@ export const authOptions: NextAuthOptions = {
         }
 
         try {
-          const user = await convex.query("users:getByEmail", { 
-            email: credentials.email 
+          const user = await convex.query("users:getByEmail", {
+            email: credentials.email
           });
 
           if (!user || !user.isActive) {
@@ -47,7 +47,7 @@ export const authOptions: NextAuthOptions = {
           }
 
           const isPasswordValid = await bcrypt.compare(
-            credentials.password, 
+            credentials.password,
             user.password
           );
 
@@ -69,18 +69,27 @@ export const authOptions: NextAuthOptions = {
       }
     })
   ],
-  
+
   callbacks: {
     async signIn({ user, account, profile }) {
       // При входе через Google
       if (account?.provider === "google") {
         try {
           // Проверяем, существует ли пользователь
-          let existingUser = await convex.query("users:getByEmail", { 
-            email: user.email! 
+          let existingUser = await convex.query("users:getByEmail", {
+            email: user.email!
           });
 
-          if (!existingUser) {
+          if (existingUser) {
+            // Проверяем, является ли пользователь staff
+            const staffRoles = ['admin', 'super-admin', 'manager', 'trainer'];
+            const isStaff = staffRoles.includes(existingUser.role);
+
+            if (typeof window !== 'undefined' &&
+              window.location.pathname.includes('staff-login') &&
+              !isStaff) {
+              return '/auth/error?error=AccessDenied';
+            }
             // Создаем нового пользователя
             const userId = await convex.mutation("users:create", {
               email: user.email!.toLowerCase(),
@@ -98,6 +107,11 @@ export const authOptions: NextAuthOptions = {
 
             console.log("✅ Создан новый пользователь через Google:", userId);
           } else {
+
+            if (typeof window !== 'undefined' &&
+              window.location.pathname.includes('staff-login')) {
+              return false;
+            }
             // Обновляем существующего пользователя
             if (!existingUser.googleId) {
               await convex.mutation("users:update", {
@@ -140,8 +154,8 @@ export const authOptions: NextAuthOptions = {
       // Если это Google вход, получаем роль из БД
       if (account?.provider === "google" && token.email) {
         try {
-          const dbUser = await convex.query("users:getByEmail", { 
-            email: token.email as string 
+          const dbUser = await convex.query("users:getByEmail", {
+            email: token.email as string
           });
           if (dbUser) {
             token.role = dbUser.role;
@@ -173,11 +187,11 @@ export const authOptions: NextAuthOptions = {
       // Обработка редиректов после входа
       if (url.startsWith("/")) return `${baseUrl}${url}`;
       else if (new URL(url).origin === baseUrl) return url;
-      
+
       // Определяем дашборд по роли
       const callbackUrl = new URL(url).searchParams.get("callbackUrl");
       if (callbackUrl?.startsWith("/")) return `${baseUrl}${callbackUrl}`;
-      
+
       return baseUrl;
     }
   },
@@ -228,7 +242,7 @@ export async function verifyToken(token: string): Promise<any> {
   try {
     console.log('🔧 Проверяем JWT токен...');
     console.log('🔑 JWT_SECRET установлен:', !!process.env.JWT_SECRET);
-    
+
     if (!process.env.JWT_SECRET) {
       throw new Error('JWT_SECRET не установлен');
     }
@@ -248,14 +262,14 @@ export async function signToken(payload: any) {
       throw new Error('JWT_SECRET не установлен');
     }
     console.log('signToken: создаем токен для:', payload);
-    
+
     const secret = new TextEncoder().encode(process.env.JWT_SECRET);
     const token = await new SignJWT(payload)
       .setProtectedHeader({ alg: 'HS256' })
       .setIssuedAt()
       .setExpirationTime('7d')
       .sign(secret);
-    
+
     console.log('signToken: токен создан успешно');
     return token;
   } catch (error) {
@@ -268,16 +282,16 @@ export async function getCurrentUser() {
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get('auth_token')?.value;
-    
+
     console.log("Токен из cookies:", token ? "найден" : "не найден");
-    
+
     if (!token) {
       return null;
     }
-    
+
     const payload = await verifyToken(token);
     console.log("Payload из токена:", payload);
-    
+
     return {
       id: payload.userId,
       name: payload.name,

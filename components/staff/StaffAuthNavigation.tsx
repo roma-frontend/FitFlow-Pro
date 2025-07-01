@@ -5,6 +5,7 @@ import { memo } from 'react';
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { GoogleLoginButton } from '../auth/GoogleLoginButton';
 
 interface StaffAuthNavigationProps {
     isLoading: boolean;
@@ -17,7 +18,7 @@ export const StaffAuthNavigation = memo(function StaffAuthNavigation({
 }: StaffAuthNavigationProps) {
     return (
         <Card className="bg-gradient-to-br from-gray-50 to-slate-50 border-gray-200 shadow-sm">
-                        <CardContent className="p-6 space-y-4">
+            <CardContent className="p-6 space-y-4">
                 {/* Ссылка на восстановление пароля */}
                 <div className="text-center">
                     <button
@@ -33,6 +34,10 @@ export const StaffAuthNavigation = memo(function StaffAuthNavigation({
                 <div className="text-center space-y-3">
                     <p className="text-xs text-gray-500">Другие варианты входа</p>
                     <div className="space-y-2">
+                        <GoogleLoginButton
+                            isStaff={true}
+                            className="bg-white hover:bg-blue-50 backdrop-blur-sm rounded-md text-sm !py-2.5 transition-all border border-gray-300 text-gray-900"
+                        />
                         <Link href="/member-login" className="block">
                             <Button
                                 variant="outline"
