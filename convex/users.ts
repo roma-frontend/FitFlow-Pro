@@ -11,6 +11,7 @@ export const getAll = query({
   },
 });
 
+// Вспомогательная функция для создания или обновления пользователя через Google
 export const createOrUpdateGoogleUser = mutation({
   args: {
     email: v.string(),
@@ -41,13 +42,22 @@ export const createOrUpdateGoogleUser = mutation({
         // Обновляем существующего пользователя
         console.log('🔄 Обновляем существующего пользователя Google данными');
         
-        await ctx.db.patch(existingUser._id, {
+        // Проверяем, какие поля доступны для обновления
+        const updateData: any = {
           googleId: args.googleId,
           isVerified: true,
-          photoUrl: args.photoUrl || existingUser.photoUrl,
-          avatar: args.photoUrl || existingUser.avatar,
           updatedAt: Date.now()
-        });
+        };
+
+        // Добавляем поля только если они существуют в схеме
+        if ('photoUrl' in existingUser) {
+          updateData.photoUrl = args.photoUrl || existingUser.photoUrl;
+        }
+        if ('avatar' in existingUser) {
+          updateData.avatar = args.photoUrl || existingUser.avatar;
+        }
+        
+        await ctx.db.patch(existingUser._id, updateData);
         
         return existingUser._id;
       } else {
@@ -129,23 +139,32 @@ export const create = mutation({
       
       if (existingUser) {
         // ✅ ИСПРАВЛЕНИЕ: Если пользователь существует и это Google вход, обновляем существующую запись
-        if (args.googleId && !existingUser.googleId) {
+        if (args.googleId && !('googleId' in existingUser && existingUser.googleId)) {
           console.log('🔄 Пользователь существует, добавляем Google ID к существующей записи');
           
-          await ctx.db.patch(existingUser._id, {
+          // Проверяем, какие поля доступны для обновления
+          const updateData: any = {
             googleId: args.googleId,
             isVerified: true,
-            photoUrl: args.photoUrl || existingUser.photoUrl,
-            avatar: args.avatar || existingUser.avatar,
             updatedAt: Date.now()
-          });
+          };
+
+          // Добавляем поля только если они существуют в схеме
+          if ('photoUrl' in existingUser) {
+            updateData.photoUrl = args.photoUrl || existingUser.photoUrl;
+          }
+          if ('avatar' in existingUser) {
+            updateData.avatar = args.avatar || existingUser.avatar;
+          }
+          
+          await ctx.db.patch(existingUser._id, updateData);
           
           console.log('✅ Google ID добавлен к существующему пользователю');
           return existingUser._id;
         }
         
         // ✅ ИСПРАВЛЕНИЕ: Если это не Google вход или Google ID уже есть
-        if (args.googleId && existingUser.googleId) {
+        if (args.googleId && 'googleId' in existingUser && existingUser.googleId) {
           console.log('✅ Пользователь уже имеет Google ID, возвращаем существующий ID');
           return existingUser._id;
         }

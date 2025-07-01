@@ -466,6 +466,8 @@ export default defineSchema({
     avatar: v.optional(v.string()),
     bio: v.optional(v.string()),
     specializations: v.array(v.string()),
+    googleId: v.optional(v.string()),
+    isVerified: v.optional(v.boolean()),
     experience: v.optional(v.number()),
     certifications: v.optional(v.array(v.string())),
     languages: v.optional(v.array(v.string())),
