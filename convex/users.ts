@@ -11,6 +11,74 @@ export const getAll = query({
   },
 });
 
+export const createOrUpdateGoogleUser = mutation({
+  args: {
+    email: v.string(),
+    name: v.string(),
+    googleId: v.string(),
+    photoUrl: v.optional(v.string()),
+    role: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    console.log('🔧 createOrUpdateGoogleUser для:', args.email);
+    
+    try {
+      // Ищем существующего пользователя в обеих таблицах
+      const [existingUserInUsers, existingUserInTrainers] = await Promise.all([
+        ctx.db
+          .query("users")
+          .filter((q) => q.eq(q.field("email"), args.email))
+          .first(),
+        ctx.db
+          .query("trainers")
+          .filter((q) => q.eq(q.field("email"), args.email))
+          .first()
+      ]);
+      
+      const existingUser = existingUserInUsers || existingUserInTrainers;
+      
+      if (existingUser) {
+        // Обновляем существующего пользователя
+        console.log('🔄 Обновляем существующего пользователя Google данными');
+        
+        await ctx.db.patch(existingUser._id, {
+          googleId: args.googleId,
+          isVerified: true,
+          photoUrl: args.photoUrl || existingUser.photoUrl,
+          avatar: args.photoUrl || existingUser.avatar,
+          updatedAt: Date.now()
+        });
+        
+        return existingUser._id;
+      } else {
+        // Создаем нового пользователя
+        console.log('👤 Создаем нового Google пользователя');
+        
+        const userId = await ctx.db.insert("users", {
+          email: args.email,
+          password: '', // Для Google пользователей пароль не нужен
+          name: args.name,
+          role: args.role || 'member',
+          isActive: true,
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+          photoUrl: args.photoUrl,
+          avatar: args.photoUrl,
+          googleId: args.googleId,
+          isVerified: true,
+          faceDescriptor: [],
+        });
+        
+        console.log('✅ Google пользователь создан с ID:', userId);
+        return userId;
+      }
+    } catch (error) {
+      console.error('❌ Ошибка в createOrUpdateGoogleUser:', error);
+      throw error;
+    }
+  },
+});
+
 export const create = mutation({
   args: {
     email: v.string(),
@@ -45,13 +113,43 @@ export const create = mutation({
     });
     
     try {
-      // Проверяем, что пользователь с таким email не существует
-      const existingUser = await ctx.db
-        .query("users")
-        .filter((q) => q.eq(q.field("email"), args.email))
-        .first();
+      // ✅ ИСПРАВЛЕНИЕ: Проверяем email в ОБЕИХ таблицах
+      const [existingUserInUsers, existingUserInTrainers] = await Promise.all([
+        ctx.db
+          .query("users")
+          .filter((q) => q.eq(q.field("email"), args.email))
+          .first(),
+        ctx.db
+          .query("trainers")
+          .filter((q) => q.eq(q.field("email"), args.email))
+          .first()
+      ]);
+      
+      const existingUser = existingUserInUsers || existingUserInTrainers;
       
       if (existingUser) {
+        // ✅ ИСПРАВЛЕНИЕ: Если пользователь существует и это Google вход, обновляем существующую запись
+        if (args.googleId && !existingUser.googleId) {
+          console.log('🔄 Пользователь существует, добавляем Google ID к существующей записи');
+          
+          await ctx.db.patch(existingUser._id, {
+            googleId: args.googleId,
+            isVerified: true,
+            photoUrl: args.photoUrl || existingUser.photoUrl,
+            avatar: args.avatar || existingUser.avatar,
+            updatedAt: Date.now()
+          });
+          
+          console.log('✅ Google ID добавлен к существующему пользователю');
+          return existingUser._id;
+        }
+        
+        // ✅ ИСПРАВЛЕНИЕ: Если это не Google вход или Google ID уже есть
+        if (args.googleId && existingUser.googleId) {
+          console.log('✅ Пользователь уже имеет Google ID, возвращаем существующий ID');
+          return existingUser._id;
+        }
+        
         throw new Error("Пользователь с таким email уже существует");
       }
       
@@ -60,11 +158,19 @@ export const create = mutation({
       if (args.createdBy) {
         // Проверяем, является ли createdBy email'ом или уже ID
         if (args.createdBy.includes('@')) {
-          // Это email, ищем пользователя
-          const creatorUser = await ctx.db
-            .query("users")
-            .filter((q) => q.eq(q.field("email"), args.createdBy!))
-            .first();
+          // Это email, ищем пользователя в обеих таблицах
+          const [creatorInUsers, creatorInTrainers] = await Promise.all([
+            ctx.db
+              .query("users")
+              .filter((q) => q.eq(q.field("email"), args.createdBy!))
+              .first(),
+            ctx.db
+              .query("trainers")
+              .filter((q) => q.eq(q.field("email"), args.createdBy!))
+              .first()
+          ]);
+          
+          const creatorUser = creatorInUsers || creatorInTrainers;
           
           if (creatorUser) {
             createdByUserId = creatorUser._id;
@@ -104,6 +210,8 @@ export const create = mutation({
           role: args.role,
           createdAt: args.createdAt,
           updatedAt: args.updatedAt || args.createdAt,
+          googleId: args.googleId, // ✅ Добавляем Google ID
+          isVerified: args.isVerified || false, // ✅ Добавляем проверку верификации
         });
         
         console.log('✅ Тренер создан в таблице trainers с ID:', trainerId);
