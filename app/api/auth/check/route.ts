@@ -3,18 +3,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSession, debugSessionAccess } from '@/lib/simple-auth';
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-
-// Define UserRole type (add this if it doesn't exist in your types)
-type UserRole = 'member' | 'client' | 'admin' | 'super-admin' | 'manager' | 'trainer' | 'staff';
+import { UserRole } from "@/lib/permissions";
 
 interface ExtendedUser {
   id: string;
   role?: string;
-  email?: string | null;
-  name?: string | null;
-  image?: string | null;
-  avatar?: string | null;
-  avatarUrl?: string | null;
+  email?: string | undefined;
+  name?: string | undefined;
+  image?: string | undefined;
+  avatar?: string | undefined;
+  avatarUrl?: string | undefined;
   isVerified?: boolean;
   rating?: number;
 }
@@ -24,10 +22,10 @@ interface AuthResponse {
   user: {
     id: string;
     role: UserRole;
-    email: string | null | undefined;
-    name: string | null | undefined;
-    avatar: string | null | undefined;
-    avatarUrl: string | null | undefined;
+    email: string | undefined;
+    name: string | undefined;
+    avatar: string | undefined;
+    avatarUrl: string | undefined;
     isVerified: boolean;
     rating: number;
   } | null;
@@ -43,9 +41,14 @@ interface AuthResponse {
   token?: string;
 }
 
+// Function to safely convert null/undefined to undefined (removes null from union)
+function nullToUndefined<T>(value: T | null | undefined): T | undefined {
+  return value === null ? undefined : value;
+}
+
 // Type guard to validate UserRole
 function isValidUserRole(role: string): role is UserRole {
-  const validRoles: UserRole[] = ['member', 'client', 'admin', 'super-admin', 'manager', 'trainer', 'staff'];
+  const validRoles: UserRole[] = ['member', 'client', 'admin', 'super-admin', 'manager', 'trainer'];
   return validRoles.includes(role as UserRole);
 }
 
@@ -65,6 +68,7 @@ function normalizeRole(role: string | undefined): UserRole {
     case 'super_admin':
       return 'super-admin';
     case 'user':
+    case 'staff':  // Map staff to member since staff is not in UserRole
       return 'member';
     default:
       return 'member';
@@ -75,12 +79,16 @@ function normalizeUser(user: any, source: 'nextauth' | 'jwt') {
   return {
     id: user.id || '',
     role: normalizeRole(user.role),
-    email: user.email || null,
-    name: user.name || null,
-    avatar: source === 'nextauth' ? (user.image || user.avatar || null) : (user.avatar || null),
-    avatarUrl: source === 'nextauth' ? (user.image || user.avatarUrl || null) : (user.avatarUrl || null),
-    isVerified: user.isVerified || false,
-    rating: user.rating || 0
+    email: nullToUndefined(user.email),
+    name: nullToUndefined(user.name),
+    avatar: source === 'nextauth' 
+      ? nullToUndefined(user.image || user.avatar) 
+      : nullToUndefined(user.avatar),
+    avatarUrl: source === 'nextauth' 
+      ? nullToUndefined(user.image || user.avatarUrl) 
+      : nullToUndefined(user.avatarUrl),
+    isVerified: Boolean(user.isVerified),
+    rating: Number(user.rating) || 0
   };
 }
 
@@ -97,7 +105,7 @@ function getDashboardForRole(role: UserRole): string {
     case 'trainer':
       return '/trainer-dashboard';
     default:
-      return '/staff-dashboard';
+      return '/member-dashboard';  // Changed from '/staff-dashboard' since staff role doesn't exist
   }
 }
 
@@ -146,11 +154,11 @@ export async function GET(request: NextRequest) {
       const { createSession } = await import('@/lib/simple-auth');
       const jwtToken = await createSession({
         id: user.id,
-        email: user.email || '',
-        role: user.role || 'member',
-        name: user.name || '',
-        avatar: user.image || user.avatar,
-        avatarUrl: user.image || user.avatarUrl,
+        email: nullToUndefined(user.email) || '',
+        role: normalizeRole(user.role), // Use normalizeRole here too
+        name: nullToUndefined(user.name) || '',
+        avatar: nullToUndefined(user.image || user.avatar),
+        avatarUrl: nullToUndefined(user.image || user.avatarUrl),
         isVerified: true,
         rating: user.rating || 0,
         createdAt: new Date(),
