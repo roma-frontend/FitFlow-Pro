@@ -4,6 +4,9 @@ import { getSession, debugSessionAccess } from '@/lib/simple-auth';
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
+// Define UserRole type (add this if it doesn't exist in your types)
+type UserRole = 'member' | 'client' | 'admin' | 'super-admin' | 'manager' | 'trainer' | 'staff';
+
 interface ExtendedUser {
   id: string;
   role?: string;
@@ -20,7 +23,7 @@ interface AuthResponse {
   authenticated: boolean;
   user: {
     id: string;
-    role: string;
+    role: UserRole;
     email: string | null | undefined;
     name: string | null | undefined;
     avatar: string | null | undefined;
@@ -37,12 +40,41 @@ interface AuthResponse {
   usedCookie?: string;
   debug?: string;
   error?: string;
+  token?: string;
+}
+
+// Type guard to validate UserRole
+function isValidUserRole(role: string): role is UserRole {
+  const validRoles: UserRole[] = ['member', 'client', 'admin', 'super-admin', 'manager', 'trainer', 'staff'];
+  return validRoles.includes(role as UserRole);
+}
+
+// Function to normalize role to valid UserRole
+function normalizeRole(role: string | undefined): UserRole {
+  if (!role) return 'member';
+  
+  const normalizedRole = role.replace(/_/g, '-').toLowerCase();
+  
+  if (isValidUserRole(normalizedRole)) {
+    return normalizedRole;
+  }
+  
+  // Fallback mapping for edge cases
+  switch (normalizedRole) {
+    case 'superadmin':
+    case 'super_admin':
+      return 'super-admin';
+    case 'user':
+      return 'member';
+    default:
+      return 'member';
+  }
 }
 
 function normalizeUser(user: any, source: 'nextauth' | 'jwt') {
   return {
     id: user.id || '',
-    role: user.role || 'member',
+    role: normalizeRole(user.role),
     email: user.email || null,
     name: user.name || null,
     avatar: source === 'nextauth' ? (user.image || user.avatar || null) : (user.avatar || null),
@@ -52,10 +84,8 @@ function normalizeUser(user: any, source: 'nextauth' | 'jwt') {
   };
 }
 
-function getDashboardForRole(role: string): string {
-  const normalizedRole = role.replace(/_/g, '-').toLowerCase();
-  
-  switch (normalizedRole) {
+function getDashboardForRole(role: UserRole): string {
+  switch (role) {
     case 'member':
     case 'client':
       return '/member-dashboard';
@@ -71,15 +101,13 @@ function getDashboardForRole(role: string): string {
   }
 }
 
-const checkRouteAccess = (pathname: string, userRole: string): boolean => {
-  const normalizedRole = userRole.toLowerCase().replace(/_/g, '-');
-  
+const checkRouteAccess = (pathname: string, userRole: UserRole): boolean => {
   if (pathname.startsWith('/trainer/')) return true;
-  if (pathname.startsWith('/admin/')) return ['admin', 'super-admin'].includes(normalizedRole);
-  if (pathname.startsWith('/manager-')) return ['manager', 'admin', 'super-admin'].includes(normalizedRole);
-  if (pathname.startsWith('/trainer-')) return ['trainer', 'manager', 'admin', 'super-admin'].includes(normalizedRole);
+  if (pathname.startsWith('/admin/')) return ['admin', 'super-admin'].includes(userRole);
+  if (pathname.startsWith('/manager-')) return ['manager', 'admin', 'super-admin'].includes(userRole);
+  if (pathname.startsWith('/trainer-')) return ['trainer', 'manager', 'admin', 'super-admin'].includes(userRole);
   if (pathname.startsWith('/member-') || pathname.startsWith('/my-') || pathname.startsWith('/profile') || pathname.startsWith('/bookings')) {
-    return ['member', 'client', 'trainer', 'manager', 'admin', 'super-admin'].includes(normalizedRole);
+    return ['member', 'client', 'trainer', 'manager', 'admin', 'super-admin'].includes(userRole);
   }
   if (pathname.startsWith('/shop')) return true;
   
@@ -230,7 +258,7 @@ export async function GET(request: NextRequest) {
 }
 
 // Вспомогательные функции
-function calculateRedirectUrl(redirectParam: string | null, userRole: string): string {
+function calculateRedirectUrl(redirectParam: string | null, userRole: UserRole): string {
   if (redirectParam) {
     try {
       const decodedRedirect = decodeURIComponent(redirectParam);
