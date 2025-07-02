@@ -908,7 +908,7 @@ export default function BookTrainerPage() {
 
                   {trainingType && (
                     <div className="border-t pt-4">
-                      <div className="flex justify-between items-center">
+                      <div className="flex flex-wrap gap-1 justify-between items-center">
                         <span className="text-sm text-gray-600">
                           {trainingType === "personal"
                             ? "Персональная тренировка"

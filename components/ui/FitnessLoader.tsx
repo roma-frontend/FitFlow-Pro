@@ -182,7 +182,7 @@ export default function FitnessLoader({
       <div className="text-center space-y-4 max-w-md">
         {/* Основной текст */}
         <div className="min-h-[2rem] flex items-center justify-center">
-          <p className={`text-lg font-semibold bg-gradient-to-r ${currentTheme.text} bg-clip-text text-transparent animate-pulse`}>
+          <p className={`text-lg font-semibold bg-gradient-to-r ${currentTheme.text} bg-clip-text text-white/80 md:text-transparent animate-pulse`}>
             {text}
           </p>
         </div>
@@ -190,7 +190,7 @@ export default function FitnessLoader({
         {/* Мотивационный текст - только на клиенте */}
         {mounted && motivationalTexts.length > 0 && (
           <div className="min-h-[1.5rem] flex items-center justify-center">
-            <p className="text-sm text-gray-600 transition-all duration-500 ease-in-out">
+            <p className="text-sm text-white/90 md:text-gray-600 transition-all duration-500 ease-in-out">
               {motivationalTexts[currentTextIndex]}
             </p>
           </div>
@@ -199,7 +199,7 @@ export default function FitnessLoader({
         {/* Fallback для SSR */}
         {!mounted && motivationalTexts.length > 0 && (
           <div className="min-h-[1.5rem] flex items-center justify-center">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-white/90 md:text-gray-600">
               {motivationalTexts[0]}
             </p>
           </div>
