@@ -38,13 +38,6 @@ export function GoogleLoginButton({ isStaff = false, className = "", disabled }:
 
       console.log("🔐 Google Login - начало процесса:", { isStaff, callbackUrl });
 
-      // Показываем loader
-      showLoader("login", {
-        userRole: isStaff ? "staff" : "member",
-        userName: "Google User",
-        dashboardUrl: callbackUrl
-      });
-
       // Выполняем вход через NextAuth
       const result = await signIn("google", {
         callbackUrl,
@@ -55,7 +48,6 @@ export function GoogleLoginButton({ isStaff = false, className = "", disabled }:
 
       if (result?.error) {
         console.error("Google login error:", result.error);
-        hideLoader();
         toast({
           variant: "destructive",
           title: "Ошибка входа",
@@ -73,18 +65,9 @@ export function GoogleLoginButton({ isStaff = false, className = "", disabled }:
         // Устанавливаем флаги для приветствия
         sessionStorage.setItem('show_welcome_toast', 'true');
         sessionStorage.setItem('welcome_user_role', isStaff ? 'staff' : 'member');
-        
-        // Небольшая задержка для показа loader
-        setTimeout(() => {
-          hideLoader();
-          // Используем window.location для полного обновления страницы
-          // Это гарантирует, что все cookies и состояние будут правильно загружены
-          window.location.href = result.url || callbackUrl;
-        }, 1500);
       }
     } catch (error) {
       console.error("Google login error:", error);
-      hideLoader();
       toast({
         variant: "destructive",
         title: "Ошибка",
