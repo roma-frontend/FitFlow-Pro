@@ -28,7 +28,7 @@ export function AnalyticsTabs({
 }: AnalyticsTabsProps) {
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-      <TabsList className="grid w-full grid-cols-4">
+      <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto">
         <TabsTrigger value="overview" className="flex items-center gap-2">
           <BarChart3 className="hidden sm:inline-block w-4 h-4" />
           Обзор

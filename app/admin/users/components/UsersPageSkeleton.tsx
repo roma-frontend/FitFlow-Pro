@@ -34,7 +34,7 @@ const HeaderSkeleton = React.memo(() => {
   return (
     <header className="relative bg-white/80 backdrop-blur-sm border-b border-gray-200/50 shadow-sm rounded-xl">
       <div className="px-4 sm:px-6 lg:px-8 py-6">
-        <div className="flex items-center justify-between">
+        <div className="hidden md:flex items-center justify-between">
           {/* Left side - Title and description */}
           <div className="space-y-3">
             <div className="flex items-center gap-3">
@@ -73,7 +73,7 @@ const HeaderSkeleton = React.memo(() => {
 // Tabs Skeleton Component
 const TabsSkeleton = React.memo(() => {
   return (
-    <div className="space-y-6">
+    <div className="hidden md:block space-y-6">
       {/* Tabs Navigation */}
       <div className="bg-white/80 backdrop-blur-sm rounded-xl border border-gray-200/50 shadow-sm">
         <div className="flex items-center justify-between p-4 border-b border-gray-200/50">
