@@ -21,7 +21,6 @@ import FaceIdCard from "@/components/member/FaceIdCard";
 import MiniProgress from "@/components/member/MiniProgress";
 import SidebarCards from "@/components/member/SidebarCards";
 import TipsSection from "@/components/member/TipsSection";
-import FitnessLoader from "@/components/ui/FitnessLoader";
 
 interface Workout {
   id: string;

@@ -22,7 +22,7 @@ export function GoogleLoginButton({ isStaff = false, className = "", disabled }:
   const showLoader = useLoaderStore((state) => state.showLoader);
   const hideLoader = useLoaderStore((state) => state.hideLoader);
   const { toast } = useToast();
-  const { refreshUser } = useAuth(); // Добавляем для обновления состояния
+  const { refreshUser } = useAuth();
   
   const redirectParam = searchParams.get('redirect');
 
