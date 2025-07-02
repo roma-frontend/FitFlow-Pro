@@ -12,7 +12,6 @@ const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 export const authOptions: NextAuthOptions = {
   debug: true,
   providers: [
-    // Google OAuth Provider
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
@@ -25,7 +24,6 @@ export const authOptions: NextAuthOptions = {
       }
     }),
 
-    // Существующий Credentials Provider для обычного входа
     CredentialsProvider({
       name: "credentials",
       credentials: {
@@ -75,66 +73,36 @@ export const authOptions: NextAuthOptions = {
       // При входе через Google
       if (account?.provider === "google") {
         try {
-          // Проверяем, существует ли пользователь
-          let existingUser = await convex.query("users:getByEmail", {
-            email: user.email!
+          console.log("🔍 Google Sign In - проверяем пользователя:", user.email);
+          
+          // Используем createOrUpdateGoogleUser для правильной обработки
+          const userId = await convex.mutation("users:createOrUpdateGoogleUser", {
+            email: user.email!.toLowerCase(),
+            name: user.name || "Google User",
+            googleId: account.providerAccountId,
+            photoUrl: user.image || undefined,
+            role: undefined // Будет использоваться role по умолчанию или существующая
           });
 
-          if (existingUser) {
-            // Проверяем, является ли пользователь staff
-            const staffRoles = ['admin', 'super-admin', 'manager', 'trainer'];
-            const isStaff = staffRoles.includes(existingUser.role);
+          console.log("✅ Google пользователь обработан:", userId);
 
-            if (typeof window !== 'undefined' &&
-              window.location.pathname.includes('staff-login') &&
-              !isStaff) {
+          // Проверяем роль для staff-login
+          if (typeof window !== 'undefined' && 
+              window.location.pathname.includes('staff-login')) {
+            const dbUser = await convex.query("users:getByEmail", {
+              email: user.email!
+            });
+            
+            const staffRoles = ['admin', 'super-admin', 'manager', 'trainer'];
+            if (dbUser && !staffRoles.includes(dbUser.role)) {
+              console.log("❌ Не staff пользователь пытается войти через staff-login");
               return '/auth/error?error=AccessDenied';
             }
-            // Создаем нового пользователя
-            const userId = await convex.mutation("users:create", {
-              email: user.email!.toLowerCase(),
-              name: user.name || "Google User",
-              googleId: account.providerAccountId,
-              avatar: user.image || "",
-              role: "member", // По умолчанию member
-              isActive: true,
-              isVerified: true, // Google аккаунты считаем верифицированными
-              createdAt: Date.now(),
-              updatedAt: Date.now(),
-              // Для Google пользователей не устанавливаем пароль
-              password: await bcrypt.hash(Math.random().toString(36), 10) // Случайный пароль для безопасности
-            });
-
-            console.log("✅ Создан новый пользователь через Google:", userId);
-          } else {
-
-            if (typeof window !== 'undefined' &&
-              window.location.pathname.includes('staff-login')) {
-              return false;
-            }
-            // Обновляем существующего пользователя
-            if (!existingUser.googleId) {
-              await convex.mutation("users:update", {
-                userId: existingUser._id,
-                updates: {
-                  googleId: account.providerAccountId,
-                  avatar: existingUser.avatar || user.image || "",
-                  isVerified: true,
-                  updatedAt: Date.now()
-                }
-              });
-            }
-
-            // Обновляем время последнего входа
-            await convex.mutation("users:updateLastLogin", {
-              userId: existingUser._id,
-              timestamp: Date.now()
-            });
           }
 
           return true;
         } catch (error) {
-          console.error("Google sign in error:", error);
+          console.error("❌ Google sign in error:", error);
           return false;
         }
       }
@@ -142,7 +110,7 @@ export const authOptions: NextAuthOptions = {
       return true;
     },
 
-    async jwt({ token, user, account }) {
+    async jwt({ token, user, account, trigger }) {
       // При первом входе добавляем данные пользователя в токен
       if (user) {
         token.userId = user.id;
@@ -151,8 +119,8 @@ export const authOptions: NextAuthOptions = {
         token.name = user.name || user.email || "User";
       }
 
-      // Если это Google вход, получаем роль из БД
-      if (account?.provider === "google" && token.email) {
+      // Если это Google вход или обновление, получаем актуальные данные из БД
+      if ((account?.provider === "google" || trigger === "update") && token.email) {
         try {
           const dbUser = await convex.query("users:getByEmail", {
             email: token.email as string
@@ -160,9 +128,10 @@ export const authOptions: NextAuthOptions = {
           if (dbUser) {
             token.role = dbUser.role;
             token.userId = dbUser._id;
+            token.name = dbUser.name || token.name;
           }
         } catch (error) {
-          console.error("Error fetching user role:", error);
+          console.error("Error fetching user data:", error);
         }
       }
 
@@ -184,14 +153,27 @@ export const authOptions: NextAuthOptions = {
     },
 
     async redirect({ url, baseUrl }) {
-      // Обработка редиректов после входа
-      if (url.startsWith("/")) return `${baseUrl}${url}`;
-      else if (new URL(url).origin === baseUrl) return url;
+      console.log("🔄 NextAuth redirect callback:", { url, baseUrl });
+      
+      // Если URL начинается с /, это внутренний путь
+      if (url.startsWith("/")) {
+        return `${baseUrl}${url}`;
+      }
+      
+      // Если URL с того же origin
+      else if (new URL(url).origin === baseUrl) {
+        return url;
+      }
 
-      // Определяем дашборд по роли
-      const callbackUrl = new URL(url).searchParams.get("callbackUrl");
-      if (callbackUrl?.startsWith("/")) return `${baseUrl}${callbackUrl}`;
+      // Извлекаем callbackUrl из параметров
+      const urlObj = new URL(url);
+      const callbackUrl = urlObj.searchParams.get("callbackUrl");
+      
+      if (callbackUrl?.startsWith("/")) {
+        return `${baseUrl}${callbackUrl}`;
+      }
 
+      // По умолчанию возвращаем на главную
       return baseUrl;
     }
   },

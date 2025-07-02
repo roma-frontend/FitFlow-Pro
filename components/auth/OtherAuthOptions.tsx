@@ -17,7 +17,7 @@ export const OtherAuthOptions = memo(function OtherAuthOptions({ loading }: Othe
       <div className="text-center space-y-3">
         <p className="text-xs text-gray-500">Другие варианты входа</p>
         <div className="space-y-2">
-          <GoogleLoginButton isStaff={false} disabled={loading}/>
+          <GoogleLoginButton isStaff={false} disabled={loading} className='rounded-lg text-sm'/>
 
           <Button
           variant="outline"

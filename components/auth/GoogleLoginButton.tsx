@@ -1,4 +1,4 @@
-// components/auth/GoogleLoginButton.tsx
+// components/auth/GoogleLoginButton.tsx - ИСПРАВЛЕННАЯ ВЕРСИЯ
 "use client";
 
 import { signIn, signOut } from "next-auth/react";
@@ -7,6 +7,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { useLoaderStore } from "@/stores/loaderStore";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
 interface GoogleLoginButtonProps {
   isStaff?: boolean;
@@ -21,6 +22,7 @@ export function GoogleLoginButton({ isStaff = false, className = "", disabled }:
   const showLoader = useLoaderStore((state) => state.showLoader);
   const hideLoader = useLoaderStore((state) => state.hideLoader);
   const { toast } = useToast();
+  const { refreshUser } = useAuth(); // Добавляем для обновления состояния
   
   const redirectParam = searchParams.get('redirect');
 
@@ -34,11 +36,22 @@ export function GoogleLoginButton({ isStaff = false, className = "", disabled }:
         callbackUrl = redirectParam;
       }
 
+      console.log("🔐 Google Login - начало процесса:", { isStaff, callbackUrl });
+
+      // Показываем loader
+      showLoader("login", {
+        userRole: isStaff ? "staff" : "member",
+        userName: "Google User",
+        dashboardUrl: callbackUrl
+      });
+
       // Выполняем вход через NextAuth
       const result = await signIn("google", {
         callbackUrl,
         redirect: false, // Не делаем автоматический редирект
       });
+
+      console.log("🔐 Google Login - результат:", result);
 
       if (result?.error) {
         console.error("Google login error:", result.error);
@@ -46,18 +59,28 @@ export function GoogleLoginButton({ isStaff = false, className = "", disabled }:
         toast({
           variant: "destructive",
           title: "Ошибка входа",
-          description: "Не удалось войти через Google"
+          description: result.error === "AccessDenied" 
+            ? "У вас нет доступа к этой части системы" 
+            : "Не удалось войти через Google"
         });
         setIsLoading(false);
       } else if (result?.ok) {
-        // Успешный вход
+        console.log("✅ Google login успешен");
+        
+        // Обновляем состояние аутентификации
+        await refreshUser();
+        
+        // Устанавливаем флаги для приветствия
         sessionStorage.setItem('show_welcome_toast', 'true');
         sessionStorage.setItem('welcome_user_role', isStaff ? 'staff' : 'member');
         
-        // Делаем редирект вручную
+        // Небольшая задержка для показа loader
         setTimeout(() => {
-          window.location.href = callbackUrl;
-        }, 500);
+          hideLoader();
+          // Используем window.location для полного обновления страницы
+          // Это гарантирует, что все cookies и состояние будут правильно загружены
+          window.location.href = result.url || callbackUrl;
+        }, 1500);
       }
     } catch (error) {
       console.error("Google login error:", error);
@@ -74,7 +97,7 @@ export function GoogleLoginButton({ isStaff = false, className = "", disabled }:
   return (
     <button
       onClick={handleGoogleLogin}
-      disabled={disabled}
+      disabled={disabled || isLoading}
       className={`w-full flex items-center justify-center gap-3 px-4 py-3 text-md border border-gray-300 rounded-2xl hover:bg-gray-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
     >
       {isLoading ? (

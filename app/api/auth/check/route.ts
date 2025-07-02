@@ -1,10 +1,9 @@
-// app/api/auth/check/route.ts - ИСПРАВЛЕННАЯ ВЕРСИЯ с правильной логикой
+// app/api/auth/check/route.ts - ИСПРАВЛЕННАЯ ВЕРСИЯ
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession, debugSessionAccess } from '@/lib/simple-auth';
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
-// Типы для совместимости
 interface ExtendedUser {
   id: string;
   role?: string;
@@ -40,7 +39,6 @@ interface AuthResponse {
   error?: string;
 }
 
-// Функция для нормализации пользователя из разных источников
 function normalizeUser(user: any, source: 'nextauth' | 'jwt') {
   return {
     id: user.id || '',
@@ -54,7 +52,6 @@ function normalizeUser(user: any, source: 'nextauth' | 'jwt') {
   };
 }
 
-// Функция для определения дашборда по роли
 function getDashboardForRole(role: string): string {
   const normalizedRole = role.replace(/_/g, '-').toLowerCase();
   
@@ -109,26 +106,62 @@ export async function GET(request: NextRequest) {
     if (nextAuthSession?.user) {
       console.log('✅ NextAuth сессия найдена:', {
         email: nextAuthSession.user.email,
-        role: (nextAuthSession.user as ExtendedUser).role
+        role: (nextAuthSession.user as ExtendedUser).role,
+        name: nextAuthSession.user.name
       });
 
       const user = nextAuthSession.user as ExtendedUser;
       const normalizedUser = normalizeUser(user, 'nextauth');
       const redirectUrl = calculateRedirectUrl(redirectParam, normalizedUser.role);
 
-      return NextResponse.json<AuthResponse>({
+      // Создаем JWT токен для совместимости с вашей системой
+      const { createSession } = await import('@/lib/simple-auth');
+      const jwtToken = await createSession({
+        id: user.id,
+        email: user.email || '',
+        role: user.role || 'member',
+        name: user.name || '',
+        avatar: user.image || user.avatar,
+        avatarUrl: user.image || user.avatarUrl,
+        isVerified: true,
+        rating: user.rating || 0,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+
+      // Устанавливаем JWT токен в cookies для совместимости
+      const response = NextResponse.json<AuthResponse>({
         authenticated: true,
         user: normalizedUser,
         dashboardUrl: redirectUrl,
         redirectUrl: redirectUrl,
         system: 'next-auth',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        token: jwtToken // Добавляем токен в ответ
       });
+
+      // Устанавливаем JWT cookies для совместимости с вашей системой
+      const cookieOptions = {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax' as const,
+        maxAge: 7 * 24 * 60 * 60,
+        path: '/'
+      };
+
+      response.cookies.set('session_id', jwtToken, cookieOptions);
+      response.cookies.set('auth_token', jwtToken, cookieOptions);
+      response.cookies.set('user_role', normalizedUser.role, {
+        ...cookieOptions,
+        httpOnly: false
+      });
+
+      return response;
     }
 
     console.log('❌ NextAuth сессия не найдена, проверяем JWT...');
 
-    // СТРАТЕГИЯ 2: Проверяем JWT токены
+    // СТРАТЕГИЯ 2: Проверяем JWT токены (ваша существующая логика)
     const sessionId = request.cookies.get('session_id')?.value;
     const authToken = request.cookies.get('auth_token')?.value;
     const sessionIdDebug = request.cookies.get('session_id_debug')?.value;
@@ -180,7 +213,8 @@ export async function GET(request: NextRequest) {
       sessionCreated: jwtSession.createdAt?.toString() || new Date().toISOString(),
       sessionExpires: jwtSession.expiresAt?.toString() || new Date().toISOString(),
       usedCookie: sessionId ? 'session_id' : (authToken ? 'auth_token' : 'session_id_debug'),
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      token: jwtToken // Добавляем токен в ответ
     });
 
   } catch (error) {
@@ -234,4 +268,10 @@ function clearAuthCookies(response: NextResponse): void {
   response.cookies.delete('auth_token');
   response.cookies.delete('session_id_debug');
   response.cookies.delete('user_role');
+  
+  // Также удаляем NextAuth cookies
+  response.cookies.delete('next-auth.session-token');
+  response.cookies.delete('__Secure-next-auth.session-token');
+  response.cookies.delete('next-auth.callback-url');
+  response.cookies.delete('__Secure-next-auth.callback-url');
 }
