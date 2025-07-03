@@ -1,4 +1,4 @@
-// app/member-dashboard/page.tsx - исправленная версия
+// app/member-dashboard/page.tsx - исправленная версия с правильным logout loader
 "use client";
 
 import { useState, useEffect } from "react";
@@ -21,6 +21,9 @@ import FaceIdCard from "@/components/member/FaceIdCard";
 import MiniProgress from "@/components/member/MiniProgress";
 import SidebarCards from "@/components/member/SidebarCards";
 import TipsSection from "@/components/member/TipsSection";
+import { useLoaderStore, type LoaderType } from "@/stores/loaderStore";
+import StaffLoginLoader from "@/app/staff-login/components/StaffLoginLoader";
+import StaffLogoutLoader from "@/app/staff-login/components/StaffLogoutLoader";
 
 interface Workout {
   id: string;
@@ -47,26 +50,16 @@ interface FaceIdStatus {
 }
 
 export default function MemberDashboard() {
-  useWelcomeToast()
+  // ВСЕ ХУКИ ДОЛЖНЫ БЫТЬ В САМОМ НАЧАЛЕ, БЕЗ УСЛОВИЙ
+  useWelcomeToast();
   const router = useRouter();
   const { user, loading, logout, refreshUser } = useAuth();
   const { get, post } = useApiRequest();
   const { toast } = useToast();
-
-  // 🔧 НОВОЕ: Состояние для отслеживания процесса выхода
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
-
-  // Добавляем отладочную информацию
-  useEffect(() => {
-    console.log("🔍 MemberDashboard отладка:", {
-      user,
-      loading,
-      isLoggingOut,
-      timestamp: new Date().toISOString()
-    });
-  }, [user, loading, isLoggingOut]);
+  const { loaderType, loaderProps, showLoader, hideLoader } = useLoaderStore();
 
   // Состояния
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [workoutsLoading, setWorkoutsLoading] = useState(true);
   const [authChecked, setAuthChecked] = useState(false);
@@ -77,7 +70,6 @@ export default function MemberDashboard() {
     totalHours: 0,
     daysLeft: 15,
   });
-
   const [faceIdStatus, setFaceIdStatus] = useState<FaceIdStatus>({
     isEnabled: false,
     lastUsed: undefined,
@@ -86,81 +78,12 @@ export default function MemberDashboard() {
   });
   const [faceIdLoading, setFaceIdLoading] = useState(true);
 
-  // 🔧 ИСПРАВЛЕННАЯ логика проверки авторизации с учетом процесса выхода
-  useEffect(() => {
-    const checkAuth = async () => {
-      console.log("🔐 MemberDashboard: начало проверки авторизации");
+  // Helper функция для проверки типа loader
+  const isLogoutLoader = () => {
+    return loaderType && loaderType === "logout";
+  };
 
-      // 🔧 ВАЖНО: Если идет процесс выхода - не проверяем доступ
-      if (isLoggingOut) {
-        console.log("🚪 MemberDashboard: идет процесс выхода, пропускаем проверки...");
-        return;
-      }
-
-      // Если еще идет загрузка - ждем
-      if (loading) {
-        console.log("⏳ MemberDashboard: ожидаем завершения загрузки auth...");
-        return;
-      }
-
-      // Проверяем localStorage на наличие сохраненных данных
-      const storedUser = localStorage.getItem('auth_user');
-      const storedToken = localStorage.getItem('auth_token');
-
-      console.log("📦 MemberDashboard: данные из localStorage:", {
-        hasUser: !!storedUser,
-        hasToken: !!storedToken,
-        currentUser: user
-      });
-
-      // Если нет пользователя после загрузки
-      if (!user) {
-        console.log("❌ MemberDashboard: нет пользователя после загрузки");
-
-        // Пробуем обновить данные пользователя если есть сохраненные данные
-        if (storedUser && storedToken) {
-          console.log("🔄 MemberDashboard: пробуем refreshUser");
-          try {
-            await refreshUser();
-            // После refreshUser снова проверим пользователя
-            return;
-          } catch (error) {
-            console.error("❌ MemberDashboard: ошибка refreshUser:", error);
-          }
-        }
-
-        // Если нет сохраненных данных - отказываем в доступе
-        console.log("🚫 MemberDashboard: нет сохраненных данных, отказ в доступе");
-        setAccessDenied(true);
-        setAuthChecked(true);
-        return;
-      }
-
-      // Проверяем роль пользователя
-      if (user.role !== "member" && user.role !== "client") {
-        console.log("🚫 MemberDashboard: неправильная роль:", user.role);
-        setAccessDenied(true);
-        setAuthChecked(true);
-        return;
-      }
-
-      // Все проверки пройдены
-      console.log("✅ MemberDashboard: авторизация успешна");
-      setAuthChecked(true);
-    };
-
-    checkAuth();
-  }, [loading, user, refreshUser, isLoggingOut]); // 🔧 Добавили isLoggingOut в зависимости
-
-  // Загружаем данные только если пользователь авторизован и проверки пройдены
-  useEffect(() => {
-    if (authChecked && user && (user.role === "member" || user.role === "client") && !accessDenied && !isLoggingOut) {
-      console.log("✅ MemberDashboard: загружаем данные пользователя");
-      fetchWorkouts();
-      checkFaceIdStatus();
-    }
-  }, [authChecked, user, accessDenied, isLoggingOut]);
-
+  // Функции для работы с данными
   const fetchWorkouts = async () => {
     try {
       setWorkoutsLoading(true);
@@ -275,18 +198,28 @@ export default function MemberDashboard() {
     });
   };
 
-  // 🔧 ИСПРАВЛЕННАЯ функция выхода с предотвращением показа "Доступ запрещен"
   const handleLogout = async () => {
     try {
       console.log("🚪 MemberDashboard: начинаем процесс выхода...");
 
-      // 🔧 ВАЖНО: Устанавливаем флаг выхода ПЕРЕД вызовом logout
       setIsLoggingOut(true);
 
-      // Выполняем выход через useAuth
-      await logout();
+      // Показываем logout loader
+      showLoader("logout", {
+        userRole: user?.role || "member",
+        userName: user?.name || user?.email?.split("@")[0] || "Участник"
+      });
+
+      // Небольшая задержка для гарантии отображения loader
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // НЕ скрываем loader - он должен оставаться до конца
+      await logout(true); // skipRedirect = true
+      
     } catch (error) {
       console.error("❌ Ошибка выхода:", error);
+      // При ошибке скрываем loader и делаем редирект
+      hideLoader();
       setIsLoggingOut(false);
       router.push("/");
     }
@@ -297,6 +230,92 @@ export default function MemberDashboard() {
     router.push("/");
   };
 
+  // useEffect хуки
+  useEffect(() => {
+    console.log("🔍 MemberDashboard отладка:", {
+      user,
+      loading,
+      isLoggingOut,
+      loaderType,
+      timestamp: new Date().toISOString()
+    });
+  }, [user, loading, isLoggingOut, loaderType]);
+
+  // Проверка авторизации
+  useEffect(() => {
+    const checkAuth = async () => {
+      console.log("🔐 MemberDashboard: начало проверки авторизации");
+
+      // Если идет процесс выхода - не проверяем доступ
+      if (isLoggingOut || isLogoutLoader()) {
+        console.log("🚪 MemberDashboard: идет процесс выхода, пропускаем проверки...");
+        return;
+      }
+
+      // Если еще идет загрузка - ждем
+      if (loading) {
+        console.log("⏳ MemberDashboard: ожидаем завершения загрузки auth...");
+        return;
+      }
+
+      // Проверяем localStorage на наличие сохраненных данных
+      const storedUser = localStorage.getItem('auth_user');
+      const storedToken = localStorage.getItem('auth_token');
+
+      console.log("📦 MemberDashboard: данные из localStorage:", {
+        hasUser: !!storedUser,
+        hasToken: !!storedToken,
+        currentUser: user
+      });
+
+      // Если нет пользователя после загрузки
+      if (!user) {
+        console.log("❌ MemberDashboard: нет пользователя после загрузки");
+
+        // Пробуем обновить данные пользователя если есть сохраненные данные
+        if (storedUser && storedToken) {
+          console.log("🔄 MemberDashboard: пробуем refreshUser");
+          try {
+            await refreshUser();
+            // После refreshUser снова проверим пользователя
+            return;
+          } catch (error) {
+            console.error("❌ MemberDashboard: ошибка refreshUser:", error);
+          }
+        }
+
+        // Если нет сохраненных данных - отказываем в доступе
+        console.log("🚫 MemberDashboard: нет сохраненных данных, отказ в доступе");
+        setAccessDenied(true);
+        setAuthChecked(true);
+        return;
+      }
+
+      // Проверяем роль пользователя
+      if (user.role !== "member" && user.role !== "client") {
+        console.log("🚫 MemberDashboard: неправильная роль:", user.role);
+        setAccessDenied(true);
+        setAuthChecked(true);
+        return;
+      }
+
+      // Все проверки пройдены
+      console.log("✅ MemberDashboard: авторизация успешна");
+      setAuthChecked(true);
+    };
+
+    checkAuth();
+  }, [loading, user, refreshUser, isLoggingOut]); // Убрали loaderType из зависимостей
+
+  // Загрузка данных
+  useEffect(() => {
+    if (authChecked && user && (user.role === "member" || user.role === "client") && !accessDenied && !isLoggingOut && !isLogoutLoader()) {
+      console.log("✅ MemberDashboard: загружаем данные пользователя");
+      fetchWorkouts();
+      checkFaceIdStatus();
+    }
+  }, [authChecked, user, accessDenied, isLoggingOut]); // Убрали loaderType из зависимостей
+
   // Получаем следующую тренировку
   const upcomingWorkouts = workouts
     .filter((w) => new Date(w.date) > new Date() && w.status !== "cancelled")
@@ -304,15 +323,29 @@ export default function MemberDashboard() {
 
   const nextWorkout = upcomingWorkouts.length > 0 ? upcomingWorkouts[0] : null;
 
+  // РЕНДЕРИНГ - ВСЕ УСЛОВНЫЕ RETURN ПОСЛЕ ВСЕХ ХУКОВ
 
-  // 🔧 ИСПРАВЛЕННАЯ проверка доступа - НЕ показываем если идет процесс выхода
-  if (!isLoggingOut && (accessDenied || !user || (user.role !== "member" && user.role !== "client"))) {
+  // Если показывается logout loader
+  if (isLogoutLoader()) {
+    console.log("🚪 MemberDashboard: показываем logout loader...");
+    return (
+      <StaffLogoutLoader
+        userRole={user?.role || "member"}
+        userName={user?.name || user?.email?.split("@")[0] || "Участник"}
+        redirectUrl="/"
+      />
+    );
+  }
+
+  // Проверка доступа
+  if (!isLoggingOut && !isLogoutLoader() && (accessDenied || !user || (user.role !== "member" && user.role !== "client"))) {
     console.log("🚫 MemberDashboard: показываем отказ в доступе", {
       accessDenied,
       hasUser: !!user,
       userRole: user?.role,
       expectedRoles: ["member", "client"],
-      isLoggingOut
+      isLoggingOut,
+      loaderType
     });
 
     return (

@@ -45,7 +45,7 @@ export default function MemberLoginContent() {
     redirectParam,
   } = useAuthForm();
 
-  if ((loaderType === "login" && loaderProps) || isRedirecting) {
+  if ((loaderType === "login" && loaderProps) || isRedirecting || loading) {
     return (
       <StaffLoginLoader
         userRole={loaderProps?.userRole || "member"}

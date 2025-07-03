@@ -1,3 +1,4 @@
+// app/staff-login/components/StaffLogoutLoader.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -73,27 +74,20 @@ export default function StaffLogoutLoader({ userRole, userName, redirectUrl }: S
   const router = useRouter();
   const roleTexts = useRoleTexts(userRole);
   const [progress, setProgress] = useState(0);
+  const hideLoader = useLoaderStore((state) => state.hideLoader);
 
   useEffect(() => {
-    // Имитация асинхронного завершения логаута
-    const timer = setTimeout(() => {
-      // Очистка состояния лоадера
-      useLoaderStore.getState().hideLoader();
-      // Редирект
-      window.location.href = redirectUrl || "/";
-    }, 1500);
-
-    return () => clearTimeout(timer);
-  }, [redirectUrl]);
-
-  useEffect(() => {
+    // Симулируем прогресс выхода
     const progressInterval = setInterval(() => {
       setProgress(prev => {
         if (prev >= 95) {
           clearInterval(progressInterval);
+          
+          // Ждем немного перед редиректом
           setTimeout(() => {
-            router.push(redirectUrl);
+            window.location.href = redirectUrl || "/";
           }, 500);
+          
           return 100;
         }
         return prev + Math.random() * 15 + 5;
@@ -101,7 +95,7 @@ export default function StaffLogoutLoader({ userRole, userName, redirectUrl }: S
     }, 300);
 
     return () => clearInterval(progressInterval);
-  }, [redirectUrl, router]);
+  }, [redirectUrl]);
 
   // Персонализированное прощание
   const getFarewell = () => {

@@ -1,6 +1,8 @@
+// stores/loaderStore.ts
 import { create } from "zustand"
 
-type LoaderType = "login" | "logout" | null
+// 🔧 ИСПРАВЛЕНО: добавили "logout" в тип и экспортируем его
+export type LoaderType = "login" | "logout" | null
 
 interface LoaderState {
     loaderType: LoaderType;
