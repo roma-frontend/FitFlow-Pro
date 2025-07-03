@@ -162,7 +162,7 @@ export function BadgeTemplateSelector({ onSelectTemplate, onCreateBlank }: Badge
               .map((template, index) => (
                 <Card 
                   key={index} 
-                  className="cursor-pointer hover:shadow-md transition-shadow"
+                  className="cursor-pointer hover:shadow-md transition-shadow overflow-clip"
                   onClick={() => onSelectTemplate(template)}
                 >
                   <CardHeader className="pb-3">
