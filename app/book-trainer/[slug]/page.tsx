@@ -196,7 +196,7 @@ function PaymentForm({
         <Button
           type="submit"
           disabled={!stripe || processing || !clientSecret}
-          className="w-full"
+          className="w-full bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600"
         >
           {processing ? (
             <>
@@ -621,8 +621,8 @@ export default function BookTrainerPage() {
                               key={dateStr}
                               onClick={() => setSelectedDate(dateStr)}
                               className={`p-2 text-center rounded-lg border transition-colors ${selectedDate === dateStr
-                                ? "bg-blue-600 text-white border-blue-600"
-                                : "hover:bg-gray-50 border-gray-200"
+                                ? "bg-gradient-to-r from-blue-500 to-indigo-500 text-white border-blue-600"
+                                : "hover:from-blue-600 hover:to-indigo-600 border-gray-200"
                                 }`}
                             >
                               <div className="text-xs">{dayName}</div>
@@ -644,7 +644,7 @@ export default function BookTrainerPage() {
                               key={time}
                               onClick={() => setSelectedTime(time)}
                               className={`p-2 text-center rounded-lg border transition-colors ${selectedTime === time
-                                ? "bg-blue-600 text-white border-blue-600"
+                                ? "bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white border-blue-600"
                                 : "hover:bg-gray-50 border-gray-200"
                                 }`}
                             >
@@ -665,7 +665,7 @@ export default function BookTrainerPage() {
                       </Button>
                       <Button
                         onClick={() => setStep(3)}
-                        className="flex-1"
+                        className="flex-1 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600"
                         disabled={!selectedDate || !selectedTime}
                       >
                         Продолжить
@@ -723,7 +723,7 @@ export default function BookTrainerPage() {
                             value="card"
                             checked={paymentMethod === "card"}
                             onChange={(e) => setPaymentMethod(e.target.value)}
-                            className="text-blue-600"
+                            className="bg-gradient-to-r from-blue-500 to-indigo-500 text-blue-600"
                           />
                           <div>
                             <div className="font-medium">Банковская карта</div>
@@ -849,7 +849,7 @@ export default function BookTrainerPage() {
                     </Button>
                     <Button
                       onClick={() => router.push("/trainers")}
-                      className="flex-1"
+                      className="flex-1 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600"
                     >
                       Записаться еще
                     </Button>
