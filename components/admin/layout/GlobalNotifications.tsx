@@ -31,7 +31,7 @@ export function GlobalNotifications({
 
       {/* Индикатор загрузки */}
       {scheduleLoading && (
-        <div className="fixed bottom-4 right-4 z-50">
+        <div className="hidden md:block fixed bottom-4 right-4 z-50">
           <div className="bg-blue-100 text-blue-800 px-4 py-2 rounded-lg shadow-lg text-sm border border-blue-200">
             <div className="flex items-center gap-2">
               <RefreshCw className="h-4 w-4 animate-spin" />

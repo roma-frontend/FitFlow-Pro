@@ -71,12 +71,12 @@ export default function SettingsPage() {
   const { exportSettings, importSettings } = useSettingsImportExport(
     config,
     (newConfig) => updateConfig("general", newConfig),
-    (value) => {}
+    (value) => { }
   );
 
   const { resetSettings, showHelp, showNotifications } = useSettingsActions(
     loadSettings,
-    (value) => {}
+    (value) => { }
   );
 
   // Отслеживание прокрутки для адаптивного хедера
@@ -444,22 +444,24 @@ export default function SettingsPage() {
           </div>
         )}
 
-        {/* ✅ Плавающая кнопка Badge для мобильных устройств */}
         {isMobile && !hasUnsavedChanges && (
-          <div className="fixed bottom-4 right-4 z-50 animate-in slide-in-from-bottom-4 duration-300">
+          <div className="fixed top-4 right-4 z-50 animate-in slide-in-from-bottom-4 duration-400">
             <Button
               onClick={handleBadgeManagement}
-              size="lg"
               className={cn(
-                "rounded-full w-14 h-14 shadow-lg hover:shadow-xl",
+                "group flex items-center justify-center shadow-lg hover:shadow-xl",
                 "bg-gradient-to-r from-purple-500 to-blue-500",
                 "hover:from-purple-600 hover:to-blue-600",
-                "transform hover:scale-110 active:scale-95",
-                "transition-all duration-200"
+                "transform hover:scale-105 active:scale-95",
+                "transition-all duration-300",
+                "rounded-full pr-2.5 pl-2.5",
+                "overflow-hidden"
               )}
-              title="Управление Badge"
             >
-              <BadgeIcon className="h-6 w-6" />
+              <BadgeIcon className="h-5 w-5 flex-shrink-0" />
+              <span className="max-w-0 ms-0 group-hover:max-w-xs group-hover:ms-2 transition-all duration-300 overflow-hidden whitespace-nowrap">
+                Управление Badge
+              </span>
             </Button>
           </div>
         )}
