@@ -325,12 +325,9 @@ export function useClients(): Client[] {
 
 // Хук для получения всех событий
 export function useScheduleEvents(filters?: EventFilters): ScheduleEvent[] {
-  // Check if api is available first
-  const isApiAvailable = typeof api?.events?.getAll === 'function';
-  
   let result: any[] | undefined;
   
-  if (isApiAvailable) {
+  try {
     if (filters?.startDate && filters?.endDate) {
       result = useQuery(api.events.getByDateRange, {
         startDate: filters.startDate,
@@ -347,14 +344,20 @@ export function useScheduleEvents(filters?: EventFilters): ScheduleEvent[] {
     } else {
       result = useQuery(api.events.getAll, {});
     }
-  } else {
-    console.warn('Convex API not available');
+  } catch (error) {
+    console.warn('Events API недоступен:', error);
     result = undefined;
   }
 
-  // Rest of the function remains the same...
+  // 🔧 ДОБАВЛЕНА РАСШИРЕННАЯ ОТЛАДКА
+  console.log('=== useScheduleEvents ОТЛАДКА ===');
+  console.log('Raw result from Convex:', result);
+  console.log('Filters:', filters);
+  console.log('Result length:', result?.length || 0);
+
   return useMemo(() => {
     if (!result) {
+      console.log('No result from Convex, returning empty array');
       return [];
     }
     
