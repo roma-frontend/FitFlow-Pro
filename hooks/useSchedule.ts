@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo, useCallback } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
+import { useSafeQuery, useSafeMutation } from "./useConvexSafe";
 
 // ============================================================================
 // ТИПЫ
@@ -324,23 +325,22 @@ export function useClients(): Client[] {
 export function useScheduleEvents(filters?: EventFilters): ScheduleEvent[] {
   let result: any[] | undefined;
   
-  try {
-    if (filters?.startDate && filters?.endDate) {
-      result = useQuery(api.events.getByDateRange, {
-        startDate: filters.startDate,
-        endDate: filters.endDate,
-      });
-    } else if (filters?.trainerId) {
-      result = useQuery(api.events.getByTrainer, {
-        trainerId: filters.trainerId as string,
-      });
-    } else if (filters?.status) {
-      result = useQuery(api.events.getByStatus, {
-        status: filters.status,
-      });
-    } else {
-      result = useQuery(api.events.getAll, {});
-    }
+  if (filters?.startDate && filters?.endDate) {
+    result = useSafeQuery(api.events.getByDateRange, {
+      startDate: filters.startDate,
+      endDate: filters.endDate,
+    });
+  } else if (filters?.trainerId) {
+    result = useSafeQuery(api.events.getByTrainer, {
+      trainerId: filters.trainerId as string,
+    });
+  } else if (filters?.status) {
+    result = useSafeQuery(api.events.getByStatus, {
+      status: filters.status,
+    });
+  } else {
+    result = useSafeQuery(api.events.getAll, {});
+  }
   } catch (error) {
     console.warn('Events API недоступен:', error);
     result = undefined;
@@ -597,11 +597,11 @@ export function useScheduleMutations() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Convex мутации
-  const createEventMutation = useMutation(api.events.create);
-  const updateEventMutation = useMutation(api.events.update);
-  const deleteEventMutation = useMutation(api.events.delete_);
-  const updateStatusMutation = useMutation(api.events.updateStatus);
+  // Use safe mutations
+  const createEventMutation = useSafeMutation(api.events.create);
+  const updateEventMutation = useSafeMutation(api.events.update);
+  const deleteEventMutation = useSafeMutation(api.events.delete_);
+  const updateStatusMutation = useSafeMutation(api.events.updateStatus);
 
   // Получаем списки тренеров и клиентов
   const trainers = useTrainers();
