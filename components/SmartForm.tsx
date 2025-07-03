@@ -22,6 +22,7 @@ import { RoleBasedPasswordValidator } from "./RoleBasedPasswordValidator";
 import { useRealTimeValidation } from "@/utils/realTimeValidation";
 import { validateEmail, validatePasswordStrength } from "@/utils/validation";
 import { Loader2, CheckCircle, AlertCircle, Shield } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 interface SmartFormProps {
   type: "login" | "register" | "staff-login";
@@ -39,6 +40,7 @@ export const SmartForm: React.FC<SmartFormProps> = ({
   const [passwordValid, setPasswordValid] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
   const { validationStates, validateField } = useRealTimeValidation();
+  const router = useRouter()
 
   // ✅ Конфигурация полей для разных типов форм с учетом окружения
   const getFormConfig = () => {
@@ -341,9 +343,9 @@ export const SmartForm: React.FC<SmartFormProps> = ({
   return (
     <Card className="w-full shadow-xl mx-auto lg:mx-0">
       <CardHeader className="text-center">
-        <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
+      <Button onClick={() => router.push("/")} className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg transition-all">
           <Shield className="h-8 w-8 text-white" />
-        </div>
+        </Button>
         <CardTitle className="text-2xl font-bold">{config.title}</CardTitle>
         <CardDescription className="text-base">
           {config.description}

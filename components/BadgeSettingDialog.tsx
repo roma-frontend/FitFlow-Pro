@@ -208,30 +208,30 @@ export function BadgeSettingDialog({
     label: string;
     description: string;
   }[] = [
-    {
-      value: "standard",
-      label: "Стандартный",
-      description: "Классический стиль",
-    },
-    {
-      value: "quantum-ai",
-      label: "Quantum AI",
-      description: "Футуристический AI стиль",
-    },
-    {
-      value: "neural-new",
-      label: "Neural New",
-      description: "Нейронный дизайн",
-    },
-    {
-      value: "holographic",
-      label: "Голографический",
-      description: "Голографический эффект",
-    },
-    { value: "minimal", label: "Минимальный", description: "Простой и чистый" },
-    { value: "cosmic", label: "Космический", description: "Космическая тема" },
-    { value: "matrix", label: "Матрица", description: "В стиле Matrix" },
-  ];
+      {
+        value: "standard",
+        label: "Стандартный",
+        description: "Классический стиль",
+      },
+      {
+        value: "quantum-ai",
+        label: "Quantum AI",
+        description: "Футуристический AI стиль",
+      },
+      {
+        value: "neural-new",
+        label: "Neural New",
+        description: "Нейронный дизайн",
+      },
+      {
+        value: "holographic",
+        label: "Голографический",
+        description: "Голографический эффект",
+      },
+      { value: "minimal", label: "Минимальный", description: "Простой и чистый" },
+      { value: "cosmic", label: "Космический", description: "Космическая тема" },
+      { value: "matrix", label: "Матрица", description: "В стиле Matrix" },
+    ];
 
   // Список доступных ролей
   const availableRoles = [
@@ -251,7 +251,7 @@ export function BadgeSettingDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto overflow-x-clip">
         <DialogHeader>
-          <DialogTitle>
+          <DialogTitle className="texxt-black">
             {isEditing ? "Редактировать Badge" : "Создать Badge"}
           </DialogTitle>
           <DialogDescription>
@@ -474,15 +474,15 @@ export function BadgeSettingDialog({
                                       onCheckedChange={(checked: boolean) => {
                                         return checked
                                           ? field.onChange([
-                                              ...field.value,
-                                              role,
-                                            ])
+                                            ...field.value,
+                                            role,
+                                          ])
                                           : field.onChange(
-                                              field.value?.filter(
-                                                (value: string) =>
-                                                  value !== role
-                                              )
-                                            );
+                                            field.value?.filter(
+                                              (value: string) =>
+                                                value !== role
+                                            )
+                                          );
                                       }}
                                     />
                                   </FormControl>
@@ -532,15 +532,15 @@ export function BadgeSettingDialog({
                                       onCheckedChange={(checked: boolean) => {
                                         return checked
                                           ? field.onChange([
-                                              ...field.value,
-                                              device,
-                                            ])
+                                            ...field.value,
+                                            device,
+                                          ])
                                           : field.onChange(
-                                              field.value?.filter(
-                                                (value: string) =>
-                                                  value !== device
-                                              )
-                                            );
+                                            field.value?.filter(
+                                              (value: string) =>
+                                                value !== device
+                                            )
+                                          );
                                       }}
                                     />
                                   </FormControl>
@@ -859,7 +859,7 @@ export function BadgeSettingDialog({
               >
                 Отмена
               </Button>
-              <Button type="submit" disabled={isSaving}>
+              <Button type="submit" disabled={isSaving} className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600">
                 {isSaving
                   ? "Сохранение..."
                   : isEditing

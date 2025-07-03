@@ -99,7 +99,7 @@ export const PWAInstallPrompt = memo(function PWAInstallPrompt() {
   ];
 
   return (
-    <Card className={`fixed z-50 border-blue-200 bg-blue-50 shadow-xl ${
+    <Card className={`fixed z-50 border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 shadow-xl ${
       deviceType === 'mobile' 
         ? 'bottom-4 left-4 right-4' 
         : 'bottom-6 right-6 w-96'
@@ -144,7 +144,7 @@ export const PWAInstallPrompt = memo(function PWAInstallPrompt() {
           <Button
             onClick={handleInstall}
             disabled={isInstalling}
-            className="flex-1 bg-blue-600 hover:bg-blue-700"
+            className="flex-1 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600"
             size="sm"
           >
             {isInstalling ? (

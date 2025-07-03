@@ -467,7 +467,7 @@ export default function HeaderBadgesPage() {
               </Button>
               <Button
                 onClick={handleCreateNew}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600"
               >
                 <Plus className="h-4 w-4" />
                 Создать Badge
