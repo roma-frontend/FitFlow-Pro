@@ -1,8 +1,8 @@
-// hooks/useStaffAuth.ts - ПОЛНАЯ БЕЗОПАСНАЯ ВЕРСИЯ
+// hooks/useStaffAuth.ts - ИСПРАВЛЕННАЯ ВЕРСИЯ
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 
 interface StaffLoginResult {
@@ -37,16 +37,35 @@ function safeHideLoader() {
   }
 }
 
+// Безопасная функция для получения параметров URL
+function getUrlParams(): URLSearchParams | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    return new URLSearchParams(window.location.search);
+  } catch (error) {
+    console.error('Error parsing URL params:', error);
+    return null;
+  }
+}
+
 export function useStaffAuth() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [showForgotPassword, setShowForgotPassword] = useState<boolean>(false);
   const [resetEmail, setResetEmail] = useState<string>("");
   const [resetSent, setResetSent] = useState<boolean>(false);
+  const [redirectPath, setRedirectPath] = useState<string | null>(null);
 
   const { toast } = useToast();
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const redirectPath = searchParams.get("redirect");
+
+  // Получаем redirect параметр безопасно
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = getUrlParams();
+      const redirect = params?.get("redirect") || null;
+      setRedirectPath(redirect);
+    }
+  }, []);
 
   // Проверка авторизации при загрузке
   useEffect(() => {
