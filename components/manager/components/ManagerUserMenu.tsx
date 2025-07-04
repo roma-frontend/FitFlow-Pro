@@ -86,7 +86,7 @@ const ManagerUserMenu = memo(
         redirectUrl: "/"
       });
       
-      await logout(true);
+      await logout();
     };
 
     const handleMenuItemClick = (action: () => void) => {

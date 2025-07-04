@@ -47,7 +47,7 @@ export default function ManagerActionsSection({
     });
     
     // Выполняем logout
-    await logout(true);
+    await logout();
   };
 
   const quickActions = [

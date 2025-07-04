@@ -7,9 +7,7 @@ import { TrainerNavigationItem } from "../types/trainer-navigation";
 import type { MessageStats, WorkoutStats, SystemStats } from "@/types/trainer";
 import TrainerUserSection from "./sections/TrainerUserSection";
 import TrainerStatsSection from "./sections/TrainerStatsSection";
-import TrainerNavigationSection from "./sections/TrainerNavigationSection";
 import TrainerActionsSection from "./sections/TrainerActionsSection";
-import TrainerDebugSection from "./sections/TrainerDebugSection";
 
 interface TrainerMobileMenuContentProps {
   navigationItems: TrainerNavigationItem[];
@@ -74,16 +72,6 @@ export default memo(function TrainerMobileMenuContent({
     />
   ), [onNavigation, onLogout, isLoading, onClose]);
 
-  const debugSection = useMemo(() => (
-    <TrainerDebugSection
-      error={error}
-      showDebug={showDebug}
-      setShowDebug={setShowDebug}
-      refetch={refetch}
-      onClose={onClose}
-    />
-  ), [error, showDebug, setShowDebug, refetch, onClose]);
-
   return (
     <div 
       className="flex-1 overflow-y-auto p-4 space-y-6"
@@ -94,14 +82,8 @@ export default memo(function TrainerMobileMenuContent({
       {/* Секция статистики */}
       {statsSection}
 
-      {/* Секция навигации */}
-      {/* {navigationSection} */}
-
       {/* Секция быстрых действий */}
       {actionsSection}
-
-      {/* Секция отладки */}
-      {debugSection}
     </div>
   );
 });

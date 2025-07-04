@@ -45,7 +45,7 @@ export default function TrainerActionsSection({
       redirectUrl: "/"
     });
     
-    await logout(true);
+    await logout();
   };
 
   const quickActions = [
