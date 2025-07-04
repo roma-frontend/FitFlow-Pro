@@ -1,20 +1,14 @@
-// components/admin/users/UserCard.tsx
+// components/admin/users/UserCard.tsx - ОПТИМИЗИРОВАННАЯ ВЕРСИЯ
 "use client";
 
-import React, { useState, useCallback, useMemo } from 'react';
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Switch } from "@/components/ui/switch";
+import React, { memo, useCallback } from 'react';
+import { cn } from "@/lib/utils";
 import { 
   MoreVertical, 
   Edit, 
   Trash2, 
-  Shield, 
   Mail, 
-  Calendar,
-  Clock,
+  Eye,
   CheckCircle,
   XCircle
 } from "lucide-react";
@@ -25,9 +19,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
-
 import { User, UserRole } from "@/types/user";
-import { canManageUser, canDeleteUser } from "@/lib/permissions";
 
 interface UserCardProps {
   user: User;
@@ -35,354 +27,211 @@ interface UserCardProps {
   onEdit: (id: string, name: string) => Promise<void>;
   onDelete: (id: string, name: string) => Promise<void>;
   onToggleStatus: (id: string, isActive: boolean) => Promise<void>;
+  onViewDetails?: (user: User) => void;
 }
 
-// Константы для мемоизации
-const roleColors: Record<UserRole, string> = {
-  'super-admin': 'bg-red-100 text-red-800 border-red-200',
-  'admin': 'bg-purple-100 text-purple-800 border-purple-200',
-  'manager': 'bg-blue-100 text-blue-800 border-blue-200',
-  'trainer': 'bg-green-100 text-green-800 border-green-200',
-  'member': 'bg-gray-100 text-gray-800 border-gray-200',
-  'client': 'bg-yellow-100 text-yellow-800 border-yellow-200'
+// Оптимизированные константы вне компонента
+const ROLE_STYLES = {
+  'super-admin': { bg: 'bg-purple-500', text: 'text-white', label: 'Супер' },
+  'admin': { bg: 'bg-red-500', text: 'text-white', label: 'Админ' },
+  'manager': { bg: 'bg-blue-500', text: 'text-white', label: 'Менеджер' },
+  'trainer': { bg: 'bg-green-500', text: 'text-white', label: 'Тренер' },
+  'member': { bg: 'bg-gray-500', text: 'text-white', label: 'Участник' },
+  'client': { bg: 'bg-orange-500', text: 'text-white', label: 'Клиент' }
+} as const;
+
+// Функция для получения инициалов
+const getInitials = (name: string): string => {
+  return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 };
 
-const roleLabels: Record<UserRole, string> = {
-  'super-admin': 'Супер Админ',
-  'admin': 'Администратор',
-  'manager': 'Менеджер',
-  'trainer': 'Тренер',
-  'member': 'Участник',
-  'client': 'Клиент'
-};
-
-// Утилиты форматирования (мемоизированы)
-const formatDate = (timestamp: number) => {
-  return new Date(timestamp).toLocaleDateString('ru-RU', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric'
-  });
-};
-
-const formatLastLogin = (timestamp?: number | null) => {
+// Функция форматирования последнего входа
+const formatLastLogin = (timestamp?: number | null): string => {
   if (!timestamp) return 'Никогда';
-  
   const now = Date.now();
   const diff = now - timestamp;
   const days = Math.floor(diff / (1000 * 60 * 60 * 24));
   
   if (days === 0) return 'Сегодня';
   if (days === 1) return 'Вчера';
-  if (days < 7) return `${days} дн. назад`;
-  if (days < 30) return `${Math.floor(days / 7)} нед. назад`;
+  if (days < 7) return `${days}д`;
+  if (days < 30) return `${Math.floor(days / 7)}н`;
+  if (days < 365) return `${Math.floor(days / 30)}м`;
+  return `${Math.floor(days / 365)}г`;
+};
+
+// Компонент аватара - отдельный мемоизированный компонент
+const UserAvatar = memo(({ name, photoUrl }: { name: string; photoUrl?: string | null }) => {
+  const initials = getInitials(name);
   
-  return formatDate(timestamp);
-};
+  if (photoUrl) {
+    return (
+      <div className="w-12 h-12 rounded-xl overflow-hidden bg-gray-100">
+        <img 
+          src={photoUrl} 
+          alt={name}
+          className="w-full h-full object-cover"
+          loading="lazy"
+          onError={(e) => {
+            e.currentTarget.style.display = 'none';
+            e.currentTarget.nextElementSibling?.classList.remove('hidden');
+          }}
+        />
+        <div className="hidden w-full h-full bg-gradient-to-br from-gray-600 to-gray-800 md:flex items-center justify-center text-white font-medium">
+          {initials}
+        </div>
+      </div>
+    );
+  }
+  
+  return (
+    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-gray-600 to-gray-800 flex items-center justify-center text-white font-medium">
+      {initials}
+    </div>
+  );
+});
 
-const getInitials = (name: string) => {
-  return name.split(' ').map(n => n[0]).join('').toUpperCase();
-};
+UserAvatar.displayName = 'UserAvatar';
 
-export const UserCard = React.memo(({ 
+// Основной компонент карточки
+export const UserCard = memo<UserCardProps>(({ 
   user, 
   currentUserRole, 
   onEdit, 
   onDelete, 
-  onToggleStatus 
-}: UserCardProps) => {
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [imageError, setImageError] = useState(false);
+  onToggleStatus,
+  onViewDetails
+}) => {
+  // Проверка прав доступа
+  const canManage = currentUserRole === 'super-admin' || 
+    (currentUserRole === 'admin' && user.role !== 'super-admin' && user.role !== 'admin');
+  
+  const roleStyle = ROLE_STYLES[user.role as keyof typeof ROLE_STYLES] || ROLE_STYLES.member;
+  const lastLogin = formatLastLogin(user.lastLogin);
 
-  // ✅ Мемоизированные вычисления
-  const canEdit = useMemo((): boolean => {
-    return canManageUser(currentUserRole, user.role);
-  }, [currentUserRole, user.role]);
+  // Оптимизированные обработчики
+  const handleEdit = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    onEdit(user.id, user.name);
+  }, [user.id, user.name, onEdit]);
 
-  const canDelete = useMemo((): boolean => {
-    return canDeleteUser(currentUserRole, user.role);
-  }, [currentUserRole, user.role]);
-
-  const userInitials = useMemo(() => {
-    return getInitials(user.name);
-  }, [user.name]);
-
-  const formattedCreatedAt = useMemo(() => {
-    return formatDate(user.createdAt || 0);
-  }, [user.createdAt]);
-
-  const formattedLastLogin = useMemo(() => {
-    return formatLastLogin(user.lastLogin);
-  }, [user.lastLogin]);
-
-  const roleColor = useMemo(() => {
-    return roleColors[user.role];
-  }, [user.role]);
-
-  const roleLabel = useMemo(() => {
-    return roleLabels[user.role];
-  }, [user.role]);
-
-  // ✅ Мемоизированные колбэки
-  const handleStatusToggle = useCallback(async (checked: boolean) => {
-    if (isUpdating) return;
-    
-    setIsUpdating(true);
-    try {
-      await onToggleStatus(user.id, checked);
-    } catch (error) {
-      console.error('Ошибка изменения статуса:', error);
-    } finally {
-      setIsUpdating(false);
-    }
-  }, [user.id, onToggleStatus, isUpdating]);
-
-  const handleDelete = useCallback(async () => {
-    try {
-      await onDelete(user.id, user.name);
-    } catch (error) {
-      console.error('Ошибка удаления:', error);
-    }
+  const handleDelete = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    onDelete(user.id, user.name);
   }, [user.id, user.name, onDelete]);
 
-const handleEdit = useCallback(async () => {
-  try {
-    await onEdit(user.id, user.name);
-  } catch (error) {
-    console.error('Ошибка редактирования:', error);
-  }
-}, [user.id, user.name, onEdit]);
+  const handleToggle = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    onToggleStatus(user.id, !user.isActive);
+  }, [user.id, user.isActive, onToggleStatus]);
 
-  const handleImageError = useCallback(() => {
-    setImageError(true);
-  }, []);
-
-  const handleActivateClick = useCallback(() => {
-    handleStatusToggle(true);
-  }, [handleStatusToggle]);
-
-  const handleDeactivateClick = useCallback(() => {
-    handleStatusToggle(false);
-  }, [handleStatusToggle]);
-
-  // ✅ Мемоизированные компоненты
-  const StatusIcon = useMemo(() => {
-    return user.isActive ? (
-      <CheckCircle className="h-4 w-4 text-green-500" />
-    ) : (
-      <XCircle className="h-4 w-4 text-red-500" />
-    );
-  }, [user.isActive]);
-
-  const StatusText = useMemo(() => {
-    return (
-      <span className={`text-xs font-medium ${
-        user.isActive ? 'text-green-600' : 'text-red-600'
-      }`}>
-        {user.isActive ? 'Активен' : 'Неактивен'}
-      </span>
-    );
-  }, [user.isActive]);
-
-  const AvatarComponent = useMemo(() => (
-    <Avatar className="h-12 w-12 ring-2 ring-white shadow-md">
-      {user.photoUrl && !imageError ? (
-        <AvatarImage 
-          src={user.photoUrl} 
-          alt={user.name}
-          onError={handleImageError}
-          className="object-cover"
-        />
-      ) : (
-        <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white font-semibold">
-          {userInitials}
-        </AvatarFallback>
-      )}
-    </Avatar>
-  ), [user.photoUrl, user.name, imageError, userInitials, handleImageError]);
+  const handleViewDetails = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    onViewDetails?.(user);
+  }, [user, onViewDetails]);
 
   return (
-    <Card className="group hover:shadow-lg transition-all duration-300 border-0 bg-white/80 backdrop-blur-sm hover:bg-white/90">
-      <CardContent className="p-6">
-        {/* Header */}
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center space-x-3">
-            {AvatarComponent}
-            <div>
-              <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
-                {user.name}
-              </h3>
-              <p className="text-sm text-gray-500 flex items-center gap-1">
-                <Mail className="h-3 w-3" />
-                {user.email}
-              </p>
-            </div>
-          </div>
+    <div className="group relative bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100 hover:border-gray-200">
+      {/* Статус индикатор */}
+      <div className={cn(
+        "absolute top-3 right-3 w-2 h-2 rounded-full",
+        user.isActive ? "bg-green-500" : "bg-gray-300"
+      )} />
 
-          {/* Actions */}
-          <div className="flex items-center gap-2">
-            {canEdit && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleEdit}
-                className="h-8 w-8 p-0 hover:bg-blue-100"
-                title="Редактировать"
-              >
-                <Edit className="h-4 w-4 text-blue-600" />
-              </Button>
-            )}
-
-            {(canEdit || canDelete) && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="h-8 w-8 p-0 hover:bg-gray-100"
-                    title="Дополнительные действия"
-                  >
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
-                  {canEdit && (
-                    <>
-                      <DropdownMenuItem onClick={handleEdit}>
-                        <Edit className="h-4 w-4 mr-2" />
-                        Редактировать
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        onClick={() => handleStatusToggle(!user.isActive)}
-                        disabled={isUpdating}
-                      >
-                        {user.isActive ? (
-                          <>
-                            <XCircle className="h-4 w-4 mr-2" />
-                            Деактивировать
-                          </>
-                        ) : (
-                          <>
-                            <CheckCircle className="h-4 w-4 mr-2" />
-                            Активировать
-                          </>
-                        )}
-                      </DropdownMenuItem>
-                    </>
-                  )}
-                  {canDelete && (
-                    <>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem 
-                        onClick={handleDelete}
-                        className="text-red-600 focus:text-red-600"
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Удалить
-                      </DropdownMenuItem>
-                    </>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-          </div>
-        </div>
-
-        {/* Role and Status */}
-        <div className="flex items-center justify-between mb-4">
-          <Badge className={`${roleColor} border`}>
-            <Shield className="h-3 w-3 mr-1" />
-            {roleLabel}
-          </Badge>
-
-          <div className="flex items-center space-x-2">
-            <div className="flex items-center space-x-1">
-              {StatusIcon}
-              {StatusText}
-            </div>
-            
-            {canEdit && (
-              <div className="scale-75">
-                <Switch
-                  checked={user.isActive}
-                  onCheckedChange={handleStatusToggle}
-                  disabled={isUpdating}
-                />
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Metadata */}
-        <div className="space-y-2 text-xs text-gray-500">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1">
-              <Calendar className="h-3 w-3" />
-              <span>Создан: {formattedCreatedAt}</span>
-            </div>
-          </div>
+      {/* Основной контент */}
+      <div className="flex items-start gap-3">
+        <UserAvatar name={user.name} photoUrl={user.photoUrl} />
+        
+        <div className="flex-1 min-w-0">
+          <h3 className="font-semibold text-gray-900 truncate">
+            {user.name}
+          </h3>
+          <p className="text-sm text-gray-500 truncate">
+            {user.email}
+          </p>
           
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1">
-              <Clock className="h-3 w-3" />
-              <span>Вход: {formattedLastLogin}</span>
-            </div>
+          {/* Роль и последний вход */}
+          <div className="flex items-center gap-2 mt-2">
+            <span className={cn(
+              "inline-flex px-2 py-0.5 text-xs font-medium rounded-md",
+              roleStyle.bg,
+              roleStyle.text
+            )}>
+              {roleStyle.label}
+            </span>
+            <span className="text-xs text-gray-400">
+              Вход: {lastLogin}
+            </span>
           </div>
         </div>
 
-        {/* Quick Actions */}
-        {canEdit && (
-          <div className="mt-4 pt-4 border-t border-gray-100">
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleEdit}
-                className="flex-1 h-8 text-xs"
-              >
-                <Edit className="h-3 w-3 mr-1" />
-                Редактировать
-              </Button>
-              
-              {user.isActive ? (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleDeactivateClick}
-                  disabled={isUpdating}
-                  className="h-8 text-xs text-orange-600 border-orange-200 hover:bg-orange-50"
+        {/* Меню действий */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="p-1 rounded-lg hover:bg-gray-100 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100">
+              <MoreVertical className="h-4 w-4 text-gray-500" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            {onViewDetails && (
+              <>
+                <DropdownMenuItem onClick={handleViewDetails}>
+                  <Eye className="h-4 w-4 mr-2" />
+                  Подробнее
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+              </>
+            )}
+            
+            {canManage && (
+              <>
+                <DropdownMenuItem onClick={handleEdit}>
+                  <Edit className="h-4 w-4 mr-2" />
+                  Редактировать
+                </DropdownMenuItem>
+                
+                <DropdownMenuItem onClick={handleToggle}>
+                  {user.isActive ? (
+                    <>
+                      <XCircle className="h-4 w-4 mr-2" />
+                      Деактивировать
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Активировать
+                    </>
+                  )}
+                </DropdownMenuItem>
+              </>
+            )}
+            
+            <DropdownMenuItem 
+              onClick={(e) => {
+                e.stopPropagation();
+                window.open(`mailto:${user.email}`);
+              }}
+            >
+              <Mail className="h-4 w-4 mr-2" />
+              Написать
+            </DropdownMenuItem>
+            
+            {canManage && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  onClick={handleDelete}
+                  className="text-red-600 focus:text-red-600"
                 >
-                  {isUpdating ? 'Обновление...' : 'Деактивировать'}
-                </Button>
-              ) : (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleActivateClick}
-                  disabled={isUpdating}
-                  className="h-8 text-xs text-green-600 border-green-200 hover:bg-green-50"
-                >
-                  {isUpdating ? 'Обновление...' : 'Активировать'}
-                </Button>
-              )}
-            </div>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}, (prevProps, nextProps) => {
-  // ✅ Кастомная функция сравнения для точного контроля ре-рендеров
-  return (
-    prevProps.user.id === nextProps.user.id &&
-    prevProps.user.name === nextProps.user.name &&
-    prevProps.user.email === nextProps.user.email &&
-    prevProps.user.isActive === nextProps.user.isActive &&
-    prevProps.user.role === nextProps.user.role &&
-    prevProps.user.photoUrl === nextProps.user.photoUrl &&
-    prevProps.user.lastLogin === nextProps.user.lastLogin &&
-    prevProps.user.createdAt === nextProps.user.createdAt &&
-    prevProps.currentUserRole === nextProps.currentUserRole
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Удалить
+                </DropdownMenuItem>
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </div>
   );
 });
 
