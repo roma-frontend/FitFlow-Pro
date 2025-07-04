@@ -10,10 +10,7 @@ import { BarChart3, Users, Calendar, MessageSquare } from "lucide-react";
 import { TrainerProvider } from '@/contexts/TrainerContext';
 import { TrainerStats } from '@/components/trainer/components/TrainerStats';
 import { useTrainerDataQuery } from '@/hooks/useTrainerDataQuery';
-import { useAuth } from '@/hooks/useAuth';
 import { useWelcomeToast } from '@/hooks/useWelcomeToast';
-import { useStaffAuth } from '@/hooks/useStaffAuth';
-import FitnessLoader from '@/components/ui/FitnessLoader';
 
 // Ленивая загрузка компонентов
 const TrainerOverview = lazy(() => import('@/components/trainer/TrainerOverview'));
@@ -67,7 +64,6 @@ function DashboardContent() {
     refetch
   } = useTrainerDataQuery();
   const [activeTab, setActiveTab] = useState("overview");
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -120,25 +116,6 @@ function DashboardContent() {
         </div>
       </main>
     );
-  }
-
-  if (isLoading) {
-    return (
-      <div className="min-h-[100svh] bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 lg:bg-gradient-to-br lg:from-blue-50 lg:via-white lg:to-indigo-50 flex items-center justify-center p-4">
-          <FitnessLoader
-            isMobile={false}
-            theme="member"
-            size="xl"
-            variant="strength"
-            text="Загружаем данные дашборда..."
-            showProgress={true}
-            motivationalTexts={[
-              "Подготавливаем форму дашборда...",
-            ]}
-            className="drop-shadow-2xl"
-          />
-      </div>
-    )
   }
 
   // Основной контент дашборда

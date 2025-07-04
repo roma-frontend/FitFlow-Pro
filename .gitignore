@@ -46,4 +46,5 @@ next-env.d.ts
 find-unused-ts.js
 find-unused-tsx.js
 test-maildev.js
+generate-secrets.js
 .env*.local

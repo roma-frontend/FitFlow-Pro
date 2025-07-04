@@ -106,7 +106,6 @@ function ManagerDashboardContent() {
 }
 
 export default function ManagerDashboard() {
-  // ✅ УБИРАЕМ проверку авторизации здесь - она должна быть в middleware
   return (
     <ManagerProvider>
       <div className="min-h-[100svh] bg-gray-50">
