@@ -48,3 +48,6 @@ find-unused-tsx.js
 test-maildev.js
 generate-secrets.js
 .env*.local
+
+# Sentry Config File
+.env.sentry-build-plugin
