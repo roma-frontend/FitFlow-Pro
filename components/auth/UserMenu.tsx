@@ -79,8 +79,7 @@ export default function UserMenu() {
       redirectUrl: "/"
     });
     
-    // ✅ ИЗМЕНИЛИ: Выполняем logout с пропуском редиректа
-    await logout(true);
+    await logout();
   };
 
   const getInitials = (name: string) => {

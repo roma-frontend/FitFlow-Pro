@@ -1,7 +1,7 @@
 // components/auth/GoogleLoginButton.tsx - ИСПРАВЛЕННАЯ ВЕРСИЯ
 "use client";
 
-import { signIn, signOut } from "next-auth/react";
+import { signIn } from "next-auth/react";
 import { useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useLoaderStore } from "@/stores/loaderStore";
@@ -38,7 +38,7 @@ export function GoogleLoginButton({ isStaff = false, className = "", disabled }:
 
       console.log("🔐 Google Login - начало процесса:", { isStaff, callbackUrl });
 
-      // Показываем loader
+      // ✅ ИСПРАВЛЕНО: Показываем loader как в обычном login
       showLoader("login", {
         userRole: isStaff ? "staff" : "member",
         userName: user?.name || "Пользователь",
@@ -55,7 +55,10 @@ export function GoogleLoginButton({ isStaff = false, className = "", disabled }:
 
       if (result?.error) {
         console.error("Google login error:", result.error);
+        
+        // ✅ ИСПРАВЛЕНО: Скрываем loader при ошибке
         hideLoader();
+        
         toast({
           variant: "destructive",
           title: "Ошибка входа",
@@ -63,31 +66,82 @@ export function GoogleLoginButton({ isStaff = false, className = "", disabled }:
             ? "У вас нет доступа к этой части системы" 
             : "Не удалось войти через Google"
         });
+        
         setIsLoading(false);
-      } else if (result?.ok) {
+        return;
+      }
+
+      if (result?.ok) {
         console.log("✅ Google login успешен");
         
-        // Обновляем состояние аутентификации
+        // ✅ ИСПРАВЛЕНО: Обновляем пользователя и ждем результата
         await refreshUser();
         
         // Устанавливаем флаги для приветствия
         sessionStorage.setItem('show_welcome_toast', 'true');
         sessionStorage.setItem('welcome_user_role', isStaff ? 'staff' : 'member');
         
-        // Небольшая задержка для показа loader
+        // ✅ ИСПРАВЛЕНО: Делаем как в обычном login - задержка, затем скрытие loader и редирект
         setTimeout(() => {
-          hideLoader();
-          window.location.href = result.url || callbackUrl;
-        }, 1500);
+          console.log('🎯 Google Login: скрываем loader и делаем редирект');
+          hideLoader(); // Скрываем loader
+          
+          // ✅ ИСПРАВЛЕНО: Принудительный редирект через window.location для надежности
+          const targetUrl = result.url || callbackUrl;
+          console.log('🎯 Google Login: редирект на:', targetUrl);
+          
+          // Используем window.location.href для гарантированного редиректа
+          window.location.href = targetUrl;
+        }, 1500); // ✅ 1.5 секунды показываем loader как в обычном login
+        
+        return;
       }
+
+      // ✅ ДОБАВЛЕНО: Обработка случая когда result есть, но нет ни ok, ни error
+      if (result?.url) {
+        console.log("🔄 Google login: получили URL, делаем редирект");
+        
+        // Обновляем пользователя
+        await refreshUser();
+        
+        // Устанавливаем флаги для приветствия
+        sessionStorage.setItem('show_welcome_toast', 'true');
+        sessionStorage.setItem('welcome_user_role', isStaff ? 'staff' : 'member');
+        
+        setTimeout(() => {
+          console.log('🎯 Google Login (URL): скрываем loader и делаем редирект');
+          hideLoader();
+          if (result.url) {
+            window.location.href = result.url;
+          }
+        }, 1500);
+        
+        return;
+      }
+
+      // Если нет ошибки, но и не успешно
+      console.log("❌ Google login: неожиданный результат", result);
+      hideLoader();
+      setIsLoading(false);
+      
+      toast({
+        variant: "destructive",
+        title: "Ошибка входа",
+        description: "Неожиданный результат от сервера авторизации"
+      });
+      
     } catch (error) {
       console.error("Google login error:", error);
+      
+      // ✅ ИСПРАВЛЕНО: Скрываем loader при ошибке
       hideLoader();
+      
       toast({
         variant: "destructive",
         title: "Ошибка",
         description: "Произошла ошибка при входе"
       });
+      
       setIsLoading(false);
     }
   };

@@ -1,4 +1,4 @@
-// app/member-login/page.tsx
+// app/member-login/MemberLoginContent.tsx - ИСПРАВЛЕННАЯ ВЕРСИЯ
 "use client";
 
 import { useState } from "react";
@@ -25,6 +25,8 @@ import { GoogleLoginButton } from "@/components/auth/GoogleLoginButton";
 export default function MemberLoginContent() {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const router = useRouter();
+  
+  // ✅ ИСПРАВЛЕНО: Правильно получаем данные из loaderStore
   const { loaderType, loaderProps } = useLoaderStore();
 
   const {
@@ -45,7 +47,8 @@ export default function MemberLoginContent() {
     redirectParam,
   } = useAuthForm();
 
-  if ((loaderType === "login" && loaderProps) || isRedirecting || loading) {
+  // ✅ ИСПРАВЛЕНО: Показываем loader если loaderType не null ИЛИ если идет процесс входа
+  if (loaderType || isRedirecting || loading) {
     return (
       <StaffLoginLoader
         userRole={loaderProps?.userRole || "member"}
@@ -54,7 +57,6 @@ export default function MemberLoginContent() {
       />
     );
   }
-
 
   if (showForgotPassword) {
     return (
@@ -262,7 +264,7 @@ export default function MemberLoginContent() {
         </div>
       </div>
 
-      {/* Десктопная версия (оригинальная) */}
+      {/* Десктопная версия (остается без изменений) */}
       <div className="hidden lg:block py-8 px-4 sm:px-6 lg:px-8">
         <div className="max-w-6xl mx-auto">
 
@@ -430,7 +432,7 @@ export default function MemberLoginContent() {
                 </CardContent>
               </Card>
 
-              {/* Статистика и достижения */}
+              {/* Остальные карточки остаются без изменений... */}
               <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-200 shadow-lg">
                 <CardHeader>
                   <CardTitle className="text-lg text-green-900 flex items-center">
