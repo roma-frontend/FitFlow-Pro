@@ -1,7 +1,7 @@
-// app/member-login/MemberLoginContent.tsx - ИСПРАВЛЕННАЯ ВЕРСИЯ
+// app/member-login/MemberLoginContent.tsx - С ЛОАДЕРОМ НА КНОПКЕ
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuthForm } from "@/hooks/useAuthForm";
 import { AuthCard } from "@/components/auth/AuthCard";
 import { ErrorAlert } from "@/components/auth/ErrorAlert";
@@ -26,7 +26,7 @@ export default function MemberLoginContent() {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const router = useRouter();
   
-  // ✅ ИСПРАВЛЕНО: Правильно получаем данные из loaderStore
+  // ✅ Получаем данные из loaderStore только для полноэкранного лоадера
   const { loaderType, loaderProps } = useLoaderStore();
 
   const {
@@ -47,13 +47,55 @@ export default function MemberLoginContent() {
     redirectParam,
   } = useAuthForm();
 
-  // ✅ ИСПРАВЛЕНО: Показываем loader если loaderType не null ИЛИ если идет процесс входа
-  if (loaderType || isRedirecting || loading) {
+  useEffect(() => {
+    const checkGoogleOAuthReturn = () => {
+      // Проверяем если пользователь вернулся после Google OAuth
+      const googleLoginInProgress = sessionStorage.getItem('google_login_in_progress');
+      const urlParams = new URLSearchParams(window.location.search);
+      const code = urlParams.get('code');
+      
+      if (googleLoginInProgress === 'true' && code) {
+        console.log('🔄 Обнаружен возврат после Google OAuth на member-login');
+        
+        // Получаем сохраненные данные
+        const isStaff = sessionStorage.getItem('google_login_is_staff') === 'true';
+        const savedRedirect = sessionStorage.getItem('google_login_redirect');
+        
+        // Очищаем sessionStorage
+        sessionStorage.removeItem('google_login_in_progress');
+        sessionStorage.removeItem('google_login_is_staff');
+        sessionStorage.removeItem('google_login_redirect');
+        
+        // Показываем loader
+        const { showLoader } = useLoaderStore.getState();
+        showLoader("login", {
+          userRole: isStaff ? "admin" : "member",
+          userName: "Пользователь",
+          dashboardUrl: savedRedirect || "/member-dashboard"
+        });
+        
+        // Через 2 секунды делаем редирект
+        setTimeout(() => {
+          const { hideLoader } = useLoaderStore.getState();
+          hideLoader();
+          
+          const targetUrl = savedRedirect || "/member-dashboard";
+          window.location.href = targetUrl;
+        }, 2000);
+      }
+    };
+
+    // Проверяем сразу при загрузке
+    checkGoogleOAuthReturn();
+  }, []);
+
+  // ✅ ИЗМЕНЕНО: Показываем полноэкранный loader только при активном loaderType (например, после Google OAuth)
+  if (loaderType === "login" && loaderProps) {
     return (
       <StaffLoginLoader
-        userRole={loaderProps?.userRole || "member"}
-        userName={loaderProps?.userName || "Участник"}
-        dashboardUrl={loaderProps?.dashboardUrl || "/member-dashboard"}
+        userRole={loaderProps.userRole || "member"}
+        userName={loaderProps.userName || "Участник"}
+        dashboardUrl={loaderProps.dashboardUrl || "/member-dashboard"}
       />
     );
   }
@@ -160,6 +202,7 @@ export default function MemberLoginContent() {
                       </div>
                     )}
 
+                    {/* ✅ ИЗМЕНЕНО: Лоадер теперь на кнопке, а не полноэкранный */}
                     <button
                       type="submit"
                       disabled={loading || !isFormReady || isValidating}
@@ -168,7 +211,7 @@ export default function MemberLoginContent() {
                       {loading ? (
                         <div className="flex items-center justify-center">
                           <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                          {redirectParam ? "Вход и перенаправление..." : "Загрузка..."}
+                          {isRedirecting ? "Перенаправление..." : "Обработка..."}
                         </div>
                       ) : (
                         isLogin ? "Войти" : "Создать аккаунт"
@@ -176,13 +219,12 @@ export default function MemberLoginContent() {
                     </button>
                   </form>
 
-
                   {/* Переключатель режима */}
                   <div className="mt-6 text-center">
                     <button
                       onClick={toggleMode}
                       disabled={loading || isValidating}
-                      className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
+                      className="text-sm text-gray-600 hover:text-gray-900 transition-colors disabled:opacity-50"
                     >
                       {isLogin ? (
                         <>
@@ -201,7 +243,8 @@ export default function MemberLoginContent() {
                     <div className="mt-3 text-center">
                       <button
                         onClick={() => setShowForgotPassword(true)}
-                        className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
+                        disabled={loading}
+                        className="text-sm text-gray-500 hover:text-gray-700 transition-colors disabled:opacity-50"
                       >
                         Забыли пароль?
                       </button>
@@ -223,7 +266,8 @@ export default function MemberLoginContent() {
                       : '/auth/face-auth';
                     router.push(faceAuthUrl);
                   }}
-                  className="w-full flex items-center justify-center p-3 bg-white/20 backdrop-blur-sm border border-white/30 rounded-2xl hover:bg-white/30 transition-all text-white"
+                  disabled={loading}
+                  className="w-full flex items-center justify-center p-3 bg-white/20 backdrop-blur-sm border border-white/30 rounded-2xl hover:bg-white/30 transition-all text-white disabled:opacity-50"
                 >
                   <Eye className="h-5 w-5 mr-2" />
                   <span className="font-medium">Face ID вход</span>
@@ -236,7 +280,8 @@ export default function MemberLoginContent() {
                       : '/staff-login';
                     router.push(staffLoginUrl);
                   }}
-                  className="w-full flex items-center justify-center p-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl hover:bg-white/20 transition-all text-white/80"
+                  disabled={loading}
+                  className="w-full flex items-center justify-center p-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl hover:bg-white/20 transition-all text-white/80 disabled:opacity-50"
                 >
                   <Shield className="h-5 w-5 mr-2" />
                   <span className="font-medium">Вход для персонала</span>
@@ -264,7 +309,7 @@ export default function MemberLoginContent() {
         </div>
       </div>
 
-      {/* Десктопная версия (остается без изменений) */}
+      {/* Десктопная версия */}
       <div className="hidden lg:block py-8 px-4 sm:px-6 lg:px-8">
         <div className="max-w-6xl mx-auto">
 
@@ -340,11 +385,14 @@ export default function MemberLoginContent() {
                     />
                   )}
 
+                  {/* ✅ ИЗМЕНЕНО: Используем SubmitButton, но с учетом loading состояния */}
                   <SubmitButton
                     isLogin={isLogin}
                     loading={loading}
                     isFormReady={isFormReady}
                     isValidating={isValidating}
+                    redirectParam={redirectParam}
+                    isRedirecting={isRedirecting}
                   />
                 </form>
 
@@ -432,7 +480,7 @@ export default function MemberLoginContent() {
                 </CardContent>
               </Card>
 
-              {/* Остальные карточки остаются без изменений... */}
+              {/* Наше сообщество */}
               <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-200 shadow-lg">
                 <CardHeader>
                   <CardTitle className="text-lg text-green-900 flex items-center">
@@ -483,7 +531,8 @@ export default function MemberLoginContent() {
                         : '/auth/face-auth';
                       router.push(faceAuthUrl);
                     }}
-                    className="w-full flex items-center justify-between p-3 bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-300/30 rounded-lg hover:from-purple-500/20 hover:to-blue-500/20 transition-all text-left"
+                    disabled={loading}
+                    className="w-full flex items-center justify-between p-3 bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-300/30 rounded-lg hover:from-purple-500/20 hover:to-blue-500/20 transition-all text-left disabled:opacity-50"
                   >
                     <div className="flex items-center">
                       <Shield className="h-4 w-4 text-purple-600 mr-3" />
@@ -502,7 +551,8 @@ export default function MemberLoginContent() {
                         : '/staff-login';
                       router.push(staffLoginUrl);
                     }}
-                    className="w-full flex items-center justify-between p-3 bg-gradient-to-r from-gray-100 to-gray-200 border border-gray-300 rounded-lg hover:from-gray-200 hover:to-gray-300 transition-all text-left"
+                    disabled={loading}
+                    className="w-full flex items-center justify-between p-3 bg-gradient-to-r from-gray-100 to-gray-200 border border-gray-300 rounded-lg hover:from-gray-200 hover:to-gray-300 transition-all text-left disabled:opacity-50"
                   >
                     <div className="flex items-center">
                       <Users className="h-4 w-4 text-gray-600 mr-3" />

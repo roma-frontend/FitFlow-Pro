@@ -1,8 +1,8 @@
-// components/auth/GoogleLoginButton.tsx - ИСПРАВЛЕННАЯ ВЕРСИЯ
+// components/auth/GoogleLoginButton.tsx - ОКОНЧАТЕЛЬНО ИСПРАВЛЕННАЯ ВЕРСИЯ
 "use client";
 
 import { signIn } from "next-auth/react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useLoaderStore } from "@/stores/loaderStore";
 import { Loader2 } from "lucide-react";
@@ -18,13 +18,53 @@ interface GoogleLoginButtonProps {
 export function GoogleLoginButton({ isStaff = false, className = "", disabled }: GoogleLoginButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
   const searchParams = useSearchParams();
-  const router = useRouter();
   const showLoader = useLoaderStore((state) => state.showLoader);
   const hideLoader = useLoaderStore((state) => state.hideLoader);
   const { toast } = useToast();
-  const { refreshUser, user } = useAuth();
+  const { refreshUser } = useAuth();
   
   const redirectParam = searchParams.get('redirect');
+
+  // ✅ ВАЖНО: Проверяем если мы вернулись после Google OAuth
+  useEffect(() => {
+    const checkGoogleReturn = async () => {
+      // Проверяем есть ли параметры OAuth в URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const state = urlParams.get('state');
+      const code = urlParams.get('code');
+      
+      // Если есть код от Google и мы на странице входа, значит OAuth прошел
+      if (code && (window.location.pathname.includes('login'))) {
+        console.log('🔄 Обнаружен возврат после Google OAuth, показываем loader...');
+        
+        // Показываем loader сразу при обнаружении возврата
+        showLoader("login", {
+          userRole: isStaff ? "admin" : "member",
+          userName: "Пользователь",
+          dashboardUrl: redirectParam || (isStaff ? "/staff-dashboard" : "/member-dashboard")
+        });
+
+        // Ждем обновления сессии
+        try {
+          await new Promise(resolve => setTimeout(resolve, 1000)); // Даем время NextAuth обработать
+          await refreshUser();
+          
+          // Через 2 секунды скрываем loader и делаем редирект
+          setTimeout(() => {
+            hideLoader();
+            const targetUrl = redirectParam || (isStaff ? "/staff-dashboard" : "/member-dashboard");
+            window.location.href = targetUrl;
+          }, 2000);
+          
+        } catch (error) {
+          console.error('❌ Ошибка при обработке возврата Google:', error);
+          hideLoader();
+        }
+      }
+    };
+
+    checkGoogleReturn();
+  }, [isStaff, redirectParam, showLoader, hideLoader, refreshUser]);
 
   const handleGoogleLogin = async () => {
     try {
@@ -38,111 +78,39 @@ export function GoogleLoginButton({ isStaff = false, className = "", disabled }:
 
       console.log("🔐 Google Login - начало процесса:", { isStaff, callbackUrl });
 
-      // ✅ ИСПРАВЛЕНО: Показываем loader как в обычном login
-      showLoader("login", {
-        userRole: isStaff ? "staff" : "member",
-        userName: user?.name || "Пользователь",
-        dashboardUrl: callbackUrl
-      });
+      // ✅ НЕ показываем loader здесь, так как NextAuth сделает серверный редирект
+      // Loader будет показан при возврате в useEffect
 
-      // Выполняем вход через NextAuth
+      // Сохраняем состояние в sessionStorage для восстановления после OAuth
+      sessionStorage.setItem('google_login_in_progress', 'true');
+      sessionStorage.setItem('google_login_is_staff', isStaff.toString());
+      if (redirectParam) {
+        sessionStorage.setItem('google_login_redirect', redirectParam);
+      }
+
+      // ✅ КЛЮЧЕВОЕ ИЗМЕНЕНИЕ: Используем redirect: true для серверного редиректа
       const result = await signIn("google", {
         callbackUrl,
-        redirect: false, // Не делаем автоматический редирект
+        redirect: true, // ✅ Включаем серверный редирект
       });
 
+      // Этот код может не выполниться из-за redirect: true
       console.log("🔐 Google Login - результат:", result);
 
-      if (result?.error) {
-        console.error("Google login error:", result.error);
-        
-        // ✅ ИСПРАВЛЕНО: Скрываем loader при ошибке
-        hideLoader();
-        
-        toast({
-          variant: "destructive",
-          title: "Ошибка входа",
-          description: result.error === "AccessDenied" 
-            ? "У вас нет доступа к этой части системы" 
-            : "Не удалось войти через Google"
-        });
-        
-        setIsLoading(false);
-        return;
-      }
-
-      if (result?.ok) {
-        console.log("✅ Google login успешен");
-        
-        // ✅ ИСПРАВЛЕНО: Обновляем пользователя и ждем результата
-        await refreshUser();
-        
-        // Устанавливаем флаги для приветствия
-        sessionStorage.setItem('show_welcome_toast', 'true');
-        sessionStorage.setItem('welcome_user_role', isStaff ? 'staff' : 'member');
-        
-        // ✅ ИСПРАВЛЕНО: Делаем как в обычном login - задержка, затем скрытие loader и редирект
-        setTimeout(() => {
-          console.log('🎯 Google Login: скрываем loader и делаем редирект');
-          hideLoader(); // Скрываем loader
-          
-          // ✅ ИСПРАВЛЕНО: Принудительный редирект через window.location для надежности
-          const targetUrl = result.url || callbackUrl;
-          console.log('🎯 Google Login: редирект на:', targetUrl);
-          
-          // Используем window.location.href для гарантированного редиректа
-          window.location.href = targetUrl;
-        }, 1500); // ✅ 1.5 секунды показываем loader как в обычном login
-        
-        return;
-      }
-
-      // ✅ ДОБАВЛЕНО: Обработка случая когда result есть, но нет ни ok, ни error
-      if (result?.url) {
-        console.log("🔄 Google login: получили URL, делаем редирект");
-        
-        // Обновляем пользователя
-        await refreshUser();
-        
-        // Устанавливаем флаги для приветствия
-        sessionStorage.setItem('show_welcome_toast', 'true');
-        sessionStorage.setItem('welcome_user_role', isStaff ? 'staff' : 'member');
-        
-        setTimeout(() => {
-          console.log('🎯 Google Login (URL): скрываем loader и делаем редирект');
-          hideLoader();
-          if (result.url) {
-            window.location.href = result.url;
-          }
-        }, 1500);
-        
-        return;
-      }
-
-      // Если нет ошибки, но и не успешно
-      console.log("❌ Google login: неожиданный результат", result);
-      hideLoader();
-      setIsLoading(false);
-      
-      toast({
-        variant: "destructive",
-        title: "Ошибка входа",
-        description: "Неожиданный результат от сервера авторизации"
-      });
-      
     } catch (error) {
       console.error("Google login error:", error);
+      setIsLoading(false);
       
-      // ✅ ИСПРАВЛЕНО: Скрываем loader при ошибке
-      hideLoader();
+      // Очищаем sessionStorage при ошибке
+      sessionStorage.removeItem('google_login_in_progress');
+      sessionStorage.removeItem('google_login_is_staff');
+      sessionStorage.removeItem('google_login_redirect');
       
       toast({
         variant: "destructive",
         title: "Ошибка",
-        description: "Произошла ошибка при входе"
+        description: "Произошла ошибка при входе через Google"
       });
-      
-      setIsLoading(false);
     }
   };
 
@@ -155,7 +123,7 @@ export function GoogleLoginButton({ isStaff = false, className = "", disabled }:
       {isLoading ? (
         <>
           <Loader2 className="h-5 w-5 animate-spin" />
-          <span>Подключение...</span>
+          <span>Подключение к Google...</span>
         </>
       ) : (
         <>

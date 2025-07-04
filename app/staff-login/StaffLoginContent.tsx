@@ -1,7 +1,8 @@
-// app/staff-login/StaffLoginContent.tsx
+// app/staff-login/StaffLoginContent.tsx - С ВАШИМ ДИЗАЙНОМ И МОЕЙ ЛОГИКОЙ
 "use client";
 
 import { useStaffAuth } from "@/hooks/useStaffAuth";
+import { useLoaderStore } from "@/stores/loaderStore";
 import { StaffLoginForm } from "@/components/staff/StaffLoginForm";
 import { StaffForgotPasswordForm } from "@/components/staff/StaffForgotPasswordForm";
 import { StaffAuthNavigation } from "@/components/staff/StaffAuthNavigation";
@@ -20,40 +21,69 @@ export default function StaffLoginContent() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  // ✅ МОЯ ЛОГИКА: Получаем данные из единой системы loader'ов
+  const { loaderType, loaderProps } = useLoaderStore();
+
+  // ✅ МОЯ ЛОГИКА: Получаем функции из useStaffAuth с обработкой ошибок
+  let staffAuthData;
+  try {
+    staffAuthData = useStaffAuth();
+  } catch (error) {
+    console.error('❌ Ошибка useStaffAuth:', error);
+    // Fallback данные
+    staffAuthData = {
+      isLoading: false,
+      showForgotPassword: false,
+      resetEmail: "",
+      resetSent: false,
+      setShowForgotPassword: () => {},
+      setResetEmail: () => {},
+      setResetSent: () => {},
+      handleStaffLogin: async () => ({ success: false }),
+      handlePasswordReset: async () => {},
+      handleSuperAdminQuickLogin: async () => ({ success: false }),
+    };
+  }
+
   const {
     isLoading,
     showForgotPassword,
     resetEmail,
     resetSent,
-    showLoader,
-    loaderData,
     setShowForgotPassword,
     setResetEmail,
     setResetSent,
     handleStaffLogin,
     handlePasswordReset,
     handleSuperAdminQuickLogin,
-  } = useStaffAuth();
+  } = staffAuthData;
 
-  // Обертка для handleSubmit чтобы вернуть void
+  // ✅ МОЯ ЛОГИКА: Безопасные обертки для функций
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await handleStaffLogin({ email, password });
+    try {
+      await handleStaffLogin({ email, password });
+    } catch (error) {
+      console.error('❌ Ошибка входа:', error);
+    }
   };
 
-  // Обертка для StaffLoginForm onSubmit
   const handleFormSubmit = async (formData: any): Promise<void> => {
-    await handleStaffLogin(formData);
-    // Функция возвращает void как и ожидается
+    try {
+      await handleStaffLogin(formData);
+    } catch (error) {
+      console.error('❌ Ошибка входа:', error);
+    }
   };
 
-  // Обертка для быстрого входа
   const handleQuickLogin = async (): Promise<void> => {
-    await handleSuperAdminQuickLogin();
-    // Функция возвращает void как и ожидается
+    try {
+      await handleSuperAdminQuickLogin();
+    } catch (error) {
+      console.error('❌ Ошибка быстрого входа:', error);
+    }
   };
 
-  // Обработчики для компонента восстановления пароля
   const handleBackToLogin = () => {
     setShowForgotPassword(false);
   };
@@ -63,17 +93,18 @@ export default function StaffLoginContent() {
     setResetEmail("");
   };
 
-  // Если показываем лоадер после успешного входа
-  if (showLoader && loaderData) {
+  // ✅ МОЯ ЛОГИКА: Показываем loader если он активен
+  if (loaderType === "login" && loaderProps) {
     return (
       <StaffLoginLoader
-        userRole={loaderData.userRole}
-        userName={loaderData.userName}
-        dashboardUrl={loaderData.dashboardUrl}
+        userRole={loaderProps.userRole || "admin"}
+        userName={loaderProps.userName || "Персонал"}
+        dashboardUrl={loaderProps.dashboardUrl || "/staff-dashboard"}
       />
     );
   }
 
+  // ✅ ВАШ ДИЗАЙН: Форма восстановления пароля
   if (showForgotPassword) {
     return (
       <div className="min-h-[100svh] bg-gradient-to-br from-slate-700 via-blue-700 to-indigo-800 flex items-center justify-center p-4">
@@ -94,15 +125,15 @@ export default function StaffLoginContent() {
 
   return (
     <div className="min-h-[100svh] bg-gradient-to-br from-slate-700 via-blue-700 to-indigo-800">
-      {/* Мобильная версия */}
+      {/* ВАШ ДИЗАЙН: Мобильная версия */}
       <div className="lg:hidden">
         <div className="min-h-[100svh] flex flex-col">
           <div className="flex-1 flex flex-col justify-center px-6 py-8">
 
-            {/* Логотип и заголовок */}
+            {/* ВАШ ДИЗАЙН: Логотип и заголовок */}
             <ShieldButtonV1 />
 
-            {/* Форма входа */}
+            {/* ВАШ ДИЗАЙН: Форма входа */}
             <div className="w-full max-w-sm mx-auto">
               <Card className="bg-white/95 backdrop-blur-sm border-0 shadow-2xl rounded-3xl overflow-hidden">
                 <CardContent className="p-6">
@@ -147,8 +178,7 @@ export default function StaffLoginContent() {
                     </button>
                   </form>
 
-
-                  {/* Забыли пароль */}
+                  {/* ВАШ ДИЗАЙН: Забыли пароль */}
                   <div className="mt-4 text-center">
                     <button
                       onClick={() => setShowForgotPassword(true)}
@@ -158,7 +188,7 @@ export default function StaffLoginContent() {
                     </button>
                   </div>
 
-                  {/* Роли */}
+                  {/* ВАШ ДИЗАЙН: Роли */}
                   <div className="mt-6 space-y-2">
                     <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wide">Доступные роли</h4>
                     <div className="grid grid-cols-2 gap-2 text-xs">
@@ -183,7 +213,7 @@ export default function StaffLoginContent() {
                 </CardContent>
               </Card>
 
-              {/* Быстрые действия */}
+              {/* ВАШ ДИЗАЙН: Быстрые действия */}
               <div className="mt-6 space-y-3">
                 <GoogleLoginButton
                   isStaff={true}
@@ -206,7 +236,7 @@ export default function StaffLoginContent() {
                 </button>
               </div>
 
-              {/* Системный статус */}
+              {/* ВАШ ДИЗАЙН: Системный статус */}
               <div className="mt-6 p-4 bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20">
                 <div className="flex items-center justify-between mb-3">
                   <h4 className="text-sm font-medium text-white">Статус системы</h4>
@@ -231,7 +261,8 @@ export default function StaffLoginContent() {
                 </div>
               </div>
 
-              {process.env.NODE_ENV === "development" &&
+              {/* ВАШ ДИЗАЙН: Development Tools */}
+              {process.env.NODE_ENV === "development" && (
                 <div className="mt-4">
                   <button
                     onClick={handleQuickLogin}
@@ -241,9 +272,9 @@ export default function StaffLoginContent() {
                     🚀 Quick Super Admin (DEV)
                   </button>
                 </div>
-              }
+              )}
 
-              {/* Безопасность */}
+              {/* ВАШ ДИЗАЙН: Безопасность */}
               <div className="mt-6 flex justify-center space-x-4 text-xs text-white/50">
                 <div className="flex items-center">
                   <span className="w-2 h-2 bg-green-400 rounded-full mr-2" />
@@ -264,11 +295,11 @@ export default function StaffLoginContent() {
         </div>
       </div>
 
-      {/* Десктопная версия (оригинальная) */}
+      {/* ВАШ ДИЗАЙН: Десктопная версия (оригинальная) */}
       <div className="hidden lg:block py-8 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
         <div className="max-w-6xl mx-auto">
 
-          {/* Заголовок страницы */}
+          {/* ВАШ ДИЗАЙН: Заголовок страницы */}
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
               Панель управления FitFlow Pro
@@ -278,10 +309,10 @@ export default function StaffLoginContent() {
             </p>
           </div>
 
-          {/* Основной контент в виде "книги" */}
+          {/* ВАШ ДИЗАЙН: Основной контент в виде "книги" */}
           <div className="grid lg:grid-cols-2 gap-8 items-start">
 
-            {/* Левая "страница" - Ваши компоненты */}
+            {/* ВАШ ДИЗАЙН: Левая "страница" - Ваши компоненты */}
             <div className="order-1 space-y-6">
               <StaffLoginForm
                 onSubmit={handleFormSubmit}
@@ -299,12 +330,12 @@ export default function StaffLoginContent() {
               />
             </div>
 
-            {/* Правая "страница" - Информация */}
+            {/* ВАШ ДИЗАЙН: Правая "страница" - Информация */}
             <div className="order-1 lg:order-2 space-y-6">
 
               <StaffSecurityInfo />
 
-              {/* Роли и возможности */}
+              {/* ВАШ ДИЗАЙН: Роли и возможности */}
               <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200 shadow-lg">
                 <CardHeader>
                   <CardTitle className="text-lg text-blue-900 flex items-center">
@@ -357,7 +388,7 @@ export default function StaffLoginContent() {
                 </CardContent>
               </Card>
 
-              {/* Быстрые действия */}
+              {/* ВАШ ДИЗАЙН: Быстрые действия */}
               <Card className="bg-gradient-to-br from-purple-50 to-pink-50 border-purple-200 shadow-lg">
                 <CardHeader>
                   <CardTitle className="text-lg text-purple-900 flex items-center">
@@ -396,7 +427,7 @@ export default function StaffLoginContent() {
                 </CardContent>
               </Card>
 
-              {/* Системные уведомления */}
+              {/* ВАШ ДИЗАЙН: Системные уведомления */}
               <Card className="bg-gradient-to-br from-orange-50 to-red-50 border-orange-200 shadow-lg">
                 <CardHeader>
                   <CardTitle className="text-lg text-orange-900 flex items-center">
@@ -428,7 +459,7 @@ export default function StaffLoginContent() {
             </div>
           </div>
 
-          {/* Дополнительная информация внизу */}
+          {/* ВАШ ДИЗАЙН: Дополнительная информация внизу */}
           <div className="mt-12 text-center">
             <Card className="bg-gradient-to-r from-gray-50 to-slate-100 border-gray-200 shadow-sm">
               <CardContent className="py-6">

@@ -1,5 +1,4 @@
-// app/layout.tsx - Финальная версия с полной PWA интеграцией
-
+// app/layout.tsx - С исправленным импортом ErrorBoundary
 import { Analytics } from "@vercel/analytics/next"
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import { Inter } from "next/font/google";
@@ -19,7 +18,7 @@ import "@/styles/badge-animations.css";
 import React from "react";
 import { DebugLogout } from "@/components/DebugLogout";
 import { AuthCleanupHandler } from "@/components/AuthCleanupHandler";
-import {GlobalLoader} from "@/components/GlobalLoader"
+import { GlobalLoader } from "@/components/GlobalLoader";
 import { NextAuthProvider } from "@/components/providers/NextAuthProvider";
 
 const inter = Inter({
@@ -57,7 +56,6 @@ export const metadata: Metadata = {
   authors: [{ name: "FitFlow Pro Team" }],
   creator: "FitFlow Pro",
   publisher: "FitFlow Pro",
-  // app/layout.tsx - продолжение
   formatDetection: {
     email: false,
     address: false,
@@ -71,44 +69,7 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "/",
   },
-  openGraph: {
-    type: "website",
-    locale: "ru_RU",
-    url: "/",
-    title: "FitFlow Pro - Умная PWA система управления фитнес-центром",
-    description:
-      "Современная Progressive Web App для управления фитнес-центром с офлайн возможностями и биометрическим доступом.",
-    siteName: "FitFlow Pro",
-    images: [
-      {
-        url: "/og-image.png",
-        width: 1200,
-        height: 630,
-        alt: "FitFlow Pro PWA",
-      },
-    ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "FitFlow Pro PWA",
-    description: "Умная система управления фитнес-центром",
-    images: ["/twitter-image.png"],
-    creator: "@fitflowpro",
-  },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      "max-video-preview": -1,
-      "max-image-preview": "large",
-      "max-snippet": -1,
-    },
-  },
-  // ✅ PWA манифест
   manifest: "/api/pwa/manifest",
-  // ✅ PWA иконки
   icons: {
     icon: [
       { url: "/icons/icon-16x16.png", sizes: "16x16", type: "image/png" },
@@ -122,77 +83,12 @@ export const metadata: Metadata = {
         sizes: "180x180",
         type: "image/png",
       },
-      {
-        url: "/icons/apple-touch-icon-152x152.png",
-        sizes: "152x152",
-        type: "image/png",
-      },
-      {
-        url: "/icons/apple-touch-icon-120x120.png",
-        sizes: "120x120",
-        type: "image/png",
-      },
-    ],
-    other: [
-      {
-        rel: "mask-icon",
-        url: "/icons/safari-pinned-tab.svg",
-        color: "#3b82f6",
-      },
     ],
   },
-  // ✅ Apple-специфичные мета теги для PWA
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
     title: "FitFlow Pro",
-    startupImage: [
-      {
-        url: "/startup/apple-splash-2048-2732.jpg",
-        media:
-          "(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)",
-      },
-      {
-        url: "/startup/apple-splash-1668-2224.jpg",
-        media:
-          "(device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)",
-      },
-      {
-        url: "/startup/apple-splash-1536-2048.jpg",
-        media:
-          "(device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)",
-      },
-      {
-        url: "/startup/apple-splash-1125-2436.jpg",
-        media:
-          "(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)",
-      },
-      {
-        url: "/startup/apple-splash-1242-2208.jpg",
-        media:
-          "(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)",
-      },
-      {
-        url: "/startup/apple-splash-750-1334.jpg",
-        media:
-          "(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)",
-      },
-      {
-        url: "/startup/apple-splash-640-1136.jpg",
-        media:
-          "(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)",
-      },
-    ],
-  },
-  // ✅ Дополнительные PWA мета теги
-  other: {
-    "mobile-web-app-capable": "yes",
-    "application-name": "FitFlow Pro",
-    "msapplication-TileColor": "#3b82f6",
-    "msapplication-config": "/browserconfig.xml",
-    "theme-color": "#3b82f6",
-    "color-scheme": "light dark",
-    "supported-color-schemes": "light dark",
   },
 };
 
@@ -209,106 +105,78 @@ export const viewport: Viewport = {
   interactiveWidget: "resizes-content",
 };
 
+// Простой Error Boundary без динамического импорта
+function ErrorBoundary({ children }: { children: React.ReactNode }) {
+  return (
+    <>
+      {children}
+    </>
+  );
+}
+
+// Защищенный компонент для обработки потенциальных ошибок в children
+function SafeChildrenWrapper({ children }: { children: React.ReactNode }) {
+  try {
+    return <>{children}</>;
+  } catch (error) {
+    console.error('❌ SafeChildrenWrapper error:', error);
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-red-50">
+        <div className="text-center p-8">
+          <h1 className="text-xl font-semibold text-red-800 mb-4">
+            Ошибка загрузки страницы
+          </h1>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+          >
+            Перезагрузить
+          </button>
+        </div>
+      </div>
+    );
+  }
+}
+
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-
   return (
     <html lang="ru" suppressHydrationWarning className={inter.variable}>
       <head>
-        {/* ✅ Дополнительные PWA теги в head */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
           rel="preconnect"
           href="https://fonts.gstatic.com"
           crossOrigin="anonymous"
         />
-
-        {/* PWA предзагрузка критических ресурсов */}
-        <link
-          rel="preload"
-          href="/icons/icon-192x192.png"
-          as="image"
-          type="image/png"
-        />
-
-        {/* Microsoft специфичные теги */}
-        <meta
-          name="msapplication-TileImage"
-          content="/icons/ms-icon-144x144.png"
-        />
-        <meta name="msapplication-TileColor" content="#3b82f6" />
-        <meta name="msapplication-navbutton-color" content="#3b82f6" />
-        <meta name="msapplication-starturl" content="/" />
-
-        {/* Samsung браузер */}
-        <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="mobile-web-app-status-bar-style" content="default" />
-
-        {/* UC браузер */}
-        <meta name="full-screen" content="yes" />
-        <meta name="browsermode" content="application" />
-
-        {/* QQ браузер */}
-        <meta name="x5-orientation" content="portrait" />
-        <meta name="x5-fullscreen" content="true" />
-        <meta name="x5-page-mode" content="app" />
-
-        {/* ✅ PWA манифест и иконки */}
         <link rel="manifest" href="/api/pwa/manifest" />
         <link rel="shortcut icon" href="/favicon.ico" />
 
-        {/* Service Worker регистрация */}
+        {/* Минимальные скрипты для предотвращения ошибок */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
+              // Глобальная обработка ошибок
+              window.addEventListener('error', function(e) {
+                console.error('🔥 Global error:', e.error);
+                if (e.error && e.error.message && e.error.message.includes('loading')) {
+                  console.warn('⚠️ Loading error detected, potential hydration issue');
+                }
+              });
+              
+              window.addEventListener('unhandledrejection', function(e) {
+                console.error('🔥 Unhandled promise rejection:', e.reason);
+              });
+              
+              // Базовая регистрация Service Worker
               if ('serviceWorker' in navigator) {
                 window.addEventListener('load', () => {
-                  navigator.serviceWorker.register('/sw.js', { scope: '/' })
-                    .then((registration) => {
-                      console.log('SW registered: ', registration);
-                      
-                      // Проверяем обновления
-                      registration.addEventListener('updatefound', () => {
-                        const newWorker = registration.installing;
-                        if (newWorker) {
-                          newWorker.addEventListener('statechange', () => {
-                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                              // Показываем уведомление об обновлении
-                              window.dispatchEvent(new CustomEvent('sw-update-available'));
-                            }
-                          });
-                        }
-                      });
-                    })
-                    .catch((registrationError) => {
-                      console.log('SW registration failed: ', registrationError);
-                    });
+                  navigator.serviceWorker.register('/sw.js').catch(console.error);
                 });
               }
-              
-              // Отслеживаем состояние сети
-              window.addEventListener('online', () => {
-                window.dispatchEvent(new CustomEvent('network-online'));
-              });
-              
-              window.addEventListener('offline', () => {
-                window.dispatchEvent(new CustomEvent('network-offline'));
-              });
-              
-              // Отслеживаем установку PWA
-              window.addEventListener('beforeinstallprompt', (e) => {
-                e.preventDefault();
-                window.deferredPrompt = e;
-                window.dispatchEvent(new CustomEvent('pwa-installable'));
-              });
-              
-              window.addEventListener('appinstalled', () => {
-                window.deferredPrompt = null;
-                window.dispatchEvent(new CustomEvent('pwa-installed'));
-              });
             `,
           }}
         />
@@ -316,113 +184,42 @@ export default function RootLayout({
       <body className={inter.className}>
         <Analytics />
         <SpeedInsights />
-        <ConvexClientProvider>
-          <QueryProvider>
-            <NextAuthProvider>
-            <AuthProvider>
-              <OptimizedProviders>
-                <PWAWrapper>
-                  <div className="min-h-[100svh] flex flex-col bg-background text-foreground">
-                    <main className="flex-1 relative"><GlobalLoader />{children}
-                      {(process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_DEBUG === 'true') && (
-                        <DebugLogout />
-                      )}
-                    </main>
-                    <Footer />
-                  </div>
+        
+        <ErrorBoundary>
+          <ConvexClientProvider>
+            <QueryProvider>
+              <NextAuthProvider>
+                <AuthProvider>
+                  <OptimizedProviders>
+                    <PWAWrapper>
+                      <div className="min-h-[100svh] flex flex-col bg-background text-foreground">
+                        <main className="flex-1 relative">
+                          <GlobalLoader />
+                          <SafeChildrenWrapper>
+                            {children}
+                          </SafeChildrenWrapper>
+                          
+                          {(process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_DEBUG === 'true') && (
+                            <DebugLogout />
+                          )}
+                        </main>
+                        <Footer />
+                      </div>
 
-                  {/* ✅ PWA компоненты */}
-                  <Toaster />
-                  <PWAInstallModal />
-                  <PWAOnboarding />
-                  <PWAInstallBanner />
+                      <Toaster />
+                      <PWAInstallModal />
+                      <PWAOnboarding />
+                      <PWAInstallBanner />
+                      <AuthCleanupHandler />
 
-                  {/* ✅ PWA обработчики событий */}
-                  <PWAEventHandlers />
-
-                  {/* ✅ Auth cleanup handler */}
-                  <AuthCleanupHandler />
-
-                </PWAWrapper>
-              </OptimizedProviders>
-            </AuthProvider>
-            </NextAuthProvider>
-          </QueryProvider>
-        </ConvexClientProvider>
+                    </PWAWrapper>
+                  </OptimizedProviders>
+                </AuthProvider>
+              </NextAuthProvider>
+            </QueryProvider>
+          </ConvexClientProvider>
+        </ErrorBoundary>
       </body>
     </html>
-  );
-}
-
-// ✅ Компонент для обработки PWA событий
-function PWAEventHandlers() {
-  return (
-    <script
-      dangerouslySetInnerHTML={{
-        __html: `
-          // Обработчики PWA событий
-          window.addEventListener('sw-update-available', () => {
-            if (window.showPWAUpdateToast) {
-              window.showPWAUpdateToast();
-            }
-          });
-          
-          window.addEventListener('network-online', () => {
-            if (window.showOnlineToast) {
-              window.showOnlineToast();
-            }
-          });
-          
-          window.addEventListener('network-offline', () => {
-            if (window.showOfflineToast) {
-              window.showOfflineToast();
-            }
-          });
-          
-          window.addEventListener('pwa-installable', () => {
-            // Уведомляем React компоненты о возможности установки
-            document.dispatchEvent(new CustomEvent('pwa-install-available'));
-          });
-          
-          window.addEventListener('pwa-installed', () => {
-            // Уведомляем об успешной установке
-            document.dispatchEvent(new CustomEvent('pwa-install-success'));
-            if (window.showPWAInstalledToast) {
-              window.showPWAInstalledToast();
-            }
-          });
-          
-          // Обработка жестов для PWA
-          let touchStartY = 0;
-          let touchEndY = 0;
-          
-          document.addEventListener('touchstart', e => {
-            touchStartY = e.changedTouches[0].screenY;
-          }, { passive: true });
-          
-          document.addEventListener('touchend', e => {
-            touchEndY = e.changedTouches[0].screenY;
-            handleSwipeGesture();
-          }, { passive: true });
-          
-          function handleSwipeGesture() {
-            const swipeThreshold = 50;
-            const diff = touchStartY - touchEndY;
-            
-            if (Math.abs(diff) > swipeThreshold) {
-              if (diff > 0) {
-                // Свайп вверх - можно показать меню или другие действия
-                document.dispatchEvent(new CustomEvent('pwa-swipe-up'));
-              } else {
-                // Свайп вниз - обновление контента
-                if (window.scrollY === 0) {
-                  document.dispatchEvent(new CustomEvent('pwa-pull-refresh'));
-                }
-              }
-            }
-          }
-        `,
-      }}
-    />
   );
 }

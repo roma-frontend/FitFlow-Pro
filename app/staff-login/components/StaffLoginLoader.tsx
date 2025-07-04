@@ -1,11 +1,10 @@
-// app/staff-login/StaffLoginLoader.tsx
+// app/staff-login/components/StaffLoginLoader.tsx - ИСПРАВЛЕННАЯ ВЕРСИЯ
 "use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import FitnessLoader from "@/components/ui/FitnessLoader";
 import { UserRole } from "@/lib/permissions";
-import { useRoleTexts } from "@/lib/roleTexts";
 
 interface StaffLoginLoaderProps {
   userRole: UserRole;
@@ -16,7 +15,7 @@ interface StaffLoginLoaderProps {
 // Маппинг ролей на варианты лоадера
 const roleToLoaderVariant: Record<UserRole, "strength" | "heartbeat" | "running" | "yoga" | "cardio" | "dumbbell"> = {
   "super-admin": "strength",
-  "admin": "heartbeat",
+  "admin": "heartbeat", 
   "manager": "running",
   "trainer": "dumbbell",
   "member": "yoga",
@@ -75,10 +74,50 @@ const roleToMotivationalTexts: Record<UserRole, string[]> = {
   ]
 };
 
+// Тексты для ролей
+const roleTexts: Record<UserRole, {
+  roleDisplayName: string;
+  dashboardTitle: string;
+  dashboardSubtitle: string;
+}> = {
+  "super-admin": {
+    roleDisplayName: "Супер Администратор",
+    dashboardTitle: "Системная Панель",
+    dashboardSubtitle: "Полный контроль над системой"
+  },
+  "admin": {
+    roleDisplayName: "Администратор", 
+    dashboardTitle: "Административная Панель",
+    dashboardSubtitle: "Управление системой и пользователями"
+  },
+  "manager": {
+    roleDisplayName: "Менеджер",
+    dashboardTitle: "Панель Менеджера",
+    dashboardSubtitle: "Управление операциями и персоналом"
+  },
+  "trainer": {
+    roleDisplayName: "Тренер",
+    dashboardTitle: "Панель Тренера", 
+    dashboardSubtitle: "Работа с клиентами и программами"
+  },
+  "member": {
+    roleDisplayName: "Участник",
+    dashboardTitle: "Личный Кабинет",
+    dashboardSubtitle: "Ваши тренировки и прогресс"
+  },
+  "client": {
+    roleDisplayName: "Клиент",
+    dashboardTitle: "Персональный Кабинет",
+    dashboardSubtitle: "Индивидуальные программы"
+  }
+};
+
 export default function StaffLoginLoader({ userRole, userName, dashboardUrl }: StaffLoginLoaderProps) {
   const router = useRouter();
-  const roleTexts = useRoleTexts(userRole);
   const [progress, setProgress] = useState(0);
+
+  // Безопасное получение текстов для роли
+  const currentRoleTexts = roleTexts[userRole] || roleTexts["member"];
 
   useEffect(() => {
     // Симулируем прогресс загрузки
@@ -112,16 +151,7 @@ export default function StaffLoginLoader({ userRole, userName, dashboardUrl }: S
       timeGreeting = "Добрый вечер";
     }
 
-    const roleGreetings: Record<UserRole, string> = {
-      "super-admin": `${timeGreeting}, ${userName}! Подготавливаем системную панель...`,
-      "admin": `${timeGreeting}, ${userName}! Загружаем административный центр...`,
-      "manager": `${timeGreeting}, ${userName}! Готовим управленческую панель...`,
-      "trainer": `${timeGreeting}, ${userName}! Настраиваем тренерское рабочее место...`,
-      "member": `${timeGreeting}, ${userName}! Открываем личный кабинет...`,
-      "client": `${timeGreeting}, ${userName}! Загружаем персональный профиль...`
-    };
-
-    return roleGreetings[userRole] || `${timeGreeting}, ${userName}!`;
+    return `${timeGreeting}, ${userName}! ${currentRoleTexts.dashboardSubtitle}`;
   };
 
   return (
@@ -159,7 +189,7 @@ export default function StaffLoginLoader({ userRole, userName, dashboardUrl }: S
             theme="staff"
             size="xl"
             variant={roleToLoaderVariant[userRole]}
-            text={roleTexts.dashboardTitle}
+            text={currentRoleTexts.dashboardTitle}
             showProgress={true}
             motivationalTexts={roleToMotivationalTexts[userRole]}
             className="drop-shadow-2xl"
@@ -170,10 +200,10 @@ export default function StaffLoginLoader({ userRole, userName, dashboardUrl }: S
             {/* Роль и описание */}
             <div className="bg-white/10 md:bg-gray-100/50 backdrop-blur-sm rounded-2xl p-6">
               <h2 className="text-lg font-semibold text-white md:text-gray-800 mb-2">
-                {roleTexts.roleDisplayName}
+                {currentRoleTexts.roleDisplayName}
               </h2>
               <p className="text-sm text-white/80 md:text-gray-600">
-                {roleTexts.dashboardSubtitle}
+                {currentRoleTexts.dashboardSubtitle}
               </p>
             </div>
 
@@ -183,7 +213,7 @@ export default function StaffLoginLoader({ userRole, userName, dashboardUrl }: S
                 Подготавливаем разделы:
               </h3>
               <div className="grid grid-cols-2 gap-3">
-                {getAvailableSections(userRole, roleTexts).map((section, index) => (
+                {getAvailableSections(userRole).map((section, index) => (
                   <div 
                     key={section}
                     className="flex items-center gap-2 text-sm text-white/80 md:text-gray-600 opacity-0"
@@ -239,55 +269,55 @@ export default function StaffLoginLoader({ userRole, userName, dashboardUrl }: S
 }
 
 // Функция для получения доступных разделов по роли
-function getAvailableSections(role: UserRole, roleTexts: any): string[] {
+function getAvailableSections(role: UserRole): string[] {
   const sections: Record<UserRole, string[]> = {
     "super-admin": [
-      roleTexts.usersTitle || "Управление пользователями",
-      roleTexts.settingsTitle,
-      roleTexts.reportsTitle,
+      "Управление пользователями",
+      "Системные настройки", 
+      "Отчеты и аналитика",
       "Системный мониторинг",
       "Безопасность",
       "Резервное копирование"
     ],
     "admin": [
-      roleTexts.trainersTitle,
-      roleTexts.clientsTitle,
-      roleTexts.scheduleTitle,
-      roleTexts.reportsTitle,
-      roleTexts.productsTitle || "Продукты",
-      roleTexts.settingsTitle
+      "Управление тренерами",
+      "Управление клиентами",
+      "Расписание залов",
+      "Отчеты и статистика",
+      "Управление продуктами",
+      "Системные настройки"
     ],
     "manager": [
-      roleTexts.trainersTitle,
-      roleTexts.clientsTitle,
-      roleTexts.scheduleTitle,
-      roleTexts.reportsTitle,
-      "Оборудование",
+      "Команда тренеров",
+      "База клиентов", 
+      "Расписание занятий",
+      "Отчеты по эффективности",
+      "Управление оборудованием",
       "Операционные задачи"
     ],
     "trainer": [
-      roleTexts.clientsTitle,
-      roleTexts.scheduleTitle,
-      "Программы тренировок",
+      "Мои клиенты",
+      "Расписание тренировок",
+      "Программы тренировок", 
       "Прогресс клиентов",
-      roleTexts.messagesTitle || "Сообщения",
+      "Сообщения",
       "Личная статистика"
     ],
     "member": [
       "Мои тренировки",
-      roleTexts.scheduleTitle,
-      roleTexts.progressTitle,
+      "Расписание занятий",
+      "Мой прогресс",
       "Достижения",
       "Сообщество",
-      roleTexts.settingsTitle
+      "Настройки профиля"
     ],
     "client": [
       "Персональные тренировки",
-      roleTexts.progressTitle,
+      "Мой прогресс",
       "Мой тренер",
-      "Питание",
-      "Цели",
-      roleTexts.settingsTitle
+      "План питания",
+      "Мои цели",
+      "Настройки аккаунта"
     ]
   };
 
