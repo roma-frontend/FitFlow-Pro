@@ -391,7 +391,7 @@ const AIAgent = () => {
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             onClick={() => setIsOpen(true)}
-            className="fixed bottom-6 right-6 z-50 w-16 h-16 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-full shadow-2xl flex items-center justify-center text-white hover:shadow-3xl transition-all duration-300"
+            className="fixed bottom-6 right-6 z-50 w-12 h-12 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-full shadow-2xl flex items-center justify-center text-white hover:shadow-3xl transition-all duration-300"
             style={{
               boxShadow: '0 8px 32px rgba(59, 130, 246, 0.3), 0 0 0 0 rgba(59, 130, 246, 0.4)',
               animation: 'pulse-glow 2s infinite'
@@ -401,7 +401,7 @@ const AIAgent = () => {
               animate={{ rotate: 360 }}
               transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
             >
-              <Brain className="h-8 w-8" />
+              <Brain className="h-6 w-6" />
             </motion.div>
             
             {/* Магические частицы */}
@@ -454,7 +454,7 @@ const AIAgent = () => {
             initial={{ opacity: 0, scale: 0.8, y: 100 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.8, y: 100 }}
-            className="fixed bottom-6 right-6 z-50 w-96 h-[600px] bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden flex flex-col"
+            className="fixed bottom-6 right-6 z-50 w-96 h-[755px] bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden flex flex-col"
             style={{
               boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
             }}
@@ -511,7 +511,7 @@ const AIAgent = () => {
             )}
 
             {/* Область сообщений */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0" style={{ height: 'calc(100% - 140px)' }}>
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0" style={{ height: 'calc(100% - 300px)' }}>
               {messages.map((message, index) => (
                 <motion.div
                   key={message.id}

@@ -63,7 +63,6 @@ const TrainerUserMenu = memo(({
 
   const showLoader = useLoaderStore((state) => state.showLoader);
 
-  // ✅ Добавляем логирование для отладки
   useEffect(() => {
     console.log('🎯 TrainerUserMenu: состояние', {
       user,

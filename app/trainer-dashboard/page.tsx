@@ -11,6 +11,7 @@ import { TrainerProvider } from '@/contexts/TrainerContext';
 import { TrainerStats } from '@/components/trainer/components/TrainerStats';
 import { useTrainerDataQuery } from '@/hooks/useTrainerDataQuery';
 import { useWelcomeToast } from '@/hooks/useWelcomeToast';
+import { useLoaderStore } from '@/stores/loaderStore';
 
 // Ленивая загрузка компонентов
 const TrainerOverview = lazy(() => import('@/components/trainer/TrainerOverview'));
@@ -54,6 +55,14 @@ function SearchParamsHandler({ onTabChange }: { onTabChange: (tab: string) => vo
 
 // Компонент с проверкой загрузки данных
 function DashboardContent() {
+
+  const hideLoader = useLoaderStore((state) => state.hideLoader);
+
+  useEffect(() => {
+    hideLoader();
+    sessionStorage.removeItem('is_redirecting');
+  }, [hideLoader]);
+
   const {
     messageStats,
     workoutStats,

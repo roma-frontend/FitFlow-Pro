@@ -29,31 +29,24 @@ import {
 } from "lucide-react";
 import { GlobalNotifications } from "@/components/admin/layout/GlobalNotifications";
 import { PersonalizedTooltips } from "@/components/admin/layout/PersonalizedTooltips";
+import { useLoaderStore } from "@/stores/loaderStore";
 
-// Хук для определения мобильного устройства
-const useIsMobile = () => {
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const checkIsMobile = () => {
-      setIsMobile(window.innerWidth < 1024);
-    };
-
-    checkIsMobile();
-    window.addEventListener('resize', checkIsMobile);
-    return () => window.removeEventListener('resize', checkIsMobile);
-  }, []);
-
-  return isMobile;
-};
 
 function AdminLayoutContent({ children }: { children: React.ReactNode }) {
+  const hideLoader = useLoaderStore((state) => state.hideLoader);
+
+
+   useEffect(() => {
+    hideLoader();
+    sessionStorage.removeItem('is_redirecting');
+  }, [hideLoader]);
+
+
   useWelcomeToast();
   const { user, loading: authLoading, refreshUser } = useAuth();
   const router = useRouter();
   const userRole = user?.role;
   const roleTexts = useRoleTexts(userRole);
-  const isMobile = useIsMobile();
 
   const {
     events,

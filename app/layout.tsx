@@ -1,4 +1,4 @@
-// app/layout.tsx - Обновленная версия с ИИ-агентом
+// app/layout.tsx - Исправленная версия
 import { Analytics } from "@vercel/analytics/next"
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import { Inter } from "next/font/google";
@@ -23,6 +23,7 @@ import { GlobalLoader } from "@/components/GlobalLoader";
 import { NextAuthProvider } from "@/components/providers/NextAuthProvider";
 import dynamic from "next/dynamic";
 import AIAgent from "@/components/AIAgent";
+import { SessionProviderWrapper } from "@/components/providers/SessionProviderWrapper";
 
 const inter = Inter({
   subsets: ["latin", "cyrillic"],
@@ -186,46 +187,48 @@ export default function RootLayout({
         />
       </head>
       <body className={inter.className}>
-        <Analytics />
-        <SpeedInsights />
-        
-        <ErrorBoundary>
-          <ConvexClientProvider>
-            <QueryProvider>
-              <NextAuthProvider>
-                <AuthProvider>
-                  <OptimizedProviders>
-                    <PWAWrapper>
-                      <div className="min-h-[100svh] flex flex-col bg-background text-foreground">
-                        <main className="flex-1 relative">
-                          <GlobalLoader />
-                          <SafeChildrenWrapper>
-                            {children}
-                          </SafeChildrenWrapper>
-                          
-                          {/* ИИ-агент - доступен на всех страницах */}
-                          <AIAgent />
-                          
-                          {(process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_DEBUG === 'true') && (
-                            <DebugLogout />
-                          )}
-                        </main>
-                        <Footer />
-                      </div>
+        <SessionProviderWrapper>
+          <Analytics />
+          <SpeedInsights />
 
-                      <Toaster />
-                      <PWAInstallModal />
-                      <PWAOnboarding />
-                      <PWAInstallBanner />
-                      <AuthCleanupHandler />
+          <ErrorBoundary>
+            <ConvexClientProvider>
+              <QueryProvider>
+                <NextAuthProvider>
+                  <AuthProvider>
+                    <OptimizedProviders>
+                      <PWAWrapper>
+                        <div className="min-h-[100svh] flex flex-col bg-background text-foreground">
+                          <main className="flex-1 relative">
+                            <GlobalLoader />
+                            <SafeChildrenWrapper>
+                              {children}
+                            </SafeChildrenWrapper>
 
-                    </PWAWrapper>
-                  </OptimizedProviders>
-                </AuthProvider>
-              </NextAuthProvider>
-            </QueryProvider>
-          </ConvexClientProvider>
-        </ErrorBoundary>
+                            {/* ИИ-агент - доступен на всех страницах */}
+                            <AIAgent />
+
+                            {(process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_DEBUG === 'true') && (
+                              <DebugLogout />
+                            )}
+                          </main>
+                          <Footer />
+                        </div>
+
+                        <Toaster />
+                        <PWAInstallModal />
+                        <PWAOnboarding />
+                        <PWAInstallBanner />
+                        <AuthCleanupHandler />
+
+                      </PWAWrapper>
+                    </OptimizedProviders>
+                  </AuthProvider>
+                </NextAuthProvider>
+              </QueryProvider>
+            </ConvexClientProvider>
+          </ErrorBoundary>
+        </SessionProviderWrapper>
       </body>
     </html>
   );

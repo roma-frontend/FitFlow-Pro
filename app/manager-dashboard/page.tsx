@@ -2,7 +2,7 @@
 
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import ManagerHeader from "@/components/manager/ManagerHeader";
 import { ManagerProvider, useManager } from "@/contexts/ManagerContext";
@@ -23,8 +23,17 @@ import {
   getBookingStatusText
 } from "@/app/manager/utils/statusHelpers";
 import { getStatCards } from "@/app/manager/utils/getStatCards";
+import { useLoaderStore } from "@/stores/loaderStore";
 
 function ManagerDashboardContent() {
+  const hideLoader = useLoaderStore((state) => state.hideLoader);
+
+   useEffect(() => {
+    // Очищаем loader и флаги при загрузке страницы admin
+    hideLoader();
+    sessionStorage.removeItem('is_redirecting');
+  }, [hideLoader]);
+
   useWelcomeToast();
   const router = useRouter();
   const { stats, trainers, bookings, loading, refreshData } = useManager();

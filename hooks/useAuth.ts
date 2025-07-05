@@ -2,10 +2,11 @@
 
 "use client";
 
-import React, { useState, useEffect, ReactNode, useRef } from 'react';
+import React, { useState, useEffect, ReactNode, useRef, useCallback } from 'react';
 import { User } from '@/lib/simple-auth';
 import { useRouter, usePathname } from 'next/navigation';
 import { useLoaderStore } from "@/stores/loaderStore"; // ✅ ДОБАВИЛИ
+import { toast } from './use-toast';
 
 export interface AuthStatus {
   authenticated: boolean;
@@ -77,18 +78,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [authStatus, setAuthStatus] = useState<AuthStatus | null>(null);
-  const router = useRouter();
   const pathname = usePathname();
-
-  // ✅ ДОБАВИЛИ: функции для управления loader
-  const hideLoader = useLoaderStore((state) => state.hideLoader);
 
   // Предотвращаем множественные вызовы checkSession
   const checkingSession = useRef(false);
   const lastCheckTime = useRef(0);
   const CHECK_THROTTLE = 1000;
   const initialCheckDone = useRef(false);
+
+  useEffect(() => {
+    const loadUser = () => {
+      try {
+        const storedUser = localStorage.getItem('auth_user');
+        if (storedUser) {
+          const userData = JSON.parse(storedUser);
+          // Преобразуем в правильный формат User
+          setUser({
+            id: userData.id,
+            email: userData.email,
+            name: userData.name,
+            role: userData.role,
+            createdAt: userData.createdAt ? new Date(userData.createdAt) : new Date(),
+            updatedAt: userData.updatedAt ? new Date(userData.updatedAt) : new Date(),
+            ...userData // Остальные поля
+          });
+        }
+      } catch (error) {
+        console.error('Error loading user from storage:', error);
+      }
+    };
+
+    loadUser();
+  }, []);
 
   useEffect(() => {
     const loadStoredAuth = () => {
@@ -139,15 +162,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const handleForceUpdate = (event: CustomEvent) => {
       console.log('🔄 Force auth update received');
-      
+
       setUser(null);
       setToken(null);
       setAuthStatus({ authenticated: false });
       setLoading(false);
-      
+
       const storedUser = localStorage.getItem('auth_user');
       const storedToken = localStorage.getItem('auth_token');
-      
+
       if (!storedUser && !storedToken) {
         console.log('✅ Auth cleared successfully');
       } else {
@@ -158,7 +181,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     window.addEventListener('force-auth-update', handleForceUpdate as EventListener);
-    
+
     return () => {
       window.removeEventListener('force-auth-update', handleForceUpdate as EventListener);
     };
@@ -273,133 +296,117 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // ✅ ИСПРАВЛЕНО: login с правильной обработкой loader
-  const login = async (email: string, password: string, redirectUrl?: string): Promise<boolean> => {
+const login = useCallback(async (email: string, password: string, redirectPath?: string) => {
+    setLoading(true);
+    setError(null);
+
     try {
-      setLoading(true);
-      console.log('🔐 AuthProvider: попытка входа для:', email, 'redirectUrl:', redirectUrl);
+      console.log('🔐 Member login attempt:', email);
 
-      // Определяем endpoint на основе текущего пути
-      let endpoint = '/api/auth/login';
-      if (typeof window !== 'undefined') {
-        const currentPath = window.location.pathname;
-        if (currentPath.includes('member-login')) {
-          endpoint = '/api/auth/member-login';
-          console.log('👥 AuthProvider: определили member-login по пути:', currentPath);
-        }
-      }
-
-      const response = await fetch(endpoint, {
+      const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include',
         body: JSON.stringify({
-          email,
+          email: email.trim().toLowerCase(),
           password,
-          redirectUrl
+          role: 'member' // Явно указываем роль
         }),
       });
 
       const data = await response.json();
-      console.log('🔐 AuthProvider: результат входа:', {
-        status: response.status,
-        success: data.success,
-        hasUser: !!data.user,
-        userRole: data.user?.role,
-        redirectUrl: data.redirectUrl || data.dashboardUrl
-      });
 
       if (!response.ok) {
-        console.error('❌ AuthProvider: ошибка входа:', data.error || 'Unknown error');
-        // ✅ ИСПРАВЛЕНО: скрываем loader при ошибке
-        hideLoader();
-        return false;
+        throw new Error(data.error || `HTTP ${response.status}`);
       }
 
       if (data.success && data.user) {
-        console.log('✅ AuthProvider: вход успешен:', data.user);
+        console.log('✅ Member login successful');
 
-        // Создаем объект пользователя
+        // Создаем объект User с правильными типами
         const userData: User = {
-          id: data.user.userId || data.user.id,
-          role: data.user.role,
-          email: data.user.email,
-          name: data.user.name,
-          avatar: data.user.avatar,
-          createdAt: data.user.createdAt || new Date().toISOString(),
-          updatedAt: data.user.updatedAt || new Date().toISOString()
+          id: data.user.id || data.user.userId || '',
+          email: data.user.email || '',
+          name: data.user.name || '',
+          role: data.user.role || 'member',
+          createdAt: data.user.createdAt ? new Date(data.user.createdAt) : new Date(),
+          updatedAt: data.user.updatedAt ? new Date(data.user.updatedAt) : new Date(),
+          ...data.user // Дополнительные поля
         };
 
-        console.log('👤 AuthProvider: созданный объект пользователя:', userData);
-
         // Сохраняем в localStorage
-        try {
-          const userJson = JSON.stringify(userData);
-          localStorage.setItem('auth_user', userJson);
-          console.log('💾 AuthProvider: данные пользователя сохранены в localStorage');
-
-          const savedUser = localStorage.getItem('auth_user');
-          console.log('✅ AuthProvider: проверка сохранения:', !!savedUser);
-        } catch (storageError) {
-          console.error('❌ AuthProvider: ошибка сохранения в localStorage:', storageError);
+        localStorage.setItem('auth_user', JSON.stringify(userData));
+        if (data.token) {
+          localStorage.setItem('auth_token', data.token);
         }
 
-        // Сохраняем токен
-        if (data.token) {
+        // Устанавливаем флаги для приветствия
+        sessionStorage.setItem('show_welcome_toast', 'true');
+        sessionStorage.setItem('welcome_user_role', 'member');
+        sessionStorage.setItem('is_redirecting', 'true');
+
+        // Определяем целевой URL
+        let targetUrl = '/member-dashboard';
+
+        if (redirectPath) {
           try {
-            localStorage.setItem('auth_token', data.token);
-            setToken(data.token);
-            console.log('💾 AuthProvider: токен сохранен в localStorage');
-          } catch (tokenError) {
-            console.error('❌ AuthProvider: ошибка сохранения токена:', tokenError);
+            const decodedRedirect = decodeURIComponent(redirectPath);
+            if (decodedRedirect.startsWith('/') && !decodedRedirect.startsWith('//')) {
+              targetUrl = decodedRedirect;
+              console.log('🎯 Redirect to requested page:', targetUrl);
+            }
+          } catch (error) {
+            console.error('❌ Error decoding redirect path');
           }
         }
 
-        // Устанавливаем пользователя в состояние
-        setUser(userData);
+        // ВАЖНО: НЕ скрываем loader здесь!
+        // Loader должен оставаться видимым до загрузки новой страницы
 
-        // Обновляем authStatus
-        const newAuthStatus = {
-          authenticated: true,
-          user: {
-            id: userData.id,
-            role: userData.role,
-            email: userData.email,
-            name: userData.name
-          },
-          dashboardUrl: getDashboardUrl(userData.role)
-        };
-        setAuthStatus(newAuthStatus);
-
-        // ✅ ИСПРАВЛЕНО: Задержка перед скрытием loader и редиректом
-        const targetUrl = data.redirectUrl || data.dashboardUrl || getDashboardUrl(userData.role);
-        console.log('🎯 AuthProvider: целевой URL:', targetUrl);
-
-        // Задержка для показа loader, затем скрытие и редирект
+        // Делаем редирект после анимации loader (1.5 сек)
         setTimeout(() => {
-          console.log('🎯 AuthProvider: скрываем loader и делаем редирект');
-          hideLoader(); // Скрываем loader
-          router.push(targetUrl); // Делаем редирект
-        }, 1500); // ✅ 1.5 секунды показываем loader
+          console.log('🚀 Redirecting to:', targetUrl);
+
+          // Используем window.location.replace для полной перезагрузки
+          window.location.replace(targetUrl);
+
+          // НЕ вызываем hideLoader() - пусть новая страница сама управляет
+        }, 1500);
+
+        // Устанавливаем user в состояние
+        setUser(userData);
+        setLoading(false);
 
         return true;
+      } else {
+        throw new Error('Invalid response from server');
+      }
+    } catch (error) {
+      console.error('💥 Login error:', error);
+
+      // При ошибке скрываем loader
+      const { hideLoader } = useLoaderStore.getState();
+      hideLoader();
+
+      sessionStorage.removeItem('is_redirecting');
+
+      const errorMessage = error instanceof Error ? error.message : 'Ошибка входа';
+      setError(errorMessage);
+      setLoading(false);
+
+      // Показываем toast с ошибкой
+      if (toast) {
+        toast({
+          variant: "destructive",
+          title: "Ошибка входа",
+          description: errorMessage,
+        });
       }
 
-      console.log('❌ AuthProvider: вход неуспешен, нет данных пользователя');
-      // ✅ ИСПРАВЛЕНО: скрываем loader при неуспешном входе
-      hideLoader();
       return false;
-    } catch (error) {
-      console.error('❌ AuthProvider: критическая ошибка входа:', error);
-      // ✅ ИСПРАВЛЕНО: скрываем loader при ошибке
-      hideLoader();
-      return false;
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [toast]);
 
   // ✅ logout остается без изменений (уже правильный)
   const logout = async (skipRedirect: boolean = false): Promise<void> => {
@@ -421,15 +428,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new Event('auth-logout'));
         document.dispatchEvent(new Event('auth-logout'));
-        
+
         if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
           navigator.serviceWorker.controller.postMessage({
             type: 'LOGOUT'
           });
         }
-        
+
         window.postMessage({ type: 'CLEAR_AUTH_STORAGE' }, window.location.origin);
-        
+
         if ('BroadcastChannel' in window) {
           const channel = new BroadcastChannel('auth_channel');
           channel.postMessage({ type: 'logout' });
@@ -440,7 +447,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Функция очистки
       const clearAuthData = () => {
         const keys = ['auth_user', 'auth_token', 'user', 'token', 'authToken', 'userToken'];
-        
+
         keys.forEach(key => {
           try {
             localStorage.removeItem(key);
@@ -483,7 +490,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // Финальная очистка
       clearAuthData();
-      
+
       // Убираем флаг
       if (typeof window !== 'undefined') {
         sessionStorage.removeItem('logout_in_progress');
@@ -499,7 +506,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     } catch (error) {
       console.error('❌ AuthProvider: критическая ошибка logout:', error);
-      
+
       if (typeof window !== 'undefined') {
         try {
           localStorage.clear();
@@ -508,11 +515,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.error('❌ Даже clear() не сработал:', e);
         }
       }
-      
+
       setUser(null);
       setToken(null);
       setAuthStatus({ authenticated: false });
-      
+
       if (!skipRedirect) {
         window.location.href = "/";
       }
@@ -543,7 +550,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     refreshUser,
     setAuthStatus: updateAuthStatus
   };
-  
+
   return React.createElement(
     AuthContext.Provider,
     { value },

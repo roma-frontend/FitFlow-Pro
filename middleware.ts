@@ -203,7 +203,14 @@ const SECURITY_CHECK = (request: NextRequest): NextResponse | null => {
     if (isDev) {
       console.log('🔄 БЛОКИРОВКА PREFETCH запроса:', request.nextUrl.pathname);
     }
-    return new NextResponse('Prefetch blocked', { status: 204 });
+    
+    // ИСПРАВЛЕНО: Используем пустой NextResponse для статуса 204
+    return new NextResponse(null, { 
+      status: 204,
+      headers: {
+        'X-Prefetch-Blocked': 'true'
+      }
+    });
   }
 
   const subrequestHeader = request.headers.get('x-middleware-subrequest');

@@ -15,6 +15,7 @@ export interface User {
   updatedAt: Date;
   lastLoginAt?: Date;
   photoUrl?: string;
+  [key: string]: any;
 }
 
 export interface Session {
