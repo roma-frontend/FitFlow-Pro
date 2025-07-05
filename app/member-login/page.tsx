@@ -12,11 +12,9 @@ function MinimalSkeleton() {
 
 export default function MemberLoginPage() {
   return (
-    <>
+    <Suspense fallback={<MinimalSkeleton />}>
       <GoogleAuthHandler />
-      <Suspense fallback={<MinimalSkeleton />}>
-        <MemberLoginContent />
-      </Suspense>
-    </>
+      <MemberLoginContent />
+    </Suspense>
   );
 }

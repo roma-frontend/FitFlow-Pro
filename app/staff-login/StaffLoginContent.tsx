@@ -11,7 +11,7 @@ import { StaffDevelopmentTools } from "@/components/staff/StaffDevelopmentTools"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Shield, Users, Zap, TrendingUp, ArrowRight, CheckCircle, AlertTriangle, Lock, Mail, Loader2, Eye, Settings } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ShieldButtonV1 } from "./components/StaffLoginButton";
 import StaffLoginLoader from "./components/StaffLoginLoader";
 import { GoogleLoginButton } from "@/components/auth/GoogleLoginButton";
@@ -20,25 +20,11 @@ export default function StaffLoginContent() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [isRedirecting, setIsRedirecting] = useState(false);
-   const {loaderType, loaderProps} = useLoaderStore()
-  const isLoaderActive = loaderType !== null;
 
-  useEffect(() => {
-    const redirectFlag = sessionStorage.getItem('is_redirecting');
-    if (redirectFlag === 'true') {
-      setIsRedirecting(true);
-    }
-    
-    // Cleanup при unmount
-    return () => {
-      if (redirectFlag === 'true' && !isLoaderActive) {
-        sessionStorage.removeItem('is_redirecting');
-      }
-    };
-  }, [isLoaderActive]);
+  // ✅ МОЯ ЛОГИКА: Получаем данные из единой системы loader'ов
+  const { loaderType, loaderProps } = useLoaderStore();
 
-
+  // ✅ МОЯ ЛОГИКА: Получаем функции из useStaffAuth с обработкой ошибок
   let staffAuthData;
   try {
     staffAuthData = useStaffAuth();
@@ -72,48 +58,29 @@ export default function StaffLoginContent() {
     handleSuperAdminQuickLogin,
   } = staffAuthData;
 
-  if (isRedirecting || isLoaderActive) {
-    return null;
-  }
-
   // ✅ МОЯ ЛОГИКА: Безопасные обертки для функций
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsRedirecting(true);
     try {
-      const result = await handleStaffLogin({ email, password });
-      if (!result.success) {
-        setIsRedirecting(false);
-      }
+      await handleStaffLogin({ email, password });
     } catch (error) {
       console.error('❌ Ошибка входа:', error);
-      setIsRedirecting(false);
     }
   };
 
   const handleFormSubmit = async (formData: any): Promise<void> => {
-    setIsRedirecting(true);
     try {
-      const result = await handleStaffLogin(formData);
-      if (!result.success) {
-        setIsRedirecting(false);
-      }
+      await handleStaffLogin(formData);
     } catch (error) {
       console.error('❌ Ошибка входа:', error);
-      setIsRedirecting(false);
     }
   };
 
   const handleQuickLogin = async (): Promise<void> => {
-    setIsRedirecting(true);
     try {
-      const result = await handleSuperAdminQuickLogin();
-      if (!result.success) {
-        setIsRedirecting(false);
-      }
+      await handleSuperAdminQuickLogin();
     } catch (error) {
       console.error('❌ Ошибка быстрого входа:', error);
-      setIsRedirecting(false);
     }
   };
 

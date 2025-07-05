@@ -25,12 +25,9 @@ import { GoogleLoginButton } from "@/components/auth/GoogleLoginButton";
 export default function MemberLoginContent() {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const router = useRouter();
-  const { showLoader, hideLoader } = useLoaderStore();
   
+  // ✅ Получаем данные из loaderStore только для полноэкранного лоадера
   const { loaderType, loaderProps } = useLoaderStore();
-  const isLoaderActive = loaderType !== null;
-
-  const [isRedirectInProgress, setIsRedirectInProgress] = useState(false);
 
   const {
     isLogin,
@@ -51,49 +48,48 @@ export default function MemberLoginContent() {
   } = useAuthForm();
 
   useEffect(() => {
-    const redirectFlag = sessionStorage.getItem('is_redirecting');
-    if (redirectFlag === 'true') {
-      setIsRedirectInProgress(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (isRedirecting || isRedirectInProgress) {
-      
-      return;
-    }
-  }, [isRedirecting, isRedirectInProgress]);
-
-  useEffect(() => {
     const checkGoogleOAuthReturn = () => {
+      // Проверяем если пользователь вернулся после Google OAuth
       const googleLoginInProgress = sessionStorage.getItem('google_login_in_progress');
       const urlParams = new URLSearchParams(window.location.search);
       const code = urlParams.get('code');
-
+      
       if (googleLoginInProgress === 'true' && code) {
         console.log('🔄 Обнаружен возврат после Google OAuth на member-login');
-
+        
+        // Получаем сохраненные данные
+        const isStaff = sessionStorage.getItem('google_login_is_staff') === 'true';
         const savedRedirect = sessionStorage.getItem('google_login_redirect');
-
+        
+        // Очищаем sessionStorage
         sessionStorage.removeItem('google_login_in_progress');
         sessionStorage.removeItem('google_login_is_staff');
         sessionStorage.removeItem('google_login_redirect');
-
+        
+        // Показываем loader
+        const { showLoader } = useLoaderStore.getState();
+        showLoader("login", {
+          userRole: isStaff ? "admin" : "member",
+          userName: "Пользователь",
+          dashboardUrl: savedRedirect || "/member-dashboard"
+        });
+        
+        // Через 2 секунды делаем редирект
         setTimeout(() => {
+          const { hideLoader } = useLoaderStore.getState();
           hideLoader();
+          
           const targetUrl = savedRedirect || "/member-dashboard";
-          window.location.replace(targetUrl); // Используем replace вместо href
+          window.location.href = targetUrl;
         }, 2000);
       }
     };
 
+    // Проверяем сразу при загрузке
     checkGoogleOAuthReturn();
-  }, [hideLoader]);
+  }, []);
 
-  if (isRedirectInProgress || isLoaderActive || isRedirecting) {
-    return null;
-  }
-
+  // ✅ ИЗМЕНЕНО: Показываем полноэкранный loader только при активном loaderType (например, после Google OAuth)
   if (loaderType === "login" && loaderProps) {
     return (
       <StaffLoginLoader

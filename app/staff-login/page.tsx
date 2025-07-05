@@ -12,11 +12,9 @@ function StaffMinimalSkeleton() {
 
 export default function StaffLoginPage() {
   return (
-    <>
+    <Suspense fallback={<StaffMinimalSkeleton />}>
       <GoogleAuthHandler />
-      <Suspense fallback={<StaffMinimalSkeleton />}>
-        <StaffLoginContent />
-      </Suspense>
-    </>
+      <StaffLoginContent />
+    </Suspense>
   );
 }

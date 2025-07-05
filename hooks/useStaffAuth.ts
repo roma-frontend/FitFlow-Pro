@@ -1,4 +1,4 @@
-// hooks/useStaffAuth.ts - ИСПРАВЛЕННАЯ ВЕРСИЯ БЕЗ ДВОЙНОГО РЕДИРЕКТА
+// hooks/useStaffAuth.ts - ИСПРАВЛЕННАЯ ВЕРСИЯ
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -30,8 +30,7 @@ export function useStaffAuth() {
   const [resetEmail, setResetEmail] = useState<string>("");
   const [resetSent, setResetSent] = useState<boolean>(false);
   const [redirectPath, setRedirectPath] = useState<string | null>(null);
-  const [isInitialAuthCheck, setIsInitialAuthCheck] = useState<boolean>(true);
-  const { showLoader, hideLoader } = useLoaderStore();
+  const {showLoader, hideLoader} = useLoaderStore()
 
   const { toast } = useToast();
   const router = useRouter();
@@ -45,19 +44,10 @@ export function useStaffAuth() {
     }
   }, []);
 
-  // Проверка авторизации при загрузке (БЕЗ автоматического редиректа)
+  // Проверка авторизации при загрузке
   useEffect(() => {
     const checkAuth = async () => {
-      // Пропускаем проверку если уже идет процесс логина
-      if (isLoading) return;
-      
       try {
-        // Проверяем флаг, что мы уже залогинены и находимся в процессе редиректа
-        const isRedirecting = sessionStorage.getItem('is_redirecting');
-        if (isRedirecting === 'true') {
-          return;
-        }
-
         // Сначала проверяем localStorage
         const storedUser = localStorage.getItem('auth_user');
         const storedToken = localStorage.getItem('auth_token');
@@ -65,20 +55,40 @@ export function useStaffAuth() {
         if (storedUser && storedToken) {
           const user = JSON.parse(storedUser);
           if (["admin", "super-admin", "manager", "trainer"].includes(user.role)) {
-            // НЕ делаем автоматический редирект при загрузке страницы логина
-            // Просто отмечаем, что пользователь уже авторизован
-            console.log('User already authenticated:', user.role);
+            const dashboardUrl = getDashboardForRole(user.role);
+            router.replace(dashboardUrl);
+            return;
           }
         }
+
+        // Если нет в localStorage, проверяем через API
+        const response = await fetch("/api/auth/check");
+        const data = await response.json();
+
+        if (
+          data.authenticated &&
+          ["admin", "super-admin", "manager", "trainer"].includes(
+            data.user?.role
+          )
+        ) {
+          // Сохраняем в localStorage если пришло из API
+          if (data.user) {
+            localStorage.setItem('auth_user', JSON.stringify(data.user));
+          }
+          if (data.token) {
+            localStorage.setItem('auth_token', data.token);
+          }
+
+          const dashboardUrl = getDashboardForRole(data.user.role);
+          router.replace(dashboardUrl);
+        }
       } catch (error) {
-        console.log("Проверка авторизации:", error);
-      } finally {
-        setIsInitialAuthCheck(false);
+        console.log("Проверка авторизации не удалась:", error);
       }
     };
 
     checkAuth();
-  }, [isLoading]);
+  }, [router]);
 
   const getDashboardForRole = useCallback((role: string): string => {
     const dashboards: { [key: string]: string } = {
@@ -373,7 +383,7 @@ const handleSuperAdminQuickLogin = useCallback(async (): Promise<StaffLoginResul
       }
     } catch (error) {
       console.error("Password reset error:", error);
-
+      
       if (toast) {
         toast({
           variant: "destructive",
@@ -381,7 +391,7 @@ const handleSuperAdminQuickLogin = useCallback(async (): Promise<StaffLoginResul
           description: error instanceof Error ? error.message : "Не удалось отправить письмо",
         });
       }
-
+      
       throw error;
     } finally {
       setIsLoading(false);
@@ -394,9 +404,7 @@ const handleSuperAdminQuickLogin = useCallback(async (): Promise<StaffLoginResul
     resetEmail,
     resetSent,
     setIsLoading,
-    redirectPath,
-    isInitialAuthCheck,
-
+    
     setShowForgotPassword,
     setResetEmail,
     setResetSent,

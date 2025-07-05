@@ -454,7 +454,7 @@ const AIAgent = () => {
             initial={{ opacity: 0, scale: 0.8, y: 100 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.8, y: 100 }}
-            className="fixed bottom-6 right-6 z-50 w-96 h-[755px] bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden flex flex-col"
+            className="fixed bottom-6 right-6 z-50 w-96 h-[760px] bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden flex flex-col"
             style={{
               boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
             }}
