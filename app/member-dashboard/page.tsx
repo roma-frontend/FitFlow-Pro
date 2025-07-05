@@ -22,7 +22,6 @@ import MiniProgress from "@/components/member/MiniProgress";
 import SidebarCards from "@/components/member/SidebarCards";
 import TipsSection from "@/components/member/TipsSection";
 import { useLoaderStore, type LoaderType } from "@/stores/loaderStore";
-import StaffLoginLoader from "@/app/staff-login/components/StaffLoginLoader";
 import StaffLogoutLoader from "@/app/staff-login/components/StaffLogoutLoader";
 
 interface Workout {
@@ -322,8 +321,6 @@ export default function MemberDashboard() {
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
   const nextWorkout = upcomingWorkouts.length > 0 ? upcomingWorkouts[0] : null;
-
-  // РЕНДЕРИНГ - ВСЕ УСЛОВНЫЕ RETURN ПОСЛЕ ВСЕХ ХУКОВ
 
   // Если показывается logout loader
   if (isLogoutLoader()) {

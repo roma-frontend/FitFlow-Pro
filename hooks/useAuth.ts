@@ -45,10 +45,9 @@ const getDashboardUrl = (role: string): string => {
     'trainer': '/trainer-dashboard',
     'client': '/member-dashboard',
     'member': '/member-dashboard',
-    'staff': '/staff-dashboard'
   };
 
-  return dashboardUrls[role] || '/dashboard';
+  return dashboardUrls[role] || '/';
 };
 
 // Функция для преобразования User в AuthStatus
@@ -81,7 +80,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
 
-  // ✅ ДОБАВИЛИ: функции для управления loader
   const hideLoader = useLoaderStore((state) => state.hideLoader);
 
   // Предотвращаем множественные вызовы checkSession
@@ -273,7 +271,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // ✅ ИСПРАВЛЕНО: login с правильной обработкой loader
   const login = async (email: string, password: string, redirectUrl?: string): Promise<boolean> => {
     try {
       setLoading(true);
@@ -401,7 +398,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // ✅ logout остается без изменений (уже правильный)
   const logout = async (skipRedirect: boolean = false): Promise<void> => {
     try {
       setLoading(true);
@@ -551,7 +547,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
-// Остальные хуки остаются без изменений...
 
 export function useFaceAuth() {
   const { authStatus, login, logout } = useAuth();

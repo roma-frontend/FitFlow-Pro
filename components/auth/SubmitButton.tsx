@@ -1,4 +1,4 @@
-// components/auth/SubmitButton.tsx - обновленная версия
+// components/auth/SubmitButton.tsx
 "use client";
 
 import { memo } from 'react';

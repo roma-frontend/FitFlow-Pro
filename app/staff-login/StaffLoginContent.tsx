@@ -1,8 +1,7 @@
-// app/staff-login/StaffLoginContent.tsx - С ВАШИМ ДИЗАЙНОМ И МОЕЙ ЛОГИКОЙ
+// app/staff-login/StaffLoginContent.tsx
 "use client";
 
 import { useStaffAuth } from "@/hooks/useStaffAuth";
-import { useLoaderStore } from "@/stores/loaderStore";
 import { StaffLoginForm } from "@/components/staff/StaffLoginForm";
 import { StaffForgotPasswordForm } from "@/components/staff/StaffForgotPasswordForm";
 import { StaffAuthNavigation } from "@/components/staff/StaffAuthNavigation";
@@ -11,20 +10,18 @@ import { StaffDevelopmentTools } from "@/components/staff/StaffDevelopmentTools"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Shield, Users, Zap, TrendingUp, ArrowRight, CheckCircle, AlertTriangle, Lock, Mail, Loader2, Eye, Settings } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ShieldButtonV1 } from "./components/StaffLoginButton";
-import StaffLoginLoader from "./components/StaffLoginLoader";
 import { GoogleLoginButton } from "@/components/auth/GoogleLoginButton";
+import { useLoaderStore } from "@/stores/loaderStore";
+import { useUser } from "@/hooks/useAuth";
 
 export default function StaffLoginContent() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const {userName, userRole} = useUser()
 
-  // ✅ МОЯ ЛОГИКА: Получаем данные из единой системы loader'ов
-  const { loaderType, loaderProps } = useLoaderStore();
-
-  // ✅ МОЯ ЛОГИКА: Получаем функции из useStaffAuth с обработкой ошибок
   let staffAuthData;
   try {
     staffAuthData = useStaffAuth();
@@ -58,7 +55,6 @@ export default function StaffLoginContent() {
     handleSuperAdminQuickLogin,
   } = staffAuthData;
 
-  // ✅ МОЯ ЛОГИКА: Безопасные обертки для функций
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -93,18 +89,52 @@ export default function StaffLoginContent() {
     setResetEmail("");
   };
 
-  // ✅ МОЯ ЛОГИКА: Показываем loader если он активен
-  if (loaderType === "login" && loaderProps) {
-    return (
-      <StaffLoginLoader
-        userRole={loaderProps.userRole || "admin"}
-        userName={loaderProps.userName || "Персонал"}
-        dashboardUrl={loaderProps.dashboardUrl || "/staff-dashboard"}
-      />
-    );
-  }
+  useEffect(() => {
+  const checkGoogleOAuthReturn = () => {
+    // Проверяем если пользователь вернулся после Google OAuth
+    const googleLoginInProgress = sessionStorage.getItem('google_login_in_progress');
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    
+    if (googleLoginInProgress === 'true' && code) {
+      console.log('🔄 Обнаружен возврат после Google OAuth на staff-login');
+      
+      // Получаем сохраненные данные
+      const isStaff = sessionStorage.getItem('google_login_is_staff') === 'true';
+      const savedRedirect = sessionStorage.getItem('google_login_redirect');
+      
+      // Очищаем sessionStorage
+      sessionStorage.removeItem('google_login_in_progress');
+      sessionStorage.removeItem('google_login_is_staff');
+      sessionStorage.removeItem('google_login_staff_role');
+      sessionStorage.removeItem('google_login_redirect');
+      
+      // Получаем конкретную роль staff
+      const staffRole = sessionStorage.getItem('google_login_staff_role');
+      
+      // Показываем loader
+      const { showLoader } = useLoaderStore.getState();
+      showLoader("login", {
+        userRole: isStaff ? (staffRole || "admin") : "member",
+        userName: "Сотрудник",
+        dashboardUrl: savedRedirect || "/admin"
+      });
+      
+      setTimeout(() => {
+        const { hideLoader } = useLoaderStore.getState();
+        hideLoader();
+        
+        const targetUrl = savedRedirect || "/admin";
+        window.location.href = targetUrl;
+      }, 2000);
+    }
+  };
+  
+  // Проверяем сразу при загрузке
+  checkGoogleOAuthReturn();
+}, []);
 
-  // ✅ ВАШ ДИЗАЙН: Форма восстановления пароля
+
   if (showForgotPassword) {
     return (
       <div className="min-h-[100svh] bg-gradient-to-br from-slate-700 via-blue-700 to-indigo-800 flex items-center justify-center p-4">

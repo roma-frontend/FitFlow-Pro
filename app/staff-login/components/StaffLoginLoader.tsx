@@ -120,6 +120,12 @@ export default function StaffLoginLoader({ userRole, userName, dashboardUrl }: S
   const currentRoleTexts = roleTexts[userRole] || roleTexts["member"];
 
   useEffect(() => {
+    // Проверяем, что dashboardUrl валиден
+    if (!dashboardUrl || typeof dashboardUrl !== 'string') {
+      console.error('Invalid dashboardUrl:', dashboardUrl);
+      return;
+    }
+
     // Симулируем прогресс загрузки
     const progressInterval = setInterval(() => {
       setProgress(prev => {
@@ -127,7 +133,14 @@ export default function StaffLoginLoader({ userRole, userName, dashboardUrl }: S
           clearInterval(progressInterval);
           // Перенаправляем после завершения загрузки
           setTimeout(() => {
-            router.push(dashboardUrl);
+            // Дополнительная проверка перед редиректом
+            if (dashboardUrl && typeof dashboardUrl === 'string' && dashboardUrl.length > 0) {
+              router.push(dashboardUrl);
+            } else {
+              console.error('Cannot redirect: invalid dashboardUrl');
+              // Fallback редирект
+              router.push('/dashboard');
+            }
           }, 500);
           return 100;
         }
@@ -151,7 +164,7 @@ export default function StaffLoginLoader({ userRole, userName, dashboardUrl }: S
       timeGreeting = "Добрый вечер";
     }
 
-    return `${timeGreeting}, ${userName}! ${currentRoleTexts.dashboardSubtitle}`;
+    return `${timeGreeting}, ${userName || 'Пользователь'}! ${currentRoleTexts.dashboardSubtitle}`;
   };
 
   return (

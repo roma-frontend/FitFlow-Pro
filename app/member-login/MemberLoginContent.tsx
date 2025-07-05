@@ -89,7 +89,6 @@ export default function MemberLoginContent() {
     checkGoogleOAuthReturn();
   }, []);
 
-  // ✅ ИЗМЕНЕНО: Показываем полноэкранный loader только при активном loaderType (например, после Google OAuth)
   if (loaderType === "login" && loaderProps) {
     return (
       <StaffLoginLoader

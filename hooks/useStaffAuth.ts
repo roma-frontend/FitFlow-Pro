@@ -123,13 +123,6 @@ const handleStaffLogin = useCallback(async (formData: {
   try {
     console.log('🔐 Staff login attempt:', { email: formData.email });
 
-    // Показываем loader
-    showLoader("login", {
-      userRole: "admin",
-      userName: formData.email.split('@')[0] || "Персонал",
-      dashboardUrl: redirectPath || "/staff-dashboard"
-    });
-
     const response = await fetch("/api/auth/login", {
       method: "POST",
       headers: {
@@ -180,26 +173,17 @@ const handleStaffLogin = useCallback(async (formData: {
         sessionStorage.removeItem("returnUrl");
       }
 
-      // Обновляем loader с правильными данными
+      // Обновляем loader с точными данными после успешного логина
       showLoader("login", {
         userRole: data.user.role,
         userName: data.user.name || data.user.email,
         dashboardUrl: destination
       });
 
-      // ВАЖНО: НЕ скрываем loader здесь!
-      // Loader должен оставаться активным до полной загрузки новой страницы
-      
-      // Делаем редирект после завершения анимации loader
       setTimeout(() => {
         console.log('🎯 Staff login: redirect to', destination);
-        
-        // Используем window.location.replace для полной перезагрузки
-        // это гарантирует, что loader останется видимым до загрузки новой страницы
-        window.location.replace(destination);
-        
-        // НЕ вызываем hideLoader() здесь - пусть новая страница сама управляет loader
-      }, 1500); // Ждем завершения анимации loader
+        router.replace(destination);
+      }, 1500);
 
       return {
         success: true,
@@ -229,7 +213,7 @@ const handleStaffLogin = useCallback(async (formData: {
     setIsLoading(false);
     return { success: false };
   }
-}, [toast, router, getDashboardForRole, redirectPath, showLoader, hideLoader]);
+}, [toast, router, getDashboardForRole, getRoleDisplayName, redirectPath, showLoader, hideLoader]);
 
 // Аналогично для handleSuperAdminQuickLogin:
 const handleSuperAdminQuickLogin = useCallback(async (): Promise<StaffLoginResult> => {
@@ -294,18 +278,16 @@ const handleSuperAdminQuickLogin = useCallback(async (): Promise<StaffLoginResul
         sessionStorage.removeItem("returnUrl");
       }
 
+      // Обновляем loader с точными данными
       showLoader("login", {
         userRole: result.user.role,
         userName: result.user.name || result.user.email,
         dashboardUrl: destination
       });
 
-      // НЕ скрываем loader здесь!
       setTimeout(() => {
         console.log('🎯 Quick login: redirect to', destination);
-        
-        // Используем window.location.replace для полной перезагрузки
-        window.location.replace(destination);
+        router.replace(destination);
       }, 1500);
 
       return {
