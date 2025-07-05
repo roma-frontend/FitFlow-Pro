@@ -1,4 +1,4 @@
-// app/layout.tsx - С исправленным импортом ErrorBoundary
+// app/layout.tsx - Обновленная версия с ИИ-агентом
 import { Analytics } from "@vercel/analytics/next"
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import { Inter } from "next/font/google";
@@ -15,11 +15,14 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import PWAInstallBanner from "@/components/PWAInstallBanner";
 import "@/styles/badge-animations.css";
+import "@/styles/ai-agent.css";
 import React from "react";
 import { DebugLogout } from "@/components/DebugLogout";
 import { AuthCleanupHandler } from "@/components/AuthCleanupHandler";
 import { GlobalLoader } from "@/components/GlobalLoader";
 import { NextAuthProvider } from "@/components/providers/NextAuthProvider";
+import dynamic from "next/dynamic";
+import AIAgent from "@/components/AIAgent";
 
 const inter = Inter({
   subsets: ["latin", "cyrillic"],
@@ -52,6 +55,7 @@ export const metadata: Metadata = {
     "приложение",
     "биометрия",
     "face-id",
+    "AI помощник"
   ],
   authors: [{ name: "FitFlow Pro Team" }],
   creator: "FitFlow Pro",
@@ -198,6 +202,9 @@ export default function RootLayout({
                           <SafeChildrenWrapper>
                             {children}
                           </SafeChildrenWrapper>
+                          
+                          {/* ИИ-агент - доступен на всех страницах */}
+                          <AIAgent />
                           
                           {(process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_DEBUG === 'true') && (
                             <DebugLogout />

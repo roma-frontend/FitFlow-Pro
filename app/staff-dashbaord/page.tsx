@@ -5,33 +5,18 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Users, LogOut, Loader2, Shield, Settings, CheckCircle } from "lucide-react";
+import { Users, LogOut, Shield } from "lucide-react";
 import { useRouter } from "next/navigation";
-import FitnessLoader from '@/components/ui/FitnessLoader';
-
-// Хук для определения мобильного устройства
-const useIsMobile = () => {
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const checkIsMobile = () => {
-      setIsMobile(window.innerWidth < 1024);
-    };
-
-    checkIsMobile();
-    window.addEventListener('resize', checkIsMobile);
-    return () => window.removeEventListener('resize', checkIsMobile);
-  }, []);
-
-  return isMobile;
-};
+import { useLoaderStore } from "@/stores/loaderStore";
+import { useStaffAuth } from "@/hooks/useStaffAuth";
 
 export default function StaffDashboardPage() {
   const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const router = useRouter();
-  const isMobile = useIsMobile();
+  const { showLoader } = useLoaderStore.getState();
+  const savedRedirect = sessionStorage.getItem('google_login_redirect');
+  const { isLoading, setIsLoading } = useStaffAuth()
 
   useEffect(() => {
     checkAuth();
@@ -41,7 +26,7 @@ export default function StaffDashboardPage() {
     try {
       const response = await fetch('/api/auth/check');
       const data = await response.json();
-      
+
       if (data.authenticated && data.user) {
         const allowedRoles = ['super-admin', 'admin', 'manager', 'trainer', 'staff'];
         if (allowedRoles.includes(data.user.role)) {
@@ -55,7 +40,7 @@ export default function StaffDashboardPage() {
     } catch (error) {
       setError('Ошибка загрузки данных');
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -67,6 +52,15 @@ export default function StaffDashboardPage() {
       console.error('Ошибка выхода:', error);
     }
   };
+
+  if (isLoading) {
+
+    showLoader("login", {
+      userRole: user?.role || "admin" || "super-admin",
+      userName: user?.name || "Администратор",
+      dashboardUrl: savedRedirect || "/admin"
+    });
+  }
 
   if (error) {
     return (
@@ -80,7 +74,7 @@ export default function StaffDashboardPage() {
             <CardDescription className="text-red-600">{error}</CardDescription>
           </CardHeader>
           <CardContent className="text-center space-y-4">
-            <Button 
+            <Button
               onClick={() => router.push('/staff-login')}
               className="w-full bg-red-600 hover:bg-red-700 text-white"
             >
@@ -110,7 +104,7 @@ export default function StaffDashboardPage() {
                 <p className="text-sm text-gray-500">Панель персонала</p>
               </div>
             </div>
-            
+
             <div className="flex items-center space-x-4">
               <div className="text-right">
                 <p className="font-medium">{user?.name}</p>
@@ -128,7 +122,7 @@ export default function StaffDashboardPage() {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
+
         <div className="mb-8">
           <h2 className="text-3xl font-bold text-gray-900 mb-2">
             Добро пожаловать, {user?.name}!
@@ -155,11 +149,11 @@ export default function StaffDashboardPage() {
                   <p><strong>Роль:</strong> {user?.role}</p>
                 </div>
               </div>
-              
+
               {(user?.role === 'super-admin' || user?.role === 'admin') && (
                 <div>
                   <h4 className="font-medium text-gray-900 mb-2">Доступные панели:</h4>
-                  <a 
+                  <a
                     href="/admin"
                     className="inline-block px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
                   >

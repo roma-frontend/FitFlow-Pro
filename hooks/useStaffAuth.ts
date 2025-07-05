@@ -423,6 +423,7 @@ export function useStaffAuth() {
     showForgotPassword,
     resetEmail,
     resetSent,
+    setIsLoading,
     
     setShowForgotPassword,
     setResetEmail,
