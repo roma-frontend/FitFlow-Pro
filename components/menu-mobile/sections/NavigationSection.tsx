@@ -120,7 +120,7 @@ export default function NavigationSection({
 
                 <div className="flex-1 text-left">
                   <div className="flex items-center justify-between">
-                    <span className="font-medium">{item.label}</span>
+                    <span className="text-sm font-medium">{item.label}</span>
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-white/60 bg-white/10 px-2 py-1 rounded-full">
                         Требуется вход

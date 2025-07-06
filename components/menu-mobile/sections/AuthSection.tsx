@@ -154,7 +154,7 @@ export default function AuthSection({ onLogin, onRegister, onClose }: AuthSectio
 
           <div className="relative flex items-center justify-center gap-2.5">
             <Sparkles className="h-5 w-5 text-white drop-shadow-lg animate-[spin_3s_linear_infinite]" />
-            <span className="text-white tracking-wide text-base drop-shadow-lg">
+            <span className="text-white tracking-wide text-sm sm:text-base drop-shadow-lg">
               Создать новый аккаунт
             </span>
           </div>

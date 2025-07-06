@@ -9,7 +9,7 @@ interface QuickActionsGridProps {
 
 export const QuickActionsGrid: React.FC<QuickActionsGridProps> = memo(({ actions, onActionClick }) => {
   return (
-    <div className="h-[280px] overflow-y-auto p-4 border-b bg-gray-50">
+    <div className="h-[264px] overflow-y-auto p-4 border-b bg-gray-50">
       <h4 className="text-sm font-medium text-gray-700 mb-3">Быстрые действия:</h4>
       <div className="grid grid-cols-2 gap-2">
         {actions.map((action, index) => (

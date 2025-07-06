@@ -122,7 +122,7 @@ export const ChatInput: React.FC<ChatInputProps> = memo(({
           whileTap={{ scale: 0.95 }}
           onClick={onSend}
           disabled={!value.trim() || isTyping}
-          className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-full flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transition-all"
+          className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-full flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transition-all"
         >
           {isTyping ? (
             <Loader2 className="h-4 w-4 animate-spin" />

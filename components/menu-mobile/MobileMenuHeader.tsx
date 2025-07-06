@@ -58,7 +58,7 @@ export default function MobileMenuHeader({ onClose }: MobileMenuHeaderProps) {
           variant="ghost"
           size="sm"
           onClick={onClose}
-          className="text-white hover:bg-white/20 p-2 h-9 w-9"
+          className="text-white hover:bg-white/20 hover:text-white/80 p-2 h-9 w-9"
         >
           <X className="h-5 w-5" />
         </Button>

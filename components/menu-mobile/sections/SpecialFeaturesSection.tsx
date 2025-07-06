@@ -84,7 +84,7 @@ export default function SpecialFeaturesSection({
           <div className="flex-1 text-left">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="font-medium">Face ID</span>
+                <span className="text-sm sm:text-base font-medium">Face ID</span>
                 <motion.span 
                   className="text-xs bg-gradient-to-r from-purple-400 to-blue-500 text-white px-2 py-0.5 rounded-full font-bold"
                   animate={{ 

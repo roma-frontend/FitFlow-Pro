@@ -120,7 +120,7 @@ function StatCard({ stat, index, isInView }: { stat: any, index: number, isInVie
       initial={{ opacity: 0, y: 50, scale: 0.9 }}
       animate={isInView ? { opacity: 1, y: 0, scale: 1 } : { opacity: 0, y: 50, scale: 0.9 }}
       transition={{ duration: 0.8, delay: index * 0.1 }}
-      className="group min-h-[280px]"
+      className="group min-h-[264px]"
     >
       <div className="h-full bg-white/10 backdrop-blur-sm rounded-2xl p-8 text-center hover:bg-white/20 transition-all duration-300 border border-white/20">
         <div className={`w-16 h-16 bg-gradient-to-r ${stat.color} rounded-xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300`}>
