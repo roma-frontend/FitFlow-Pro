@@ -30,6 +30,19 @@ import {
   LucideIcon
 } from 'lucide-react';
 
+interface ActivityData {
+  steps: number;
+  heartRate: number;
+  activeEnergy: number;
+  sleepHours: number;
+  lastSync: Date;
+}
+
+interface FitnessTrackerConfig {
+  connected: boolean;
+  lastSync: Date | null;
+}
+
 // Types
 interface AudioConfig {
   enabled: boolean;
@@ -140,10 +153,10 @@ interface SelectProps {
 
 const Select: React.FC<SelectProps> = ({ value, onValueChange, children }) => {
   const [isOpen, setIsOpen] = useState(false);
-  
+
   return (
     <div className="relative">
-      <button 
+      <button
         onClick={() => setIsOpen(!isOpen)}
         className="w-24 h-8 px-2 text-xs border rounded flex items-center justify-between"
       >
@@ -152,8 +165,8 @@ const Select: React.FC<SelectProps> = ({ value, onValueChange, children }) => {
       </button>
       {isOpen && (
         <div className="absolute top-full mt-1 w-full bg-white border rounded shadow-lg z-10">
-          {React.Children.map(children, child => 
-            React.isValidElement(child) 
+          {React.Children.map(children, child =>
+            React.isValidElement(child)
               ? React.cloneElement(child as React.ReactElement<any>, { onValueChange, setIsOpen })
               : child
           )}
@@ -205,10 +218,220 @@ const AIAgent: React.FC = () => {
     waterIntake: 0,
     stressLevel: 3
   });
+  const [activityData, setActivityData] = useState<ActivityData | null>(null);
+  const [isHealthkitInitialized, setIsHealthkitInitialized] = useState(false);
 
   const voiceRssKey = process.env.NEXT_PUBLIC_VOICERSS_KEY || '';
   const nutritionixAppId = process.env.NEXT_PUBLIC_NUTRITIONIX_APP_ID || '';
   const nutritionixAppKey = process.env.NEXT_PUBLIC_NUTRITIONIX_APP_KEY || '';
+
+
+  // Добавляем перед основным компонентом AIAgent
+  interface StatCardProps {
+    value: number | string;
+    label: string;
+    icon: string;
+  }
+
+  const StatCard: React.FC<StatCardProps> = ({ value, label, icon }) => {
+    return (
+      <div className="bg-gray-50 p-3 rounded-lg text-center">
+        <div className="flex items-center justify-center space-x-2">
+          <span className="text-lg">{icon}</span>
+          <p className="text-xl font-bold">{value}</p>
+        </div>
+        <p className="text-xs text-gray-500 mt-1">{label}</p>
+      </div>
+    );
+  };
+
+  // Обновляем AppleHealthStats для использования StatCard
+  const AppleHealthStats = () => {
+    if (!activityData) return null;
+
+    return (
+      <div className="bg-white border border-gray-200 rounded-xl p-4 mb-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center space-x-2">
+            <Apple className="h-5 w-5 text-gray-800" />
+            <h3 className="font-medium">Apple Health Data</h3>
+          </div>
+          <span className="text-xs text-gray-500">
+            {new Date(activityData.lastSync).toLocaleTimeString()}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <StatCard
+            value={activityData.steps.toLocaleString()}
+            label="Шаги"
+            icon="👟"
+          />
+          <StatCard
+            value={activityData.heartRate}
+            label="Пульс (уд/мин)"
+            icon="❤️"
+          />
+          <StatCard
+            value={Math.round(activityData.activeEnergy)}
+            label="Активные ккал"
+            icon="🔥"
+          />
+          <StatCard
+            value={activityData.sleepHours.toFixed(1)}
+            label="Часы сна"
+            icon="💤"
+          />
+        </div>
+      </div>
+    );
+  };
+
+  useEffect(() => {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    if (!isIOS || typeof window === 'undefined') return;
+
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/healthkitjs@latest/dist/healthkit.js';
+
+    script.onload = () => {
+      // Type-safe check using type assertion
+      const healthKit = (window as typeof window & { HealthKit?: HealthKitJS }).HealthKit;
+
+      if (healthKit) {
+        setIsHealthkitInitialized(true);
+      } else {
+        console.error('HealthKit not loaded correctly');
+      }
+    };
+
+    script.onerror = () => {
+      console.error('Failed to load HealthKit script');
+    };
+
+    document.body.appendChild(script);
+
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/healthkitjs@latest/dist/healthkit.js';
+      script.onload = () => {
+        // @ts-ignore
+        if (window.HealthKit) {
+          setIsHealthkitInitialized(true);
+        }
+      };
+      document.body.appendChild(script);
+
+      return () => {
+        document.body.removeChild(script);
+      };
+    }
+  }, []);
+
+  // Функция подключения Apple Health
+  const connectAppleHealth = async (): Promise<boolean> => {
+    setIsTyping(true);
+
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    if (!isIOS) {
+      console.error("HealthKit доступен только на iOS устройствах");
+      setIsTyping(false);
+      return false;
+    }
+
+    try {
+      // Properly check for HealthKit with type safety
+      if (!('HealthKit' in window)) {
+        console.error("HealthKit not available");
+        setIsTyping(false);
+        return false;
+      }
+
+      const healthKit = (window as any).HealthKit as {
+        requestAuthorization: (types: string[]) => Promise<boolean>;
+        querySampleType: (
+          type: string,
+          options: {
+            start: Date;
+            end: Date;
+            limit?: number;
+          }
+        ) => Promise<Array<{ value: number; startDate: string; endDate: string }>>;
+      };
+
+      // Запрашиваем разрешения
+      const authorized = await healthKit.requestAuthorization([
+        'activeEnergyBurned',
+        'stepCount',
+        'heartRate',
+        'sleepAnalysis'
+      ]);
+
+      if (!authorized) {
+        setIsTyping(false);
+        return false;
+      }
+
+      // Получаем данные за последние 24 часа
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - 1);
+
+      // Шаги
+      const stepsData = await healthKit.querySampleType('stepCount', {
+        start: startDate,
+        end: endDate
+      });
+      const totalSteps = stepsData.reduce((sum: number, item: any) => sum + item.value, 0);
+
+      // Пульс (последнее измерение)
+      const heartRateData = await healthKit.querySampleType('heartRate', {
+        start: startDate,
+        end: endDate,
+        limit: 1
+      });
+      const latestHeartRate = heartRateData.length > 0 ? heartRateData[0].value : 0;
+
+      // Активная энергия (калории)
+      const energyData = await healthKit.querySampleType('activeEnergyBurned', {
+        start: startDate,
+        end: endDate
+      });
+      const totalEnergy = energyData.reduce((sum: number, item: any) => sum + item.value, 0);
+
+      // Сон
+      const sleepData = await healthKit.querySampleType('sleepAnalysis', {
+        start: startDate,
+        end: endDate
+      });
+      const totalSleepMinutes = sleepData.reduce((sum: number, item: any) => {
+        return sum + (new Date(item.endDate).getTime() - new Date(item.startDate).getTime()) / 60000;
+      }, 0);
+
+      setActivityData({
+        steps: totalSteps,
+        heartRate: latestHeartRate,
+        activeEnergy: totalEnergy,
+        sleepHours: totalSleepMinutes / 60,
+        lastSync: new Date()
+      });
+
+      setIsTyping(false);
+      return true;
+
+    } catch (error) {
+      console.error("Apple Health error:", error);
+      setIsTyping(false);
+      return false;
+    }
+  };
+
 
   const calculateRecoveryScore = () => {
     const now = new Date();
@@ -240,6 +463,7 @@ const AIAgent: React.FC = () => {
 
   const handleRecoveryCommand = (command: string, params?: any): string => {
     switch (command) {
+
       case 'log_sleep':
         setRecoveryData(prev => ({
           ...prev,
@@ -364,63 +588,69 @@ const AIAgent: React.FC = () => {
     return data;
   };
 
-  const quickActions: QuickAction[] = [
-    {
-      title: "Анализ питания",
-      description: "Например: 'Сколько калорий в банане?'",
-      icon: Apple,
-      action: "analyze_nutrition",
-      color: "from-green-500 to-teal-600"
-    },
-    {
-      title: "Подобрать тренера",
-      description: "Найдем идеального тренера для ваших целей",
-      icon: Users,
-      action: "find_trainer",
-      color: "from-blue-500 to-indigo-600"
-    },
-    {
-      title: "Выбрать абонемент",
-      description: "Подберем подходящий тарифный план",
-      icon: CreditCard,
-      action: "choose_membership",
-      color: "from-green-500 to-emerald-600"
-    },
-    {
-      title: "Записаться на тренировку",
-      description: "Быстрая запись к тренеру",
-      icon: Calendar,
-      action: "book_training",
-      color: "from-purple-500 to-pink-600"
-    },
-    {
-      title: "Посетить магазин",
-      description: "Спортивное питание и аксессуары",
-      icon: ShoppingBag,
-      action: "visit_shop",
-      color: "from-orange-500 to-red-600"
-    },
-    {
-      title: "Трекер сна",
-      description: "Записать продолжительность сна",
-      icon: Moon,
-      action: "log_sleep",
-      color: "from-indigo-500 to-blue-600"
-    },
-    {
-      title: "Питьевой режим",
-      description: "Добавить выпитую воду",
-      icon: Droplet,
-      action: "log_water",
-      color: "from-blue-400 to-cyan-500"
-    },
-    {
-      title: "Программа растяжки",
-      description: "Рекомендации по восстановлению",
-      icon: Activity,
-      action: "start_stretching",
-      color: "from-purple-400 to-fuchsia-500"
-    }
+  const quickActions: QuickAction[] = [{
+    title: "Apple Health",
+    description: "Синхронизация с HealthKit",
+    icon: Apple,
+    action: "connect_apple_health",
+    color: "from-gray-800 to-gray-600"
+  },
+  {
+    title: "Анализ питания",
+    description: "Например: 'Сколько калорий в банане?'",
+    icon: Apple,
+    action: "analyze_nutrition",
+    color: "from-green-500 to-teal-600"
+  },
+  {
+    title: "Подобрать тренера",
+    description: "Найдем идеального тренера для ваших целей",
+    icon: Users,
+    action: "find_trainer",
+    color: "from-blue-500 to-indigo-600"
+  },
+  {
+    title: "Выбрать абонемент",
+    description: "Подберем подходящий тарифный план",
+    icon: CreditCard,
+    action: "choose_membership",
+    color: "from-green-500 to-emerald-600"
+  },
+  {
+    title: "Записаться на тренировку",
+    description: "Быстрая запись к тренеру",
+    icon: Calendar,
+    action: "book_training",
+    color: "from-purple-500 to-pink-600"
+  },
+  {
+    title: "Посетить магазин",
+    description: "Спортивное питание и аксессуары",
+    icon: ShoppingBag,
+    action: "visit_shop",
+    color: "from-orange-500 to-red-600"
+  },
+  {
+    title: "Трекер сна",
+    description: "Записать продолжительность сна",
+    icon: Moon,
+    action: "log_sleep",
+    color: "from-indigo-500 to-blue-600"
+  },
+  {
+    title: "Питьевой режим",
+    description: "Добавить выпитую воду",
+    icon: Droplet,
+    action: "log_water",
+    color: "from-blue-400 to-cyan-500"
+  },
+  {
+    title: "Программа растяжки",
+    description: "Рекомендации по восстановлению",
+    icon: Activity,
+    action: "start_stretching",
+    color: "from-purple-400 to-fuchsia-500"
+  }
   ];
 
   const knowledgeBase = {
@@ -683,6 +913,7 @@ const AIAgent: React.FC = () => {
   };
 
   const generateBotResponse = async (text: string): Promise<Message> => {
+
     const generateUniqueId = () => `${Date.now()}-${Math.floor(Math.random() * 1000)}`;
     let responseText = "";
     let suggestions: string[] = [];
@@ -1027,7 +1258,39 @@ const AIAgent: React.FC = () => {
       'start_stretching': 'Программа растяжки'
     };
 
-    if (action === 'analyze_nutrition') {
+    if (action === 'connect_apple_health') {
+      // Добавляем проверку платформы перед вызовом
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      if (!isIOS) {
+        setMessages(prev => [...prev, {
+          id: Date.now().toString(),
+          text: "❌ Apple Health доступен только на iOS устройствах",
+          isBot: true,
+          timestamp: new Date()
+        }]);
+        return;
+      }
+      connectAppleHealth().then(success => {
+        if (success) {
+          const message: Message = {
+            id: Date.now().toString(),
+            text: "✅ Apple Health успешно подключен! Теперь я могу отслеживать вашу активность, пульс и сон.",
+            isBot: true,
+            timestamp: new Date()
+          };
+          setMessages(prev => [...prev, message]);
+        } else {
+          const message: Message = {
+            id: Date.now().toString(),
+            text: "❌ Не удалось подключить Apple Health. Пожалуйста, проверьте разрешения в настройках.",
+            isBot: true,
+            timestamp: new Date()
+          };
+          setMessages(prev => [...prev, message]);
+        }
+      });
+    }
+    else if (action === 'analyze_nutrition') {
       setInputText(actionMap[action]);
     } else {
       processUserMessage(actionMap[action]);
@@ -1122,7 +1385,7 @@ const AIAgent: React.FC = () => {
             initial={{ opacity: 0, scale: 0.8, y: 100 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.8, y: 100 }}
-            className="fixed bottom-0 sm:bottom-6 right-0 sm:right-6 z-50 w-full sm:w-96 h-full sm:h-[760px] bg-white rounded-0 sm:rounded-2xl shadow-2xl border border-gray-200 overflow-hidden flex flex-col"
+            className="fixed bottom-0 sm:bottom-6 right-0 sm:right-6 z-50 w-full sm:w-96 h-full sm:h-[760px] bg-white rounded-0 sm:rounded-2xl shadow-2xl border-none sm:border border-gray-200 overflow-hidden flex flex-col"
             style={{
               boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
             }}
@@ -1154,7 +1417,7 @@ const AIAgent: React.FC = () => {
             </div>
 
             {messages.length <= 1 && (
-              <div className="p-4 border-b bg-gray-50">
+              <div className="h-[190px] overflow-y-auto p-4 border-b bg-gray-50">
                 <h4 className="text-sm font-medium text-gray-700 mb-3">Быстрые действия:</h4>
                 <div className="grid grid-cols-2 gap-2">
                   {quickActions.map((action, index) => (
@@ -1185,7 +1448,7 @@ const AIAgent: React.FC = () => {
                   transition={{ delay: index * 0.1 }}
                   className={`flex ${msg.isBot ? 'justify-start' : 'justify-end'}`}
                 >
-                  <div className={`max-w-[80%] ${msg.isBot ? 'order-1' : 'order-2'}`}>
+                  <div className={`max-w-full sm:max-w-[80%] ${msg.isBot ? 'order-1' : 'order-2'}`}>
                     {msg.isBot && (
                       <div className="flex items-center space-x-2 mb-1">
                         <Bot className="h-4 w-4 text-blue-500" />
@@ -1271,6 +1534,9 @@ const AIAgent: React.FC = () => {
                   </div>
                 </motion.div>
               ))}
+
+              {activityData && <AppleHealthStats />}
+
 
               {isTyping && (
                 <motion.div
