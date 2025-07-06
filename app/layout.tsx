@@ -22,7 +22,7 @@ import { AuthCleanupHandler } from "@/components/AuthCleanupHandler";
 import { GlobalLoader } from "@/components/GlobalLoader";
 import { NextAuthProvider } from "@/components/providers/NextAuthProvider";
 import dynamic from "next/dynamic";
-import AIAgent from "@/components/AIAgent";
+import AIAgent from "@/components/ai-agent/AIAgent";
 import { SessionProviderWrapper } from "@/components/providers/SessionProviderWrapper";
 
 const inter = Inter({
