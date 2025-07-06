@@ -22,7 +22,7 @@ export const SettingsPageSkeleton = ({
   return (
     <div className="min-h-[100lvh] bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
       {/* Header Skeleton */}
-      <div className="bg-white border-b border-gray-200/80 backdrop-blur-sm">
+      <div className="hidden sm:block bg-white border-b border-gray-200/80 backdrop-blur-sm">
         <div className={cn(
           "flex items-center justify-between",
           isMobile ? "px-4 py-3" : "px-6 py-4 lg:px-8"

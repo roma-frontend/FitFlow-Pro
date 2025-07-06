@@ -18,16 +18,17 @@ import {
   BarChart3,
   Loader2,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export function PasswordResetManagement() {
   const [activeTab, setActiveTab] = useState<
     "logs" | "settings" | "notifications"
   >("logs");
   const [isClient, setIsClient] = useState(false);
-  
+
   // ВСЕГДА вызываем хук, независимо от условий
   const { cleanup, isLoading } = usePasswordResetCleanup();
-  
+
   // Проверяем, что компонент загружен на клиенте
   useEffect(() => {
     setIsClient(true);
@@ -36,7 +37,7 @@ export function PasswordResetManagement() {
   const handleCleanup = async () => {
     // Проверяем isClient перед выполнением действия, а не перед вызовом хука
     if (!isClient) return;
-    
+
     try {
       await cleanup();
     } catch (error) {
@@ -69,11 +70,11 @@ export function PasswordResetManagement() {
       {/* Заголовок и навигация */}
       <div className="flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-0 justify-between px-4 sm:px-0">
         <div>
-          <h1 className="inline-flex flex-col sm:flex-row items-start sm:items-center gap-3 gap-0 text-2xl md:text-3xl font-bold sm:space-x-2 text-wrap">
+          <h1 className="inline-flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-0 text-xl md:text-2xl font-bold sm:space-x-2 text-wrap">
             <Shield className="h-8 w-8 text-blue-600" />
             <span>Управление восстановлением паролей</span>
           </h1>
-          <p className="text-gray-600 mt-2">
+          <p className="text-sm sm:text-base text-gray-600 mt-2">
             Мониторинг и управление процессом восстановления паролей
           </p>
         </div>
@@ -86,7 +87,10 @@ export function PasswordResetManagement() {
                 key={tab.id}
                 variant={activeTab === tab.id ? "default" : "outline"}
                 onClick={() => setActiveTab(tab.id)}
-                className="flex items-center space-x-2"
+                className={cn(
+                  "flex items-center space-x-2",
+                  activeTab === tab.id && "bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600"
+                )}
               >
                 <Icon className="h-4 w-4" />
                 <span>{tab.label}</span>

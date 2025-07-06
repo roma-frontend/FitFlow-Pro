@@ -141,7 +141,7 @@ export function PasswordResetTester() {
         <CardTitle className="flex items-center space-x-2 text-yellow-900">
           <TestTube className="h-5 w-5" />
           <span>Тестирование восстановления пароля</span>
-          <Badge variant="outline">DEV ONLY</Badge>
+          <Badge variant="custom">DEV ONLY</Badge>
         </CardTitle>
       </CardHeader>
       
@@ -164,6 +164,7 @@ export function PasswordResetTester() {
                 variant={userType === 'member' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setUserType('member')}
+                className='bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600'
               >
                 Участник
               </Button>
@@ -184,6 +185,7 @@ export function PasswordResetTester() {
             onClick={testPasswordReset}
             disabled={loading}
             size="sm"
+            className='bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600'
           >
             <Mail className="h-4 w-4 mr-2" />
             Тест запроса восстановления

@@ -276,7 +276,7 @@ export function PasswordResetLogs() {
   const getUserTypeBadge = (userType: PasswordResetLog['userType']): JSX.Element => {
     return (
       <Badge
-        variant={userType === "staff" ? "secondary" : "outline"}
+        variant={userType === "staff" ? "secondary" : "custom"}
         className="text-xs"
       >
         {userType === "staff" ? "👥 Персонал" : "👤 Участник"}
@@ -485,7 +485,7 @@ export function PasswordResetLogs() {
           </div>
 
           {/* Фильтры */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 mt-4">
+          <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mt-4">
             <div className="relative">
               <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
               <Input
@@ -651,7 +651,7 @@ export function PasswordResetLogs() {
               </div>
 
               {/* Десктопная версия - таблица */}
-              <div className="hidden md:block overflow-x-auto">
+              <div className="hidden 2xl:block overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
@@ -827,7 +827,7 @@ export function PasswordResetLogs() {
                 <Users className="h-4 w-4 text-green-600" />
                 <span className="text-sm">Участники</span>
               </div>
-              <Badge variant="outline">{stats.members}</Badge>
+              <Badge variant="custom">{stats.members}</Badge>
             </div>
             <div className="pt-2 border-t">
               <div className="flex items-center justify-between">

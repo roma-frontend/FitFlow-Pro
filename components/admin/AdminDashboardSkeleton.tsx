@@ -61,7 +61,7 @@ export const AdminDashboardSkeleton = React.memo(() => {
 // Welcome Header Skeleton
 const WelcomeHeaderSkeleton = React.memo(() => {
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <div className="hidden sm:block bg-white rounded-xl shadow-sm border border-gray-200 p-6">
       <div className="flex items-center justify-between">
         {/* Left side - User info */}
         <div className="flex items-center gap-4">
