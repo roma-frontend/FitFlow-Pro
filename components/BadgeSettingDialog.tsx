@@ -357,7 +357,7 @@ export function BadgeSettingDialog({
                                     text="Abc"
                                     size="sm"
                                   />
-                                  <div className="flex flex-col">
+                                  <div className="flex flex-col items-start">
                                     <span>{variant.label}</span>
                                     <span className="text-xs text-gray-500">
                                       {variant.description}

@@ -59,7 +59,7 @@ export function PWAStatus({ showDetails = false, className }: PWAStatusProps) {
   // Детальное отображение
   return (
     <div className={className}>
-      <div className="flex items-center gap-2 mb-2">
+      <div className="flex flex-wrap gap-2 mb-2">
         {/* PWA статус */}
         {isInstalled ? (
           <Badge variant="default" className="bg-green-500/20 text-green-400 border-green-500/30">

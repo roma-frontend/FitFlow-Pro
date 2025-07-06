@@ -423,7 +423,7 @@ export default function HeaderBadgesPage() {
       {/* Header */}
       <div className="bg-white shadow-sm border-b rounded-xl">
         <div className="md:px-6 md:py-4">
-          <div className="flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-2 justify-between p-4">
+          <div className="flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-2 justify-between">
             <div className="flex flex-col md:flex-row items-start md:items-center gap-2 md:gap-4">
               <Button
                 variant="ghost"
@@ -435,10 +435,10 @@ export default function HeaderBadgesPage() {
                 Назад
               </Button>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">
+                <h1 className="text-xl xl:text-2xl font-bold text-gray-900">
                   Управление Badge
                 </h1>
-                <p className="text-gray-600">
+                <p className="text-sm xl:text-base text-gray-600">
                   Полная система управления значками навигации
                 </p>
               </div>

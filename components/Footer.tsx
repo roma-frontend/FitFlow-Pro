@@ -458,7 +458,7 @@ const Footer = () => {
 
                   {/* ✅ PWA статус информация */}
                   <div className="mt-4 p-3 bg-white/5 rounded-lg border border-white/10">
-                    <div className="flex items-center justify-between mb-2">
+                    <div className="flex flex-wrap gap-2 justify-between mb-2">
                       <span className="text-sm text-gray-300">
                         Статус приложения:
                       </span>
