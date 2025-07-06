@@ -74,7 +74,7 @@ export default function ShopPage() {
                     </h1>
                   </div>
                   
-                  <Badge variant="outline" className="hidden sm:inline-flex">
+                  <Badge variant="product" className="hidden sm:inline-flex">
                     {orderStep === 'payment' ? 'Шаг 2 из 3' : 'Завершено'}
                   </Badge>
                 </div>

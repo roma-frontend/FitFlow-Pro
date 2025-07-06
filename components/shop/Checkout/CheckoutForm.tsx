@@ -128,7 +128,10 @@ export default function CheckoutForm({
       <div className="p-4 border rounded-lg">
         <PaymentElement 
           options={{
-            layout: 'tabs',
+            layout: {
+              type: "tabs",
+              defaultCollapsed: false,
+            },
             paymentMethodOrder: ['card'],
             fields: {
               billingDetails: {
@@ -143,7 +146,7 @@ export default function CheckoutForm({
       <Button
         type="submit"
         disabled={!stripe || !elements || loading}
-        className="w-full"
+        className="w-full bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600"
         size="lg"
       >
         {loading ? (
