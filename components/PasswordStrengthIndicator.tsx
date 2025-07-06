@@ -73,7 +73,7 @@ export const PasswordStrengthIndicator: React.FC<PasswordStrengthIndicatorProps>
       {/* Рекомендации */}
       {strength.feedback.length > 0 && (
         <div className={`p-3 rounded-lg border ${
-          strength.color === 'green' ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'
+          strength.color === 'green' ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-200'
         }`}>
           <p className="text-sm font-medium text-gray-700 mb-1">
             {strength.color === 'green' ? '✅ Отличный пароль!' : '💡 Рекомендации:'}

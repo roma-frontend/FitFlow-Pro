@@ -371,7 +371,7 @@ export const SmartForm: React.FC<SmartFormProps> = ({
           <Card
             className={`border-2 transition-colors ${
               isFormReady()
-                ? "bg-green-50 border-green-200"
+                ? "bg-blue-50 border-blue-200"
                 : "bg-gray-50 border-gray-200"
             }`}
           >

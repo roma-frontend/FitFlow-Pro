@@ -1050,34 +1050,6 @@ const AIAgent: React.FC = () => {
     // Здесь будет интеграция с Web Speech API
   };
 
-  // Add CSS for pulse animation
-  useEffect(() => {
-    const style = document.createElement('style');
-    style.textContent = `
-      @keyframes pulse-glow {
-        0% {
-          box-shadow: 0 8px 32px rgba(59, 130, 246, 0.3), 0 0 0 0 rgba(59, 130, 246, 0.4);
-        }
-        70% {
-          box-shadow: 0 8px 32px rgba(59, 130, 246, 0.3), 0 0 0 10px rgba(59, 130, 246, 0);
-        }
-        100% {
-          box-shadow: 0 8px 32px rgba(59, 130, 246, 0.3), 0 0 0 0 rgba(59, 130, 246, 0);
-        }
-      }
-    `;
-    if (!document.head.querySelector('#pulse-glow-style')) {
-      style.id = 'pulse-glow-style';
-      document.head.appendChild(style);
-    }
-    return () => {
-      const existingStyle = document.head.querySelector('#pulse-glow-style');
-      if (existingStyle) {
-        existingStyle.remove();
-      }
-    };
-  }, []);
-
   return (
     <>
       <AnimatePresence>
@@ -1150,7 +1122,7 @@ const AIAgent: React.FC = () => {
             initial={{ opacity: 0, scale: 0.8, y: 100 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.8, y: 100 }}
-            className="fixed bottom-6 right-6 z-50 w-96 h-[760px] bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden flex flex-col"
+            className="fixed bottom-0 sm:bottom-6 right-0 sm:right-6 z-50 w-full sm:w-96 h-full sm:h-[760px] bg-white rounded-0 sm:rounded-2xl shadow-2xl border border-gray-200 overflow-hidden flex flex-col"
             style={{
               boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
             }}
