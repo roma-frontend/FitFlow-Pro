@@ -86,12 +86,26 @@ export const VoiceInput: React.FC<VoiceInputProps> = ({ onTranscript, disabled }
     };
 
     recognition.onresult = (event: SpeechRecognitionEvent) => {
-      const current = event.resultIndex;
-      const transcript = event.results[current][0].transcript;
-      setTranscript(transcript);
+      let finalTranscript = '';
+      let interimTranscript = '';
+
+      // Собираем все результаты
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        
+        if (event.results[i].isFinal) {
+          finalTranscript += transcript;
+        } else {
+          interimTranscript += transcript;
+        }
+      }
+
+      // Обновляем отображаемую транскрипцию
+      setTranscript(interimTranscript);
       
-      if (event.results[current].isFinal) {
-        onTranscript(transcript);
+      // Если есть финальный результат, передаем его
+      if (finalTranscript) {
+        onTranscript(finalTranscript);
         setTranscript('');
       }
     };
@@ -99,6 +113,7 @@ export const VoiceInput: React.FC<VoiceInputProps> = ({ onTranscript, disabled }
     recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
       console.error('Voice recognition error:', event.error);
       setIsListening(false);
+      setTranscript('');
       
       // Show user-friendly error messages
       if (event.error === 'no-speech') {
@@ -111,6 +126,7 @@ export const VoiceInput: React.FC<VoiceInputProps> = ({ onTranscript, disabled }
     recognition.onend = () => {
       console.log('Voice recognition ended');
       setIsListening(false);
+      setTranscript('');
     };
 
     recognitionRef.current = recognition;
@@ -128,9 +144,15 @@ export const VoiceInput: React.FC<VoiceInputProps> = ({ onTranscript, disabled }
     if (isListening) {
       recognitionRef.current.stop();
       setIsListening(false);
+      setTranscript('');
     } else {
-      recognitionRef.current.start();
-      setIsListening(true);
+      try {
+        recognitionRef.current.start();
+        setIsListening(true);
+      } catch (error) {
+        console.error('Error starting voice recognition:', error);
+        setIsListening(false);
+      }
     }
   };
 
@@ -159,7 +181,7 @@ export const VoiceInput: React.FC<VoiceInputProps> = ({ onTranscript, disabled }
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap"
+          className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap max-w-xs truncate"
         >
           {transcript}
         </motion.div>

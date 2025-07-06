@@ -74,8 +74,11 @@ export const ChatInput: React.FC<ChatInputProps> = memo(({
     }
   }, [onSend]);
 
+  // Исправленная функция для обработки голосового ввода
   const handleVoiceTranscript = useCallback((transcript: string) => {
-    onChange(value + (value ? ' ' : '') + transcript);
+    // Добавляем пробел перед новым текстом только если в поле уже есть текст
+    const newText = value ? `${value} ${transcript}` : transcript;
+    onChange(newText);
     onVoiceTranscript(transcript);
   }, [value, onChange, onVoiceTranscript]);
 
