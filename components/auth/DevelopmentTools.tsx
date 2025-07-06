@@ -1,3 +1,4 @@
+// components/auth/DevelopmentTools.tsx
 "use client";
 
 import { memo } from 'react';
@@ -5,18 +6,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 
-interface FormData {
+// Переименовываем тип, чтобы избежать конфликта с глобальным FormData
+interface AuthFormData {
   email: string;
   password: string;
   name: string;
   phone: string;
+  role: string;
 }
 
 interface DevelopmentToolsProps {
   isLogin: boolean;
   loading: boolean;
   isValidating: boolean;
-  onFillData: (data: FormData) => void;
+  onFillData: (data: AuthFormData) => void;
   onClearForm: () => void;
   onShowForgotPassword: () => void;
 }
@@ -40,6 +43,7 @@ export const DevelopmentTools = memo(function DevelopmentTools({
         password: isLogin ? "password123" : "SecurePass123!",
         name: isLogin ? "" : "Тестовый Пользователь",
         phone: isLogin ? "" : "+7 (999) 123-45-67",
+        role: ""
       });
       toast({
         title: "Тестовые данные заполнены",
@@ -51,6 +55,7 @@ export const DevelopmentTools = memo(function DevelopmentTools({
         password: "123",
         name: isLogin ? "" : "А",
         phone: "",
+        role: ""
       });
       toast({
         title: "Некорректные данные заполнены",
@@ -65,6 +70,7 @@ export const DevelopmentTools = memo(function DevelopmentTools({
       password: isLogin ? "password123" : "SecurePass123!",
       name: isLogin ? "" : "Реальный Пользователь",
       phone: isLogin ? "" : "+7 (999) 123-45-67",
+      role: ""
     });
     toast({
       title: "Реальные данные заполнены",

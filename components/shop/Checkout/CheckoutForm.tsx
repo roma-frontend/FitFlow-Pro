@@ -12,12 +12,14 @@ import { useToast } from '@/hooks/use-toast';
 
 interface CheckoutFormProps {
   paymentIntentId: string;
+  orderId?: string; // Добавляем отдельный orderId
   onSuccess: (receipt: any) => void;
   onError: (error: string) => void;
 }
 
 export default function CheckoutForm({
   paymentIntentId,
+  orderId,
   onSuccess,
   onError
 }: CheckoutFormProps) {
@@ -39,7 +41,7 @@ export default function CheckoutForm({
     try {
       console.log('💳 CheckoutForm: начинаем подтверждение платежа...');
 
-      // ✅ Подтверждаем платеж
+      // ✅ Проверяем готовность элементов
       const { error: submitError } = await elements.submit();
       if (submitError) {
         throw new Error(submitError.message || 'Ошибка при отправке формы');
@@ -49,12 +51,14 @@ export default function CheckoutForm({
       const { error, paymentIntent } = await stripe.confirmPayment({
         elements,
         confirmParams: {
-          return_url: `${window.location.origin}/shop/success`,
+          return_url: `${window.location.origin}/shop/success?payment_intent=${paymentIntentId}`,
         },
         redirect: 'if_required',
       });
 
       if (error) {
+        // Более детальная обработка ошибок
+        console.error('❌ Stripe error:', error);
         throw new Error(error.message || 'Ошибка при подтверждении платежа');
       }
 
@@ -66,7 +70,7 @@ export default function CheckoutForm({
           description: "Обрабатываем ваш заказ...",
         });
 
-        // ✅ Подтверждаем заказ через API
+        // ✅ Подтверждаем заказ через API с правильными параметрами
         const confirmResponse = await fetch('/api/payments/confirm-payment', {
           method: 'POST',
           headers: {
@@ -74,16 +78,18 @@ export default function CheckoutForm({
           },
           body: JSON.stringify({
             paymentIntentId: paymentIntent.id,
-            orderId: paymentIntentId, // Используем как временный ID
+            orderId: orderId || paymentIntentId, // Используем orderId или fallback
+            amount: paymentIntent.amount,
+            currency: paymentIntent.currency,
           }),
         });
 
-        const confirmData = await confirmResponse.json();
-
         if (!confirmResponse.ok) {
-          throw new Error(confirmData.error || 'Ошибка подтверждения заказа');
+          const errorData = await confirmResponse.json();
+          throw new Error(errorData.error || 'Ошибка подтверждения заказа');
         }
 
+        const confirmData = await confirmResponse.json();
         console.log('✅ CheckoutForm: заказ подтвержден с данными:', confirmData);
 
         toast({
@@ -92,13 +98,18 @@ export default function CheckoutForm({
         });
 
         // ✅ Передаем чек с полными данными
-        onSuccess(confirmData.receipt);
+        onSuccess(confirmData.receipt || confirmData);
+      } else if (paymentIntent && paymentIntent.status === 'processing') {
+        toast({
+          title: "Платеж обрабатывается",
+          description: "Ожидайте подтверждения...",
+        });
       } else {
-        throw new Error('Платеж не был завершен');
+        throw new Error(`Неожиданный статус платежа: ${paymentIntent?.status || 'неизвестен'}`);
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Неизвестная ошибка';
-      console.error('❌ CheckoutForm: ошибка:', errorMessage);
+      console.error('❌ CheckoutForm: ошибка:', errorMessage, err);
       
       toast({
         title: "Ошибка платежа",
@@ -119,13 +130,19 @@ export default function CheckoutForm({
           options={{
             layout: 'tabs',
             paymentMethodOrder: ['card'],
+            fields: {
+              billingDetails: {
+                name: 'auto',
+                email: 'auto',
+              },
+            },
           }}
         />
       </div>
       
       <Button
         type="submit"
-        disabled={!stripe || loading}
+        disabled={!stripe || !elements || loading}
         className="w-full"
         size="lg"
       >

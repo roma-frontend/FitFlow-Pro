@@ -14,13 +14,11 @@ import { useEffect, useState } from "react";
 import { ShieldButtonV1 } from "./components/StaffLoginButton";
 import { GoogleLoginButton } from "@/components/auth/GoogleLoginButton";
 import { useLoaderStore } from "@/stores/loaderStore";
-import { useUser } from "@/hooks/useAuth";
 
 export default function StaffLoginContent() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const {userName, userRole} = useUser()
 
   let staffAuthData;
   try {
@@ -155,15 +153,13 @@ export default function StaffLoginContent() {
 
   return (
     <div className="min-h-[100svh] bg-gradient-to-br from-slate-700 via-blue-700 to-indigo-800">
-      {/* ВАШ ДИЗАЙН: Мобильная версия */}
+      {/* Мобильная версия */}
       <div className="lg:hidden">
         <div className="min-h-[100svh] flex flex-col">
           <div className="flex-1 flex flex-col justify-center px-6 py-8">
-
-            {/* ВАШ ДИЗАЙН: Логотип и заголовок */}
+            
             <ShieldButtonV1 />
 
-            {/* ВАШ ДИЗАЙН: Форма входа */}
             <div className="w-full max-w-sm mx-auto">
               <Card className="bg-white/95 backdrop-blur-sm border-0 shadow-2xl rounded-3xl overflow-hidden">
                 <CardContent className="p-6">
@@ -208,7 +204,7 @@ export default function StaffLoginContent() {
                     </button>
                   </form>
 
-                  {/* ВАШ ДИЗАЙН: Забыли пароль */}
+                  {/* Забыли пароль */}
                   <div className="mt-4 text-center">
                     <button
                       onClick={() => setShowForgotPassword(true)}
@@ -218,7 +214,7 @@ export default function StaffLoginContent() {
                     </button>
                   </div>
 
-                  {/* ВАШ ДИЗАЙН: Роли */}
+                  {/* Роли */}
                   <div className="mt-6 space-y-2">
                     <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wide">Доступные роли</h4>
                     <div className="grid grid-cols-2 gap-2 text-xs">
@@ -243,7 +239,7 @@ export default function StaffLoginContent() {
                 </CardContent>
               </Card>
 
-              {/* ВАШ ДИЗАЙН: Быстрые действия */}
+              {/* Быстрые действия */}
               <div className="mt-6 space-y-3">
                 <GoogleLoginButton
                   isStaff={true}
@@ -266,7 +262,7 @@ export default function StaffLoginContent() {
                 </button>
               </div>
 
-              {/* ВАШ ДИЗАЙН: Системный статус */}
+              {/* Системный статус */}
               <div className="mt-6 p-4 bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20">
                 <div className="flex items-center justify-between mb-3">
                   <h4 className="text-sm font-medium text-white">Статус системы</h4>
@@ -291,7 +287,7 @@ export default function StaffLoginContent() {
                 </div>
               </div>
 
-              {/* ВАШ ДИЗАЙН: Development Tools */}
+              {/* Development Tools */}
               {process.env.NODE_ENV === "development" && (
                 <div className="mt-4">
                   <button
@@ -304,7 +300,7 @@ export default function StaffLoginContent() {
                 </div>
               )}
 
-              {/* ВАШ ДИЗАЙН: Безопасность */}
+              {/* Безопасность */}
               <div className="mt-6 flex justify-center space-x-4 text-xs text-white/50">
                 <div className="flex items-center">
                   <span className="w-2 h-2 bg-green-400 rounded-full mr-2" />
@@ -325,11 +321,11 @@ export default function StaffLoginContent() {
         </div>
       </div>
 
-      {/* ВАШ ДИЗАЙН: Десктопная версия (оригинальная) */}
+      {/* Десктопная версия (оригинальная) */}
       <div className="hidden lg:block py-8 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
         <div className="max-w-6xl mx-auto">
 
-          {/* ВАШ ДИЗАЙН: Заголовок страницы */}
+          {/* Заголовок страницы */}
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
               Панель управления FitFlow Pro
@@ -339,10 +335,10 @@ export default function StaffLoginContent() {
             </p>
           </div>
 
-          {/* ВАШ ДИЗАЙН: Основной контент в виде "книги" */}
+          {/* Основной контент в виде "книги" */}
           <div className="grid lg:grid-cols-2 gap-8 items-start">
 
-            {/* ВАШ ДИЗАЙН: Левая "страница" - Ваши компоненты */}
+            {/* Левая "страница" - Ваши компоненты */}
             <div className="order-1 space-y-6">
               <StaffLoginForm
                 onSubmit={handleFormSubmit}
@@ -360,12 +356,12 @@ export default function StaffLoginContent() {
               />
             </div>
 
-            {/* ВАШ ДИЗАЙН: Правая "страница" - Информация */}
+            {/* Правая "страница" - Информация */}
             <div className="order-1 lg:order-2 space-y-6">
 
               <StaffSecurityInfo />
 
-              {/* ВАШ ДИЗАЙН: Роли и возможности */}
+              {/* Роли и возможности */}
               <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200 shadow-lg">
                 <CardHeader>
                   <CardTitle className="text-lg text-blue-900 flex items-center">
@@ -418,7 +414,7 @@ export default function StaffLoginContent() {
                 </CardContent>
               </Card>
 
-              {/* ВАШ ДИЗАЙН: Быстрые действия */}
+              {/* Быстрые действия */}
               <Card className="bg-gradient-to-br from-purple-50 to-pink-50 border-purple-200 shadow-lg">
                 <CardHeader>
                   <CardTitle className="text-lg text-purple-900 flex items-center">
@@ -457,7 +453,7 @@ export default function StaffLoginContent() {
                 </CardContent>
               </Card>
 
-              {/* ВАШ ДИЗАЙН: Системные уведомления */}
+              {/* Системные уведомления */}
               <Card className="bg-gradient-to-br from-orange-50 to-red-50 border-orange-200 shadow-lg">
                 <CardHeader>
                   <CardTitle className="text-lg text-orange-900 flex items-center">
@@ -489,7 +485,7 @@ export default function StaffLoginContent() {
             </div>
           </div>
 
-          {/* ВАШ ДИЗАЙН: Дополнительная информация внизу */}
+          {/* Дополнительная информация внизу */}
           <div className="mt-12 text-center">
             <Card className="bg-gradient-to-r from-gray-50 to-slate-100 border-gray-200 shadow-sm">
               <CardContent className="py-6">

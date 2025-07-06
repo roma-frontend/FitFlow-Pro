@@ -1,4 +1,4 @@
-// components/SmartForm.tsx
+// components/SmartForm.tsx - обновленная версия с UniversalSubmitButton
 import React, { useState, useEffect } from "react";
 import {
   Card,
@@ -23,7 +23,7 @@ import { useRealTimeValidation } from "@/utils/realTimeValidation";
 import { validateEmail, validatePasswordStrength } from "@/utils/validation";
 import { Loader2, CheckCircle, AlertCircle, Shield } from "lucide-react";
 import { useRouter } from "next/navigation";
-
+import { UniversalSubmitButton } from "./auth/UniversalSubmitButton";
 interface SmartFormProps {
   type: "login" | "register" | "staff-login";
   onSubmit: (data: any) => Promise<void>;
@@ -40,9 +40,9 @@ export const SmartForm: React.FC<SmartFormProps> = ({
   const [passwordValid, setPasswordValid] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
   const { validationStates, validateField } = useRealTimeValidation();
-  const router = useRouter()
+  const router = useRouter();
 
-  // ✅ Конфигурация полей для разных типов форм с учетом окружения
+  // Конфигурация полей для разных типов форм с учетом окружения
   const getFormConfig = () => {
     switch (type) {
       case "register":
@@ -56,7 +56,6 @@ export const SmartForm: React.FC<SmartFormProps> = ({
         };
       case "staff-login":
         return {
-          // ✅ В development показываем role, в production - только email и password
           fields: process.env.NODE_ENV === "development" 
             ? ["role", "email", "password"]
             : ["email", "password"],
@@ -80,14 +79,14 @@ export const SmartForm: React.FC<SmartFormProps> = ({
 
   const config = getFormConfig();
 
-  // ✅ Инициализация формы с учетом текущей конфигурации
+  // Инициализация формы с учетом текущей конфигурации
   useEffect(() => {
     const initialData: Record<string, any> = {};
     config.fields.forEach((field) => {
       initialData[field] = field === "role" ? "admin" : "";
     });
     setFormData(initialData);
-  }, [type, config.fields.join(',')]); // Зависимость от полей конфигурации
+  }, [type, config.fields.join(',')]);
 
   // Обработчик изменения полей
   const handleFieldChange = (fieldName: string, value: string) => {
@@ -130,10 +129,9 @@ export const SmartForm: React.FC<SmartFormProps> = ({
     }
   };
 
-  // ✅ Проверка готовности формы с учетом окружения
+  // Проверка готовности формы с учетом окружения
   const isFormReady = () => {
     const requiredFields = config.fields.filter((field) => {
-      // В production исключаем role из обязательных полей
       if (field === "role" && process.env.NODE_ENV !== "development") {
         return false;
       }
@@ -162,12 +160,11 @@ export const SmartForm: React.FC<SmartFormProps> = ({
     return true;
   };
 
-  // ✅ Обработка отправки формы
+  // Обработка отправки формы
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isFormReady() || isLoading || isValidating) return;
 
-    // ✅ В production устанавливаем дефолтную роль для staff-login
     const submitData = { ...formData };
     if (type === "staff-login" && process.env.NODE_ENV !== "development") {
       submitData.role = "admin";
@@ -176,13 +173,11 @@ export const SmartForm: React.FC<SmartFormProps> = ({
     await onSubmit(submitData);
   };
 
-  // ✅ Рендеринг полей с правильной обработкой role
+  // Рендеринг полей с правильной обработкой role
   const renderField = (fieldName: string) => {
     const fieldValidation = validationStates[fieldName];
 
-    // ✅ Специальная обработка role поля
     if (fieldName === "role") {
-      // Показываем только в development
       if (process.env.NODE_ENV === "development") {
         return (
           <div key={fieldName}>
@@ -209,11 +204,9 @@ export const SmartForm: React.FC<SmartFormProps> = ({
           </div>
         );
       }
-      // В production возвращаем null - поле не отображается
       return null;
     }
 
-    // ✅ Остальные поля через switch
     switch (fieldName) {
       case "name":
         return (
@@ -291,10 +284,9 @@ export const SmartForm: React.FC<SmartFormProps> = ({
               <RoleBasedPasswordValidator
                 password={formData[fieldName]}
                 role={
-                  // ✅ В production используем дефолтную роль
                   process.env.NODE_ENV === "development" 
                     ? (formData.role === "admin" || formData.role === "super-admin" ? "admin" : "staff")
-                    : "admin" // Дефолтная роль для production
+                    : "admin"
                 }
                 onValidationChange={setPasswordValid}
               />
@@ -343,14 +335,16 @@ export const SmartForm: React.FC<SmartFormProps> = ({
   return (
     <Card className="w-full shadow-xl mx-auto lg:mx-0">
       <CardHeader className="text-center">
-      <Button onClick={() => router.push("/")} className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg transition-all">
+        <Button 
+          onClick={() => router.push("/")} 
+          className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg transition-all"
+        >
           <Shield className="h-8 w-8 text-white" />
         </Button>
         <CardTitle className="text-2xl font-bold">{config.title}</CardTitle>
         <CardDescription className="text-base">
           {config.description}
         </CardDescription>
-        {/* ✅ Отладочная информация для development */}
         {process.env.NODE_ENV === "development" && (
           <div className="text-xs text-gray-500 mt-2 p-2 bg-yellow-50 rounded">
             🔧 Dev Mode: Showing all fields including role selector
@@ -360,35 +354,19 @@ export const SmartForm: React.FC<SmartFormProps> = ({
 
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* ✅ Рендерим только те поля, которые есть в конфигурации */}
           {config.fields.map((fieldName) => renderField(fieldName))}
 
-          <Button
-            type="submit"
-            disabled={isLoading || !isFormReady() || isValidating}
-            className={`w-full h-11 transition-all duration-200 ${
-              isFormReady() && !isValidating
-                ? "bg-gradient-to-r from-green-600 to-green-800 hover:from-green-700 hover:to-green-900"
-                : "bg-gradient-to-r from-gray-400 to-gray-600"
-            }`}
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Обработка...
-              </>
-            ) : isValidating ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Проверка...
-              </>
-            ) : (
-              config.submitText
-            )}
-          </Button>
+          {/* ✅ Используем UniversalSubmitButton вместо обычной Button */}
+          <UniversalSubmitButton
+            type={type}
+            loading={isLoading}
+            isFormReady={isFormReady()}
+            isValidating={isValidating}
+            submitText={config.submitText}
+          />
         </form>
 
-        {/* ✅ Индикатор готовности формы */}
+        {/* Индикатор готовности формы */}
         <div className="mt-4">
           <Card
             className={`border-2 transition-colors ${
@@ -412,7 +390,6 @@ export const SmartForm: React.FC<SmartFormProps> = ({
 
               <div className="mt-2 space-y-1 text-xs">
                 {config.fields.map((field) => {
-                  // ✅ Проверяем валидность каждого поля
                   const isFieldValid =
                     field === "role" ||
                     (field === "email"
@@ -423,7 +400,6 @@ export const SmartForm: React.FC<SmartFormProps> = ({
                           ? formData.password === formData[field]
                           : Boolean(formData[field]?.trim()));
 
-                  // ✅ Получаем человекочитаемое название поля
                   const getFieldLabel = (fieldName: string) => {
                     switch (fieldName) {
                       case "confirmPassword": return "Подтверждение пароля";
@@ -453,7 +429,6 @@ export const SmartForm: React.FC<SmartFormProps> = ({
                 })}
               </div>
 
-              {/* ✅ Дополнительная информация для production */}
               {process.env.NODE_ENV !== "development" && type === "staff-login" && (
                 <div className="mt-2 text-xs text-blue-600 bg-blue-50 p-2 rounded">
                   ℹ️ В production режиме роль устанавливается автоматически

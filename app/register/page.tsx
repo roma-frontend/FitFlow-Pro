@@ -7,7 +7,7 @@ import { useAuthForm } from "@/hooks/useAuthForm";
 import { AuthCard } from "@/components/auth/AuthCard";
 import { ErrorAlert } from "@/components/auth/ErrorAlert";
 import { FormField } from "@/components/auth/FormField";
-import { SubmitButton } from "@/components/auth/SubmitButton";
+import { SubmitButton } from "@/components/auth/UniversalSubmitButton";
 import { AuthModeToggle } from "@/components/auth/AuthModeToggle";
 import { FormStatusIndicator } from "@/components/auth/FormStatusIndicator";
 import { SecurityInfo } from "@/components/auth/SecurityInfo";

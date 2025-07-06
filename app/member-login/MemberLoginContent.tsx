@@ -1,4 +1,4 @@
-// app/member-login/MemberLoginContent.tsx - С ЛОАДЕРОМ НА КНОПКЕ
+// app/member-login/MemberLoginContent.tsx - ПОЛНАЯ ВЕРСИЯ
 "use client";
 
 import { useEffect, useState } from "react";
@@ -6,7 +6,7 @@ import { useAuthForm } from "@/hooks/useAuthForm";
 import { AuthCard } from "@/components/auth/AuthCard";
 import { ErrorAlert } from "@/components/auth/ErrorAlert";
 import { FormField } from "@/components/auth/FormField";
-import { SubmitButton } from "@/components/auth/SubmitButton";
+import { UniversalSubmitButton } from "@/components/auth/UniversalSubmitButton";
 import { AuthModeToggle } from "@/components/auth/AuthModeToggle";
 import { FormStatusIndicator } from "@/components/auth/FormStatusIndicator";
 import { SecurityInfo } from "@/components/auth/SecurityInfo";
@@ -26,7 +26,6 @@ export default function MemberLoginContent() {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const router = useRouter();
   
-  // ✅ Получаем данные из loaderStore только для полноэкранного лоадера
   const { loaderType, loaderProps } = useLoaderStore();
 
   const {
@@ -39,6 +38,7 @@ export default function MemberLoginContent() {
     isValidating,
     isFormReady,
     isRedirecting,
+    showFullScreenLoader,
     handleFieldChange,
     handleSubmit,
     toggleMode,
@@ -49,7 +49,6 @@ export default function MemberLoginContent() {
 
   useEffect(() => {
     const checkGoogleOAuthReturn = () => {
-      // Проверяем если пользователь вернулся после Google OAuth
       const googleLoginInProgress = sessionStorage.getItem('google_login_in_progress');
       const urlParams = new URLSearchParams(window.location.search);
       const code = urlParams.get('code');
@@ -57,16 +56,13 @@ export default function MemberLoginContent() {
       if (googleLoginInProgress === 'true' && code) {
         console.log('🔄 Обнаружен возврат после Google OAuth на member-login');
         
-        // Получаем сохраненные данные
         const isStaff = sessionStorage.getItem('google_login_is_staff') === 'true';
         const savedRedirect = sessionStorage.getItem('google_login_redirect');
         
-        // Очищаем sessionStorage
         sessionStorage.removeItem('google_login_in_progress');
         sessionStorage.removeItem('google_login_is_staff');
         sessionStorage.removeItem('google_login_redirect');
         
-        // Показываем loader
         const { showLoader } = useLoaderStore.getState();
         showLoader("login", {
           userRole: isStaff ? "admin" : "member",
@@ -74,7 +70,6 @@ export default function MemberLoginContent() {
           dashboardUrl: savedRedirect || "/member-dashboard"
         });
         
-        // Через 2 секунды делаем редирект
         setTimeout(() => {
           const { hideLoader } = useLoaderStore.getState();
           hideLoader();
@@ -85,16 +80,16 @@ export default function MemberLoginContent() {
       }
     };
 
-    // Проверяем сразу при загрузке
     checkGoogleOAuthReturn();
   }, []);
 
-  if (loaderType === "login" && loaderProps) {
+  // ✅ ЕДИНАЯ ЛОГИКА: показываем полноэкранный loader только когда showFullScreenLoader = true
+  if ((loaderType === "login" && loaderProps) || showFullScreenLoader) {
     return (
       <StaffLoginLoader
-        userRole={loaderProps.userRole || "member"}
-        userName={loaderProps.userName || "Участник"}
-        dashboardUrl={loaderProps.dashboardUrl || "/member-dashboard"}
+        userRole={loaderProps?.userRole || "member"}
+        userName={loaderProps?.userName || "Участник"}
+        dashboardUrl={loaderProps?.dashboardUrl || "/member-dashboard"}
       />
     );
   }
@@ -201,7 +196,7 @@ export default function MemberLoginContent() {
                       </div>
                     )}
 
-                    {/* ✅ ИЗМЕНЕНО: Лоадер теперь на кнопке, а не полноэкранный */}
+                    {/* ✅ Кнопка с loader только на кнопке (без полноэкранного) */}
                     <button
                       type="submit"
                       disabled={loading || !isFormReady || isValidating}
@@ -210,7 +205,7 @@ export default function MemberLoginContent() {
                       {loading ? (
                         <div className="flex items-center justify-center">
                           <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                          {isRedirecting ? "Перенаправление..." : "Обработка..."}
+                          {isRedirecting ? "Перенаправление..." : (isLogin ? "Входим..." : "Создаем аккаунт...")}
                         </div>
                       ) : (
                         isLogin ? "Войти" : "Создать аккаунт"
@@ -322,7 +317,7 @@ export default function MemberLoginContent() {
             </p>
           </div>
 
-          {/* Основной контент в виде "книги" */}
+          {/* Основной контент */}
           <div className="grid lg:grid-cols-2 gap-8 items-start">
 
             {/* Левая "страница" - Форма входа/регистрации */}
@@ -384,14 +379,13 @@ export default function MemberLoginContent() {
                     />
                   )}
 
-                  {/* ✅ ИЗМЕНЕНО: Используем SubmitButton, но с учетом loading состояния */}
-                  <SubmitButton
+                  <UniversalSubmitButton
                     isLogin={isLogin}
-                    loading={loading}
+                    loading={loading && !showFullScreenLoader}
                     isFormReady={isFormReady}
                     isValidating={isValidating}
                     redirectParam={redirectParam}
-                    isRedirecting={isRedirecting}
+                    isRedirecting={isRedirecting && !showFullScreenLoader}
                   />
                 </form>
 
