@@ -37,7 +37,7 @@ export default class ErrorBoundary extends Component<Props, State> {
       const router = useRouter()
 
       return (
-        <div className="min-h-[100svh] flex items-center justify-center bg-gradient-to-br from-red-50 to-orange-50">
+        <div className="min-h-[100lvh] flex items-center justify-center bg-gradient-to-br from-red-50 to-orange-50">
           <div className="text-center max-w-md mx-auto p-8">
             <div className="w-20 h-20 bg-gradient-to-r from-red-500 to-orange-600 rounded-full flex items-center justify-center mx-auto mb-6">
               <AlertTriangle className="h-10 w-10 text-white" />

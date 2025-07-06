@@ -287,7 +287,7 @@ export function BadgeManagementDashboard({
   return (
     <div className="space-y-6">
       {/* Верхняя панель с фильтрами и действиями */}
-      <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+      <div className="flex flex-col xl:flex-row gap-4 items-start xl:items-center justify-between">
         <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
           <div className="relative w-full md:w-64">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" />

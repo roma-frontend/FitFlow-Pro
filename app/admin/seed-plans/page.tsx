@@ -160,7 +160,7 @@ export default function SeedPlansPage() {
   ];
 
   return (
-    <div className="min-h-[100svh] bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+    <div className="min-h-[100lvh] bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
       <div className="max-w-7xl mx-auto p-4 sm:p-6">
         {/* Header */}
         <header className="relative bg-gradient-to-r from-white via-gray-50 to-white border-b border-gray-200/80 backdrop-blur-sm rounded-xl mb-8">

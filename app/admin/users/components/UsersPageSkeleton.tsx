@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 export const UsersPageSkeleton = React.memo(() => {
   return (
-    <div className="min-h-[100svh] bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+    <div className="min-h-[100lvh] bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
       {/* Animated Background Elements */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/20 to-purple-600/20 rounded-full blur-3xl animate-pulse"></div>

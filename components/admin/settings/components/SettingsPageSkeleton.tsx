@@ -20,7 +20,7 @@ export const SettingsPageSkeleton = ({
   currentStep = 0
 }: SettingsPageSkeletonProps) => {
   return (
-    <div className="min-h-[100svh] bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+    <div className="min-h-[100lvh] bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
       {/* Header Skeleton */}
       <div className="bg-white border-b border-gray-200/80 backdrop-blur-sm">
         <div className={cn(

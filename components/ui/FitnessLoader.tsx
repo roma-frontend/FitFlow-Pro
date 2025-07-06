@@ -110,7 +110,7 @@ export default function FitnessLoader({
   if (isMobile) {
     // ✅ ИСПРАВЛЕНО: МОБИЛЬНАЯ ВЕРСИЯ с лучшей видимостью текста
     return (
-      <div className={cn(`min-h-[100svh] bg-gradient-to-br ${currentTheme.bg} flex items-center justify-center p-4`, className)}>
+      <div className={cn(`min-h-[100lvh] bg-gradient-to-br ${currentTheme.bg} flex items-center justify-center p-4`, className)}>
         <div className="text-center text-white">
           {/* Логотип/лоадер */}
           <div className="mb-6">

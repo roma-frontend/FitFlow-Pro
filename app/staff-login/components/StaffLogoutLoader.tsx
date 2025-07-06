@@ -123,7 +123,7 @@ export default function StaffLogoutLoader({ userRole, userName, redirectUrl }: S
   };
 
   return (
-    <div className="min-h-[100svh] bg-gradient-to-br from-slate-700 via-blue-700 to-indigo-800 md:bg-gradient-to-br md:from-slate-50 md:via-gray-50 md:to-zinc-50 relative overflow-hidden">
+    <div className="min-h-[100lvh] bg-gradient-to-br from-slate-700 via-blue-700 to-indigo-800 md:bg-gradient-to-br md:from-slate-50 md:via-gray-50 md:to-zinc-50 relative overflow-hidden">
       {/* Декоративные элементы */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="md:hidden">
@@ -141,7 +141,7 @@ export default function StaffLogoutLoader({ userRole, userName, redirectUrl }: S
       </div>
 
       {/* Центральный контент */}
-      <div className="relative z-10 flex items-center justify-center min-h-[100svh] p-4">
+      <div className="relative z-10 flex items-center justify-center min-h-[100lvh] p-4">
         <div className="text-center max-w-2xl mx-auto">
           {/* Прощание */}
           <h1 className="text-2xl md:text-3xl font-bold text-white md:text-gray-800 mb-8 opacity-0 animate-[fadeIn_0.8s_ease-out_forwards]">

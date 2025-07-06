@@ -58,7 +58,7 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-[100svh] bg-gray-50 w-full overflow-x-hidden">
+    <div className="min-h-[100lvh] bg-gray-50 w-full overflow-x-hidden">
       <main className="w-full">
         <div className="px-2 sm:px-4 lg:px-6 xl:px-8 py-3 sm:py-4 lg:py-6">
           <div className="space-y-4 sm:space-y-6">

@@ -323,7 +323,7 @@ export const OptimizedProviders = memo(({ children }: OptimizedProvidersProps) =
             // ДЕСКТОПНАЯ ВЕРСИЯ - с декоративными элементами и светлым фоном
             console.log('💻 Рендерим ДЕСКТОПНЫЙ лоадер');
             return (
-                <div className="min-h-[100svh] flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-green-50 relative overflow-hidden">
+                <div className="min-h-[100lvh] flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-green-50 relative overflow-hidden">
                     {/* Статичный фон */}
                     <div className="absolute inset-0 overflow-hidden">
                         <div className="absolute top-20 left-10 w-16 h-16 bg-blue-500/10 rounded-full" />

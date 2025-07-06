@@ -39,7 +39,7 @@ import { useRouter } from "next/navigation";
 // Компонент загрузки для Suspense
 function PageLoader() {
   return (
-    <div className="min-h-[100svh] bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 lg:bg-gradient-to-br lg:from-blue-50 lg:via-white lg:to-indigo-50 flex items-center justify-center p-4">
+    <div className="min-h-[100lvh] bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 lg:bg-gradient-to-br lg:from-blue-50 lg:via-white lg:to-indigo-50 flex items-center justify-center p-4">
       <div className="text-center text-white lg:text-gray-900">
         <div className="relative mb-6">
           <div className="w-16 h-16 mx-auto bg-white/20 lg:bg-blue-100 rounded-2xl flex items-center justify-center backdrop-blur-sm shadow-lg">
@@ -83,7 +83,7 @@ function MemberLoginContent() {
   // Показываем индикатор перенаправления
   if (isRedirecting) {
     return (
-      <div className="min-h-[100svh] bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 lg:bg-gradient-to-br lg:from-blue-50 lg:via-white lg:to-indigo-50 flex items-center justify-center p-4">
+      <div className="min-h-[100lvh] bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 lg:bg-gradient-to-br lg:from-blue-50 lg:via-white lg:to-indigo-50 flex items-center justify-center p-4">
         <div className="text-center text-white lg:text-gray-900">
           <div className="relative mb-6">
             <div className="w-16 h-16 mx-auto bg-white/20 lg:bg-blue-100 rounded-2xl flex items-center justify-center backdrop-blur-sm shadow-lg">
@@ -151,7 +151,7 @@ function MemberLoginContent() {
 
   if (showForgotPassword) {
     return (
-      <div className="min-h-[100svh] bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 flex items-center justify-center p-4">
+      <div className="min-h-[100lvh] bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 flex items-center justify-center p-4">
         <div className="w-full max-w-sm">
           <ForgotPasswordForm
             onBack={() => setShowForgotPassword(false)}
@@ -203,10 +203,10 @@ function MemberLoginContent() {
   );
 
   return (
-    <div className="min-h-[100svh] bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 lg:bg-gradient-to-br lg:from-blue-50 lg:via-white lg:to-indigo-50">
+    <div className="min-h-[100lvh] bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 lg:bg-gradient-to-br lg:from-blue-50 lg:via-white lg:to-indigo-50">
       {/* Мобильная версия */}
       <div className="lg:hidden">
-        <div className="min-h-[100svh] flex flex-col">
+        <div className="min-h-[100lvh] flex flex-col">
           <div className="flex-1 flex flex-col justify-center px-6 py-8">
 
             {/* Логотип и заголовок */}

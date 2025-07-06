@@ -159,7 +159,7 @@ function AddTrainerContent() {
     formData.workingHours.days.length > 0;
 
   return (
-    <div className="min-h-[100svh] bg-gray-50">
+    <div className="min-h-[100lvh] bg-gray-50">
       <ManagerHeader />
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

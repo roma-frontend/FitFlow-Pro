@@ -216,7 +216,7 @@ export default function TrainerDashboard() {
   useWelcomeToast();
   return (
     <TrainerProvider>
-      <div className="min-h-[100svh] bg-gray-50">
+      <div className="min-h-[100lvh] bg-gray-50">
         <TrainerHeader />
         <DashboardContent />
       </div>

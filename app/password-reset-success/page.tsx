@@ -35,7 +35,7 @@ function PasswordResetSuccessContent() {
   };
 
   return (
-    <div className="min-h-[100svh] bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center p-4">
+    <div className="min-h-[100lvh] bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -96,7 +96,7 @@ function PasswordResetSuccessContent() {
 // Компонент загрузки
 function LoadingFallback() {
   return (
-    <div className="min-h-[100svh] bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center p-4">
+    <div className="min-h-[100lvh] bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardContent className="text-center py-8">
           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-green-600" />

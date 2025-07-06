@@ -70,7 +70,7 @@ export default function ElenaSmirnovaPage() {
   const IconComponent = trainer.avatar;
 
   return (
-    <div className="min-h-[100svh] bg-gray-50">
+    <div className="min-h-[100lvh] bg-gray-50">
       {/* Header */}
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

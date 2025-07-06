@@ -337,7 +337,7 @@ export default function TrainerProfilePage() {
   if (loading) {
     return (
         <TrainerProvider>
-          <div className="min-h-[100svh] bg-gray-50">
+          <div className="min-h-[100lvh] bg-gray-50">
             <TrainerHeader />
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
               <div className="flex items-center justify-center h-64">
@@ -355,7 +355,7 @@ export default function TrainerProfilePage() {
   if (!profile) {
     return (
         <TrainerProvider>
-          <div className="min-h-[100svh] bg-gray-50">
+          <div className="min-h-[100lvh] bg-gray-50">
             <TrainerHeader />
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
               <div className="text-center">
@@ -369,7 +369,7 @@ export default function TrainerProfilePage() {
 
   return (
       <TrainerProvider>
-        <div className="min-h-[100svh] bg-gray-50">
+        <div className="min-h-[100lvh] bg-gray-50">
           <TrainerHeader />
           
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

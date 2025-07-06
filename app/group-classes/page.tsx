@@ -39,7 +39,7 @@ export default function GroupClassesPage() {
   }
 
   return (
-    <div className="min-h-[100svh] bg-gray-50">
+    <div className="min-h-[100lvh] bg-gray-50">
       <PageHeader onBack={handleBack} />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

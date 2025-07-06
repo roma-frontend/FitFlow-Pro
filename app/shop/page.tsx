@@ -44,7 +44,7 @@ export default function ShopPage() {
   };
 
   return (
-    <div className="min-h-[100svh] bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="min-h-[100lvh] bg-gradient-to-br from-gray-50 to-gray-100">
       <MainHeader
       />
 

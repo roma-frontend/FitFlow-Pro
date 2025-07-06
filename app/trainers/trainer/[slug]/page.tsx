@@ -342,7 +342,7 @@ export default function TrainerPage() {
 
   if (!trainer) {
     return (
-      <div className="min-h-[100svh] bg-gray-50 flex items-center justify-center">
+      <div className="min-h-[100lvh] bg-gray-50 flex items-center justify-center">
         <Card className="max-w-md">
           <CardContent className="p-8 text-center">
             <h2 className="text-xl font-bold mb-4">Тренер не найден</h2>
@@ -361,7 +361,7 @@ export default function TrainerPage() {
   const IconComponent = trainer.avatar;
 
   return (
-    <div className="min-h-[100svh] bg-gray-50">
+    <div className="min-h-[100lvh] bg-gray-50">
       {/* Header */}
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

@@ -133,7 +133,7 @@ export default function MyBookingsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-[100svh] bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
+      <div className="min-h-[100lvh] bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
           <p className="text-gray-600">Загрузка тренировок...</p>
@@ -143,7 +143,7 @@ export default function MyBookingsPage() {
   }
 
   return (
-    <div className="min-h-[100svh] bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="min-h-[100lvh] bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Header */}
       <header className="relative bg-gradient-to-r from-white via-gray-50 to-white border-b border-gray-200/80 backdrop-blur-sm">
         <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-blue-500/20 to-transparent" />

@@ -134,7 +134,7 @@ class ShopErrorBoundary extends Component<Props, State> {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-[100svh] bg-gray-50 flex items-center justify-center p-4 sm:p-8">
+        <div className="min-h-[100lvh] bg-gray-50 flex items-center justify-center p-4 sm:p-8">
           <Card className="w-full max-w-md mx-auto">
             <CardContent className="p-6 sm:p-8 text-center">
               <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">

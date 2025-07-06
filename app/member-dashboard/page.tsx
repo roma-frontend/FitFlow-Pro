@@ -346,7 +346,7 @@ export default function MemberDashboard() {
     });
 
     return (
-      <div className="min-h-[100svh] bg-gray-50 flex items-center justify-center">
+      <div className="min-h-[100lvh] bg-gray-50 flex items-center justify-center">
         <Card className="w-full max-w-md">
           <CardContent className="p-8 text-center">
             <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
@@ -383,7 +383,7 @@ export default function MemberDashboard() {
 
   // Основной контент дашборда
   return (
-    <div className="min-h-[100svh] bg-gradient-to-br from-blue-50 to-green-50">
+    <div className="min-h-[100lvh] bg-gradient-to-br from-blue-50 to-green-50">
       {/* Хедер */}
       <MemberHeader onLogout={handleLogout} />
 

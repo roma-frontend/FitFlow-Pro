@@ -153,7 +153,7 @@ export default function TrainersPage() {
   });
 
   return (
-    <div className="min-h-[100svh] bg-gradient-to-br from-blue-50 to-green-50">
+    <div className="min-h-[100lvh] bg-gradient-to-br from-blue-50 to-green-50">
       {/* Header */}
       <TrainersPageHeader 
         totalTrainers={trainersData.length}

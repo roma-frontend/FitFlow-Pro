@@ -270,7 +270,7 @@ export default function BookTrainerPage() {
 
   if (!trainer) {
     return (
-      <div className="min-h-[100svh] bg-gradient-to-br from-blue-50 to-green-50 flex items-center justify-center">
+      <div className="min-h-[100lvh] bg-gradient-to-br from-blue-50 to-green-50 flex items-center justify-center">
         <Card className="p-8 text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">
             Тренер не найден
@@ -341,7 +341,7 @@ export default function BookTrainerPage() {
   };
 
   return (
-    <div className="min-h-[100svh] bg-gradient-to-br from-blue-50 to-green-50">
+    <div className="min-h-[100lvh] bg-gradient-to-br from-blue-50 to-green-50">
       <>
         <header className="sticky top-0 z-40 w-full border-b border-white/10 bg-gradient-to-r from-blue-600 via-blue-700 to-green-600 backdrop-blur supports-[backdrop-filter]:bg-gradient-to-r supports-[backdrop-filter]:from-blue-600/95 supports-[backdrop-filter]:via-blue-700/95 supports-[backdrop-filter]:to-green-600/95">
           <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">

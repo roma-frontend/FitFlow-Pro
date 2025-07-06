@@ -28,7 +28,7 @@ export const SettingsErrorState = ({
   
   return (
     <div className={cn(
-      "min-h-[100svh] bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100",
+      "min-h-[100lvh] bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100",
       "flex items-center justify-center",
       isMobile ? "p-4" : "p-6"
     )}>

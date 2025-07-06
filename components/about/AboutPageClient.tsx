@@ -17,7 +17,7 @@ import {
 
 export function AboutPageClient() {
   return (
-    <div className="min-h-[100svh] bg-white">
+    <div className="min-h-[100lvh] bg-white">
       {/* 🚀 Кнопка возврата - загружается сразу */}
       <div className="fixed top-4 left-4 z-50">
         <BackToHomeButton />

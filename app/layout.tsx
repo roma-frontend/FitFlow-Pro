@@ -198,7 +198,7 @@ export default function RootLayout({
                   <AuthProvider>
                     <OptimizedProviders>
                       <PWAWrapper>
-                        <div className="min-h-[100svh] flex flex-col bg-background text-foreground">
+                        <div className="min-h-[100lvh] flex flex-col bg-background text-foreground">
                           <main className="flex-1 relative">
                             <GlobalLoader />
                             <SafeChildrenWrapper>

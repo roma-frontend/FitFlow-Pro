@@ -45,7 +45,7 @@ export default function HomePage() {
   return (
     <>
       <AuthPreserver />
-      <div className="min-h-[100svh] bg-gradient-to-br from-blue-50 to-green-50 w-full overflow-x-hidden">
+      <div className="min-h-[100lvh] bg-gradient-to-br from-blue-50 to-green-50 w-full overflow-x-hidden">
         {/* HEADER */}
         <div className="w-full">
           <MainHeader />

@@ -256,7 +256,7 @@ export default function SettingsPage() {
     <>
       <div
         className={cn(
-          "min-h-[100svh] transition-all duration-300",
+          "min-h-[100lvh] transition-all duration-300",
           isMobile
             ? "bg-gradient-to-b from-slate-50 to-blue-50"
             : "bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100",

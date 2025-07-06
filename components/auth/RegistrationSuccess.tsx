@@ -25,7 +25,7 @@ export function RegistrationSuccess({
   onResendEmail 
 }: RegistrationSuccessProps) {
   return (
-    <div className="min-h-[100svh] bg-gradient-to-br from-green-50 via-white to-emerald-50 flex items-center justify-center p-4">
+    <div className="min-h-[100lvh] bg-gradient-to-br from-green-50 via-white to-emerald-50 flex items-center justify-center p-4">
       <Card className="w-full max-w-md bg-white shadow-2xl border-0">
         <CardHeader className="text-center pb-4">
           {/* ✅ Анимированная иконка успеха */}

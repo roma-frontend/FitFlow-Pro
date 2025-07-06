@@ -10,7 +10,7 @@ export default function ManagerBookings() {
   return (
       <ManagerProvider>
           <ManagerErrorBoundary>
-            <div className="min-h-[100svh] bg-gray-50">
+            <div className="min-h-[100lvh] bg-gray-50">
               <ManagerHeader />
               <BookingsManagementContent />
             </div>

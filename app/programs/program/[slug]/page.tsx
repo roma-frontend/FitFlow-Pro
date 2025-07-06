@@ -609,7 +609,7 @@ export default function ProgramPage() {
 
   if (!program) {
     return (
-      <div className="min-h-[100svh] bg-gradient-to-br from-blue-50 to-green-50 flex items-center justify-center">
+      <div className="min-h-[100lvh] bg-gradient-to-br from-blue-50 to-green-50 flex items-center justify-center">
         <Card className="p-8 text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">
             Программа не найдена
@@ -628,7 +628,7 @@ export default function ProgramPage() {
   const IconComponent = program.icon;
 
   return (
-    <div className="min-h-[100svh] bg-gradient-to-br from-blue-50 to-green-50">
+    <div className="min-h-[100lvh] bg-gradient-to-br from-blue-50 to-green-50">
       {/* Header */}
       <header className="bg-white shadow-sm sticky top-0 z-50 backdrop-blur-sm bg-white/95">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

@@ -15,7 +15,7 @@ function ResetPasswordContent() {
 
   if (!token) {
     return (
-      <div className="min-h-[100svh] bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center p-4">
+      <div className="min-h-[100lvh] bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <CardTitle className="text-red-600">Ошибка</CardTitle>
@@ -34,7 +34,7 @@ function ResetPasswordContent() {
   }
 
   return (
-    <div className="min-h-[100svh] bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center p-4">
+    <div className="min-h-[100lvh] bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold text-gray-900">
@@ -55,7 +55,7 @@ function ResetPasswordContent() {
 // Компонент загрузки
 function LoadingFallback() {
   return (
-    <div className="min-h-[100svh] bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center p-4">
+    <div className="min-h-[100lvh] bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardContent className="text-center py-8">
           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />

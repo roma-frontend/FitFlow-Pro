@@ -96,7 +96,7 @@ export default function MemberLoginContent() {
 
   if (showForgotPassword) {
     return (
-      <div className="min-h-[100svh] bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 flex items-center justify-center p-4">
+      <div className="min-h-[100lvh] bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 flex items-center justify-center p-4">
         <div className="w-full max-w-sm">
           <ForgotPasswordForm
             onBack={() => setShowForgotPassword(false)}
@@ -109,14 +109,14 @@ export default function MemberLoginContent() {
 
   if (error) {
     return (
-      <div className="min-h-[100svh] bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 flex items-center justify-center p-4">
+      <div className="min-h-[100lvh] bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 flex items-center justify-center p-4">
         <ErrorAlert error={error} />
       </div>
     );
   }
 
   return (
-    <div className="min-h-[100svh] bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 lg:bg-gradient-to-br lg:from-blue-50 lg:via-white lg:to-indigo-50">
+    <div className="min-h-[100lvh] bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 lg:bg-gradient-to-br lg:from-blue-50 lg:via-white lg:to-indigo-50">
       {/* 🔧 ИНДИКАТОР REDIRECT'А ВВЕРХУ СТРАНИЦЫ */}
       {redirectParam && (
         <div className="bg-blue-500/90 backdrop-blur-sm text-white text-center py-2 px-4">
@@ -128,7 +128,7 @@ export default function MemberLoginContent() {
 
       {/* Мобильная версия */}
       <div className="lg:hidden">
-        <div className="min-h-[100svh] flex flex-col">
+        <div className="min-h-[100lvh] flex flex-col">
           {/* Верхняя часть с градиентом */}
           <div className="flex-1 flex flex-col justify-center px-6 py-8">
 

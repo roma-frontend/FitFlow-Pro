@@ -199,7 +199,7 @@ function MembershipsPageContent() {
 
   if (isLoading || isLoadingMembership) {
     return (
-      <div className="min-h-[100svh] bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center">
+      <div className="min-h-[100lvh] bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Загрузка абонементов...</p>
@@ -210,7 +210,7 @@ function MembershipsPageContent() {
 
   if (showPaymentForm && selectedPlan) {
     return (
-      <div className="min-h-[100svh] bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+      <div className="min-h-[100lvh] bg-gradient-to-br from-blue-50 via-white to-indigo-50">
         <header className="relative bg-gradient-to-r from-white via-gray-50 to-white border-b border-gray-200/80 backdrop-blur-sm">
           <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-blue-500/20 to-transparent" />
 
@@ -252,7 +252,7 @@ function MembershipsPageContent() {
   }
 
   return (
-    <div className="min-h-[100svh] bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+    <div className="min-h-[100lvh] bg-gradient-to-br from-blue-50 via-white to-indigo-50">
       <header className="relative bg-gradient-to-r from-white via-gray-50 to-white border-b border-gray-200/80 backdrop-blur-sm">
         <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-blue-500/20 to-transparent" />
 

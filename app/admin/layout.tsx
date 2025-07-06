@@ -264,7 +264,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   }, [scheduleError, isOnline, userRole, roleTexts]);
 
   return (
-    <div className="min-h-[100svh] bg-gradient-to-br from-gray-50 to-blue-50">
+    <div className="min-h-[100lvh] bg-gradient-to-br from-gray-50 to-blue-50">
       {/* Мобильная шапка */}
       <MobileHeader
         roleTexts={roleTexts}

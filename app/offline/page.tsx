@@ -79,7 +79,7 @@ export default function OfflinePage() {
   ];
 
   return (
-    <div className="min-h-[100svh] bg-gradient-to-br from-orange-50 to-red-50 flex items-center justify-center p-4">
+    <div className="min-h-[100lvh] bg-gradient-to-br from-orange-50 to-red-50 flex items-center justify-center p-4">
       <div className="w-full max-w-4xl space-y-8">
         
         {/* Главная карточка офлайн статуса */}

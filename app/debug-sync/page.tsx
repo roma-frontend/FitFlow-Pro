@@ -14,7 +14,7 @@ export default function DashboardPage() {
   return (
     <UnifiedDataProvider>
       <MessagingProvider>
-        <div className="min-h-[100svh] bg-gray-50">
+        <div className="min-h-[100lvh] bg-gray-50">
           <SystemDashboard userRole={userRole} userId={userId} />
           <SystemTestPanel />
         </div>

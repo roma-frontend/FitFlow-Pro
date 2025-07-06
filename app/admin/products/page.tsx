@@ -114,7 +114,7 @@ export default function ProductsPage() {
   }
 
   return (
-    <div className="min-h-[100svh] bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+    <div className="min-h-[100lvh] bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
       {/* Header */}
       <ProductsHeader
         stats={stats}

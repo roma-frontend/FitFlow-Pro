@@ -192,7 +192,7 @@ const ScheduleTabsContainer = memo(function ScheduleTabsContainer({
   );
 
   return (
-    <div className="min-h-[100svh] bg-gradient-to-br from-slate-50 via-white to-blue-50/30">
+    <div className="min-h-[100lvh] bg-gradient-to-br from-slate-50 via-white to-blue-50/30">
       <div className="px-4 sm:px-6 lg:px-8 py-8">
         {/* Заголовок с анимацией */}
         <div className="mb-10">

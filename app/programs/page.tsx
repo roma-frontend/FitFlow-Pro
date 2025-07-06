@@ -76,7 +76,7 @@ export default function ProgramsPage() {
   });
 
   return (
-    <div className="min-h-[100svh] bg-gray-50">
+    <div className="min-h-[100lvh] bg-gray-50">
       {/* Header с поиском и фильтрами */}
       <ProgramsPageHeader
         totalPrograms={programsData.length}

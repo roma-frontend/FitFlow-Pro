@@ -11,7 +11,7 @@ export function AboutHero() {
   };
 
   return (
-    <section className="relative min-h-[100svh] flex items-center justify-center overflow-hidden bg-gradient-to-br from-blue-900 via-blue-800 to-green-800">
+    <section className="relative min-h-[100lvh] flex items-center justify-center overflow-hidden bg-gradient-to-br from-blue-900 via-blue-800 to-green-800">
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-10">
         <div

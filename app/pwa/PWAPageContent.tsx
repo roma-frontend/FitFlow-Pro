@@ -30,7 +30,7 @@ export default function PWAPage() {
     const { isInstalled, canInstall } = usePWA();
 
     return (
-        <div className="min-h-[100svh] bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div className="min-h-[100lvh] bg-gradient-to-br from-blue-50 to-indigo-100">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 {/* Header */}
                 <div className="mb-8">

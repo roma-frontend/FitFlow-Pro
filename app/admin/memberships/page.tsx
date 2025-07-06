@@ -168,7 +168,7 @@ export default function AdminMembershipsDemo() {
   };
 
   return (
-    <div className="min-h-[100svh] bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+    <div className="min-h-[100lvh] bg-gradient-to-br from-blue-50 via-white to-indigo-50">
       {/* Шапка с уведомлением о демо-режиме */}
       <header className="relative bg-gradient-to-r from-white via-gray-50 to-white border-b border-gray-200/80 backdrop-blur-sm">
         {/* Декоративная линия */}

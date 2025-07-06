@@ -50,7 +50,7 @@ const shouldShowSkeleton = (pathname: string): boolean => {
 const AdminSkeleton = () => {
   return (
     <div className="fixed inset-0 z-50 bg-white">
-      <div className="min-h-[100svh] flex">
+      <div className="min-h-[100lvh] flex">
         {/* Sidebar скелетон */}
         <div className="w-64 bg-gray-50 border-r border-gray-200 p-4">
           <div className="space-y-4">

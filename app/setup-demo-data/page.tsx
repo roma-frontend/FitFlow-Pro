@@ -399,7 +399,7 @@ export default function SetupDemoDataPage() {
   };
 
   return (
-    <div className="min-h-[100svh] bg-gray-50 p-8">
+    <div className="min-h-[100lvh] bg-gray-50 p-8">
       <div className="max-w-4xl mx-auto">
         <Card className="mb-8">
           <CardHeader>

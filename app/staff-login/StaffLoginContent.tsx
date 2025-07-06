@@ -135,7 +135,7 @@ export default function StaffLoginContent() {
 
   if (showForgotPassword) {
     return (
-      <div className="min-h-[100svh] bg-gradient-to-br from-slate-700 via-blue-700 to-indigo-800 flex items-center justify-center p-4">
+      <div className="min-h-[100lvh] bg-gradient-to-br from-slate-700 via-blue-700 to-indigo-800 flex items-center justify-center p-4">
         <div className="max-w-sm w-full">
           <StaffForgotPasswordForm
             resetEmail={resetEmail}
@@ -152,10 +152,10 @@ export default function StaffLoginContent() {
   }
 
   return (
-    <div className="min-h-[100svh] bg-gradient-to-br from-slate-700 via-blue-700 to-indigo-800">
+    <div className="min-h-[100lvh] bg-gradient-to-br from-slate-700 via-blue-700 to-indigo-800">
       {/* Мобильная версия */}
       <div className="lg:hidden">
-        <div className="min-h-[100svh] flex flex-col">
+        <div className="min-h-[100lvh] flex flex-col">
           <div className="flex-1 flex flex-col justify-center px-6 py-8">
             
             <ShieldButtonV1 />

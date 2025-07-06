@@ -64,7 +64,7 @@ export default function HeaderBadgesPage() {
   // Проверяем доступность API
   if (!isApiAvailable) {
     return (
-      <div className="min-h-[100svh] bg-gradient-to-br from-slate-50 to-blue-50 p-6">
+      <div className="min-h-[100lvh] bg-gradient-to-br from-slate-50 to-blue-50 p-6">
         <div className="max-w-7xl mx-auto">
           <div className="text-center py-12">
             <h1 className="text-2xl font-bold text-gray-900 mb-4">
@@ -85,7 +85,7 @@ export default function HeaderBadgesPage() {
   // Проверяем авторизацию
   if (!isAuthenticated) {
     return (
-      <div className="min-h-[100svh] bg-gradient-to-br from-slate-50 to-blue-50 p-6">
+      <div className="min-h-[100lvh] bg-gradient-to-br from-slate-50 to-blue-50 p-6">
         <div className="max-w-7xl mx-auto">
           <div className="text-center py-12">
             <div className="flex justify-center mb-6">
@@ -114,7 +114,7 @@ export default function HeaderBadgesPage() {
   // Проверяем права доступа
   if (!canManageBadges) {
     return (
-      <div className="min-h-[100svh] bg-gradient-to-br from-slate-50 to-blue-50 p-6">
+      <div className="min-h-[100lvh] bg-gradient-to-br from-slate-50 to-blue-50 p-6">
         <div className="max-w-7xl mx-auto">
           <div className="text-center py-12">
             <div className="flex justify-center mb-6">
@@ -141,7 +141,7 @@ export default function HeaderBadgesPage() {
   // Проверяем наличие ошибок
   if (hasError) {
     return (
-      <div className="min-h-[100svh] bg-gradient-to-br from-slate-50 to-blue-50 p-6">
+      <div className="min-h-[100lvh] bg-gradient-to-br from-slate-50 to-blue-50 p-6">
         <div className="max-w-7xl mx-auto">
           <div className="text-center py-12">
             <div className="flex justify-center mb-6">
@@ -403,7 +403,7 @@ export default function HeaderBadgesPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-[100svh] bg-gradient-to-br from-slate-50 to-blue-50 p-6">
+      <div className="min-h-[100lvh] bg-gradient-to-br from-slate-50 to-blue-50 p-6">
         <div className="max-w-7xl mx-auto">
           <div className="animate-pulse space-y-6">
             <div className="h-8 bg-gray-200 rounded w-1/3"></div>
@@ -419,9 +419,9 @@ export default function HeaderBadgesPage() {
   }
 
   return (
-    <div className="min-h-[100svh] bg-gradient-to-br from-slate-50 to-blue-50">
+    <div className="min-h-[100lvh] bg-gradient-to-br from-slate-50 to-blue-50 space-y-4">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b rounded-xl">
+      <div className="bg-white shadow-sm border-b rounded-xl p-6 md:p-0">
         <div className="md:px-6 md:py-4">
           <div className="flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-2 justify-between">
             <div className="flex flex-col md:flex-row items-start md:items-center gap-2 md:gap-4">
