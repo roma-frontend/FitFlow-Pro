@@ -2,7 +2,7 @@
 export { AuthCard } from './AuthCard';
 export { ErrorAlert } from './ErrorAlert';
 export { FormField } from './FormField';
-export { SubmitButton } from './UniversalSubmitButton';
+export { UniversalSubmitButton } from './UniversalSubmitButton';
 export { AuthModeToggle } from './AuthModeToggle';
 export { FormStatusIndicator } from './FormStatusIndicator';
 export { SecurityInfo } from './SecurityInfo';
