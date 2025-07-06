@@ -142,7 +142,7 @@ export function PWAInstallModal() {
           </div>
 
           {/* Преимущества */}
-          <div className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 p-4 rounded-lg">
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg">
             <div className="flex items-center gap-2 mb-3">
               <Star className="h-5 w-5 text-yellow-500" />
               <span className="font-semibold text-gray-900">Почему стоит установить?</span>

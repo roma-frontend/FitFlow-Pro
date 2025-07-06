@@ -164,7 +164,7 @@ const Select: React.FC<SelectProps> = ({ value, onValueChange, children }) => {
         <ChevronRight className={`h-3 w-3 transition-transform ${isOpen ? 'rotate-90' : ''}`} />
       </button>
       {isOpen && (
-        <div className="absolute top-full mt-1 w-full bg-white border rounded shadow-lg z-10">
+        <div className="absolute bottom-full mt-1 w-full bg-white border rounded shadow-lg z-10">
           {React.Children.map(children, child =>
             React.isValidElement(child)
               ? React.cloneElement(child as React.ReactElement<any>, { onValueChange, setIsOpen })
@@ -875,7 +875,7 @@ const AIAgent: React.FC = () => {
       setTimeout(() => {
         const welcomeMessage: Message = {
           id: Date.now().toString(),
-          text: "👋 Привет! Я ваш персональный фитнес-помощник FitFlow Pro! Помогу подобрать тренера, выбрать программу тренировок, записаться на занятие или ответить на любые вопросы о нашем клубе. Чем могу помочь?",
+          text: "👋 Привет! Я ваш персональный фитнес-помощник FitFlow Pro! Помогу подобрать тренера, выбрать программу тренировок, записаться на занятие. Чем могу помочь?",
           isBot: true,
           timestamp: new Date(),
           suggestions: [
@@ -1417,7 +1417,7 @@ const AIAgent: React.FC = () => {
             </div>
 
             {messages.length <= 1 && (
-              <div className="h-[190px] overflow-y-auto p-4 border-b bg-gray-50">
+              <div className="h-[280px] overflow-y-auto p-4 border-b bg-gray-50">
                 <h4 className="text-sm font-medium text-gray-700 mb-3">Быстрые действия:</h4>
                 <div className="grid grid-cols-2 gap-2">
                   {quickActions.map((action, index) => (
