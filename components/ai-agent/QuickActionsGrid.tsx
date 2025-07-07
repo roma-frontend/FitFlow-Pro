@@ -71,8 +71,8 @@ const QuickActionButton: React.FC<{
       whileHover={{ scale: 1.03, y: -3 }}
       whileTap={{ scale: 0.97 }}
       onClick={onClick}
-      className={`relative p-4 sm:p-3 rounded-3xl bg-gradient-to-br ${getGradient(action.color)} text-white text-left shadow-lg hover:shadow-xl transition-all min-h-[50px] sm:h-[180px] overflow-hidden group`}
-    >
+      className={`relative p-3 rounded-3xl bg-gradient-to-br ${getGradient(action.color)} text-white text-left shadow-lg hover:shadow-xl transition-shadow min-h-[80px] sm:min-h-[100px] sm:h-[180px] overflow-hidden group`}
+>
       {/* Subtle background pattern */}
       <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-50" />
       
@@ -88,12 +88,12 @@ const QuickActionButton: React.FC<{
         <motion.div 
           whileHover={{ scale: 1.1, rotate: 5 }}
           transition={{ type: "spring", damping: 15 }}
-          className="w-8 h-8 sm:w-10 sm:h-10 mb-3 sm:mb-4 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm"
+          className="w-8 h-8 sm:w-10 sm:h-10 mb-2 sm:mb-4 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm"
         >
           <action.icon className="h-4 w-4 sm:h-5 sm:w-5" />
         </motion.div>
         
-        <h3 className="font-bold text-sm sm:text-base leading-tight">
+        <h3 className="font-bold text-xs sm:text-sm lg:text-base leading-tight">
           {action.title}
         </h3>
       </div>

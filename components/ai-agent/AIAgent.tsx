@@ -42,7 +42,7 @@ const TypingIndicator = () => (
         </motion.div>
         <span className="text-xs font-medium text-gray-500">FitFlow AI печатает...</span>
       </div>
-      <motion.div 
+      <motion.div
         initial={{ scale: 0.95 }}
         animate={{ scale: 1 }}
         className="bg-white/90 backdrop-blur-sm p-4 rounded-3xl shadow-lg border border-gray-200/50"
@@ -52,13 +52,13 @@ const TypingIndicator = () => (
             <motion.div
               key={i}
               className="w-2.5 h-2.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full"
-              animate={{ 
+              animate={{
                 scale: [1, 1.5, 1],
                 opacity: [0.5, 1, 0.5]
               }}
-              transition={{ 
-                duration: 1.4, 
-                repeat: Infinity, 
+              transition={{
+                duration: 1.4,
+                repeat: Infinity,
                 delay,
                 ease: "easeInOut"
               }}
@@ -111,16 +111,16 @@ const AIAgent: React.FC = () => {
     if (isOpen) {
       // Save current scroll position
       const scrollY = window.scrollY;
-      
+
       // Add styles to prevent scrolling
       document.body.style.position = 'fixed';
       document.body.style.top = `-${scrollY}px`;
       document.body.style.width = '100%';
       document.body.style.overflow = 'hidden';
-      
+
       // Add touch-action to prevent mobile scroll
       document.documentElement.style.touchAction = 'none';
-      
+
       return () => {
         // Restore scroll position and remove styles
         document.body.style.position = '';
@@ -128,7 +128,7 @@ const AIAgent: React.FC = () => {
         document.body.style.width = '';
         document.body.style.overflow = '';
         document.documentElement.style.touchAction = '';
-        
+
         // Restore scroll position
         window.scrollTo(0, scrollY);
       };
@@ -138,7 +138,7 @@ const AIAgent: React.FC = () => {
   // Smooth scroll to bottom with animation
   const scrollToBottom = useCallback(() => {
     if (!scrollContainerRef.current || !messagesEndRef.current) return;
-    
+
     const scrollContainer = scrollContainerRef.current;
     const targetPosition = messagesEndRef.current.offsetTop;
     const startPosition = scrollContainer.scrollTop;
@@ -150,19 +150,19 @@ const AIAgent: React.FC = () => {
       if (startTime === null) startTime = currentTime;
       const timeElapsed = currentTime - startTime;
       const progress = Math.min(timeElapsed / duration, 1);
-      
+
       // Easing function for smooth animation
       const easeInOutCubic = (t: number) => {
         return t < 0.5 ? 4 * t * t * t : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1;
       };
-      
+
       scrollContainer.scrollTop = startPosition + distance * easeInOutCubic(progress);
-      
+
       if (progress < 1) {
         requestAnimationFrame(animation);
       }
     };
-    
+
     requestAnimationFrame(animation);
   }, []);
 
@@ -175,7 +175,7 @@ const AIAgent: React.FC = () => {
   // Debounced welcome message
   const showWelcomeMessage = useCallback(() => {
     if (!isOpen || messages.length > 0) return;
-    
+
     const welcomeMessage: Message = {
       id: Date.now().toString(),
       text: "👋 Добро пожаловать в FitFlow Pro!\n\nЯ ваш персональный AI-помощник. Чем могу помочь?",
@@ -183,7 +183,7 @@ const AIAgent: React.FC = () => {
       timestamp: new Date(),
       suggestions: [
         "Подобрать тренера",
-        "Выбрать абонемент", 
+        "Выбрать абонемент",
         "Программы тренировок",
         "Записаться на занятие"
       ]
@@ -213,7 +213,7 @@ const AIAgent: React.FC = () => {
     try {
       // Minimal delay for natural feel
       await new Promise(resolve => setTimeout(resolve, 500));
-      
+
       const botResponse = await generateBotResponse(text.toLowerCase());
       setMessages(prev => [...prev, botResponse]);
 
@@ -307,7 +307,7 @@ const AIAgent: React.FC = () => {
             >
               <Brain className="h-8 w-8" />
             </motion.div>
-            
+
             {/* Pulse effect */}
             <motion.div
               className="absolute inset-0 rounded-3xl bg-gradient-to-r from-blue-600 to-indigo-600"
@@ -324,6 +324,12 @@ const AIAgent: React.FC = () => {
           <motion.div
             {...scaleIn}
             className="fixed inset-0 sm:bottom-6 sm:right-6 sm:top-auto sm:left-auto z-50 w-full sm:w-[420px] h-full sm:h-[85vh] sm:max-h-[800px] bg-white/95 backdrop-blur-sm sm:rounded-3xl shadow-2xl sm:border border-gray-200/50 overflow-hidden flex flex-col"
+            style={{
+              paddingTop: 'env(safe-area-inset-top)',
+              paddingBottom: 'env(safe-area-inset-bottom)',
+              touchAction: 'pan-y',
+              overscrollBehavior: 'contain'
+            }}
           >
             {/* Header */}
             <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 text-white">
@@ -350,7 +356,7 @@ const AIAgent: React.FC = () => {
 
             {/* Quick Actions */}
             {messages.length <= 1 && (
-              <div className="border-b border-gray-100">
+              <div className="border-b border-gray-100 shrink-0">
                 <Suspense fallback={<LoadingFallback />}>
                   <QuickActionsGrid
                     actions={quickActions}
@@ -361,9 +367,9 @@ const AIAgent: React.FC = () => {
             )}
 
             {/* Messages Area */}
-            <div 
+            <div
               ref={scrollContainerRef}
-              className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 bg-gray-50/50 scroll-smooth"
+              className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 sm:p-6 space-y-4 bg-gray-50/50"
             >
               <Suspense fallback={<LoadingFallback />}>
                 <MessageList
@@ -378,16 +384,16 @@ const AIAgent: React.FC = () => {
                   <AppleHealthStats data={activityData} />
                 </Suspense>
               )}
-              
+
               <AnimatePresence>
                 {isTyping && <TypingIndicator />}
               </AnimatePresence>
-              
+
               <div ref={messagesEndRef} />
             </div>
 
             {/* Input Area */}
-            <div className="border-t border-gray-100 bg-white">
+            <div className="border-t border-gray-100 bg-white shrink-0 pb-safe">
               <ChatInput
                 value={inputText}
                 onChange={setInputText}

@@ -38,6 +38,15 @@ body.page-transition-active > div#__next {
   background: linear-gradient(to bottom right, #3b82f6, #8b5cf6, #6366f1);
 }
 
+
+.pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
 /* Анимация появления контента */
 @keyframes fadeIn {
   from {
