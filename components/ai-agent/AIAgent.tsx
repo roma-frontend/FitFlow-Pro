@@ -29,7 +29,6 @@ const scaleIn = {
   transition: { type: "spring", damping: 30, stiffness: 300 }
 };
 
-// Lightweight typing indicator with smooth animation
 const TypingIndicator = () => (
   <motion.div {...fadeIn} className="flex justify-start mb-4">
     <div className="max-w-[80%] sm:max-w-[70%]">
@@ -37,7 +36,7 @@ const TypingIndicator = () => (
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-          className="w-6 h-6 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center"
+          className="w-6 h-6 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center"
         >
           <Bot className="h-3 w-3 text-white" />
         </motion.div>
@@ -52,7 +51,7 @@ const TypingIndicator = () => (
           {[0, 0.2, 0.4].map((delay, i) => (
             <motion.div
               key={i}
-              className="w-2.5 h-2.5 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full"
+              className="w-2.5 h-2.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full"
               animate={{ 
                 scale: [1, 1.5, 1],
                 opacity: [0.5, 1, 0.5]
@@ -74,7 +73,7 @@ const TypingIndicator = () => (
 // Loading fallback
 const LoadingFallback = () => (
   <div className="flex items-center justify-center p-8">
-    <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+    <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
   </div>
 );
 
@@ -107,6 +106,34 @@ const AIAgent: React.FC = () => {
     setActivityData,
     connectAppleHealth
   });
+
+  useEffect(() => {
+    if (isOpen) {
+      // Save current scroll position
+      const scrollY = window.scrollY;
+      
+      // Add styles to prevent scrolling
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
+      document.body.style.overflow = 'hidden';
+      
+      // Add touch-action to prevent mobile scroll
+      document.documentElement.style.touchAction = 'none';
+      
+      return () => {
+        // Restore scroll position and remove styles
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+        document.body.style.overflow = '';
+        document.documentElement.style.touchAction = '';
+        
+        // Restore scroll position
+        window.scrollTo(0, scrollY);
+      };
+    }
+  }, [isOpen]);
 
   // Smooth scroll to bottom with animation
   const scrollToBottom = useCallback(() => {
@@ -164,8 +191,9 @@ const AIAgent: React.FC = () => {
     setMessages([welcomeMessage]);
   }, [isOpen, messages.length]);
 
+
   // Use effect with cleanup
-  React.useEffect(() => {
+  useEffect(() => {
     const timer = setTimeout(showWelcomeMessage, 300);
     return () => clearTimeout(timer);
   }, [showWelcomeMessage]);
@@ -271,7 +299,7 @@ const AIAgent: React.FC = () => {
             whileHover={{ scale: 1.1, rotate: 5 }}
             whileTap={{ scale: 0.9 }}
             onClick={() => setIsOpen(true)}
-            className="fixed bottom-6 right-6 z-50 w-16 h-16 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl shadow-2xl flex items-center justify-center text-white group"
+            className="fixed bottom-6 right-6 z-50 w-16 h-16 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-3xl shadow-2xl flex items-center justify-center text-white group"
           >
             <motion.div
               animate={{ rotate: 360 }}
