@@ -439,7 +439,7 @@ const AIAgent: React.FC = () => {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 50 }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="fixed inset-0 sm:bottom-6 sm:right-6 sm:top-auto sm:left-auto z-50 w-full sm:w-[420px] h-full sm:h-[85vh] sm:max-h-[800px] glass-morphism sm:rounded-3xl shadow-2xl border-none sm:border border-white/20 overflow-clip flex flex-col safe-area-top"
+            className="fixed inset-0 sm:bottom-6 sm:right-6 sm:top-auto sm:left-auto z-50 w-full sm:w-[420px] h-full sm:h-[85vh] sm:max-h-[800px]  !border-none glass-morphism sm:rounded-3xl shadow-2xl sm:border border-white/20 overflow-clip flex flex-col safe-area-top"
             style={{
               boxShadow: '0 25px 50px rgba(0,0,0,0.25), 0 0 0 1px rgba(255,255,255,0.05)'
             }}
