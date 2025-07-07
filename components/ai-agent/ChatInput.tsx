@@ -98,7 +98,7 @@ export const ChatInput: React.FC<ChatInputProps> = memo(({
 }) => {
   const [isFocused, setIsFocused] = useState(false);
   const [showVoiceSelector, setShowVoiceSelector] = useState(false);
-  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Auto-resize textarea
   useEffect(() => {
