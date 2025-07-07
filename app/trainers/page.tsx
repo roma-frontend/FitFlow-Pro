@@ -1,4 +1,4 @@
-// app/trainers/page.tsx (обновленная версия)
+// app/trainers/page.tsx (обновленная версия с интеграцией AI агента)
 "use client";
 
 import {
@@ -13,30 +13,51 @@ import {
   Star,
   Award,
   Search,
+  Bot,
+  MessageCircle,
 } from "lucide-react";
 import { memo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { trainersData } from "@/lib/trainers-data";
 import TrainersPageHeader from "./_components/TrainersHeader";
+import { useAIAgent, AI_ACTIONS } from "@/stores/useAIAgentStore";
 
 const TrainerCard = memo(({ trainer }: { trainer: any }) => {
   const router = useRouter();
+  const { openTrainerConsultation } = useAIAgent();
   const IconComponent = trainer.icon;
 
   const handleCardClick = () => {
-    console.log('Card clicked, navigating to:', trainer.link); 
+    console.log('Card clicked, navigating to:', trainer.link);
     router.push(trainer.link);
   };
 
   const handleProfileClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    console.log('Profile clicked, navigating to:', trainer.link); 
+    console.log('Profile clicked, navigating to:', trainer.link);
   };
 
   const handleBookingClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     console.log('Booking clicked, navigating to:', trainer.bookingLink);
     router.push(trainer.bookingLink);
+  };
+
+  // Новая функция для открытия AI консультации по конкретному тренеру
+  const handleAIConsultation = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    console.log('AI consultation clicked for trainer:', trainer.name);
+
+    // Открываем AI агента с контекстом конкретного тренера
+    openTrainerConsultation({
+      name: trainer.name,
+      specialty: trainer.specialty,
+      experience: trainer.experience,
+      rating: trainer.rating,
+      price: trainer.price,
+      badges: trainer.badges,
+      category: trainer.category
+    });
   };
 
   return (
@@ -95,10 +116,18 @@ const TrainerCard = memo(({ trainer }: { trainer: any }) => {
           </p>
 
           <div className="flex items-center justify-between pt-4">
-            <div className="text-lg font-bold text-gray-900 transition-all duration-300 group-hover:scale-105">
-              {trainer.price}
-            </div>
+
             <div className="flex gap-2">
+              {/* Кнопка AI консультации */}
+              <button
+                onClick={handleAIConsultation}
+                className="flex items-center gap-1 px-3 py-1 text-sm bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded hover:from-blue-600 hover:to-indigo-600 transition-all duration-300 transform hover:scale-105 shadow-md"
+                title="AI консультация по тренеру"
+              >
+                <Bot className="h-3 w-3" />
+                <span className="hidden sm:inline">AI</span>
+              </button>
+
               <button
                 onClick={handleProfileClick}
                 className={`px-3 py-1 text-sm border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-all duration-300 transform hover:scale-105`}
@@ -112,6 +141,10 @@ const TrainerCard = memo(({ trainer }: { trainer: any }) => {
                 Записаться
               </button>
             </div>
+
+          </div>
+          <div className="text-lg font-bold text-gray-900 transition-all duration-300 group-hover:scale-105">
+            {trainer.price}
           </div>
         </div>
       </CardContent>
@@ -123,6 +156,7 @@ TrainerCard.displayName = "TrainerCard";
 
 export default function TrainersPage() {
   const router = useRouter();
+  const { openTrainerSelection, openConsultation } = useAIAgent();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("Все");
 
@@ -152,10 +186,39 @@ export default function TrainersPage() {
     return matchesSearch && matchesCategory;
   });
 
+  // Функция для открытия AI консультации по подбору тренера
+  const handleGeneralConsultation = () => {
+    console.log('Opening general AI consultation');
+
+    // Открываем AI агента для общей консультации с контекстом текущих фильтров
+    openConsultation({
+      page: 'trainers',
+      selectedCategory: selectedCategory !== "Все" ? selectedCategory : undefined,
+      searchTerm: searchTerm || undefined,
+      availableTrainers: filteredTrainers,
+      intent: 'general_consultation',
+      userPreferences: {
+        categories: selectedCategory !== "Все" ? [selectedCategory] : categories.slice(1),
+        searchQuery: searchTerm || undefined
+      }
+    });
+  };
+
+  // Функция для открытия AI подбора тренера
+  const handleTrainerSelection = () => {
+    console.log('Opening trainer selection AI');
+
+    // Открываем AI агента для подбора тренера с полным контекстом
+    openTrainerSelection(
+      filteredTrainers,
+      categories.slice(1) // Убираем "Все" из категорий
+    );
+  };
+
   return (
     <div className="min-h-[100lvh] bg-gradient-to-br from-blue-50 to-green-50">
       {/* Header */}
-      <TrainersPageHeader 
+      <TrainersPageHeader
         totalTrainers={trainersData.length}
         categoriesCount={categories.length - 1}
         filteredCount={filteredTrainers.length}
@@ -187,15 +250,24 @@ export default function TrainersPage() {
             <p className="text-gray-500 mb-4">
               Попробуйте изменить критерии поиска или выбрать другую категорию
             </p>
-            <button
-              onClick={() => {
-                setSearchTerm("");
-                setSelectedCategory("Все");
-              }}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Сбросить фильтры
-            </button>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <button
+                onClick={() => {
+                  setSearchTerm("");
+                  setSelectedCategory("Все");
+                }}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Сбросить фильтры
+              </button>
+              <button
+                onClick={handleTrainerSelection}
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg hover:from-blue-600 hover:to-cyan-600 transition-all duration-300 transform hover:scale-105"
+              >
+                <Bot className="h-4 w-4" />
+                AI подбор тренера
+              </button>
+            </div>
           </div>
         )}
 
@@ -211,10 +283,18 @@ export default function TrainersPage() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button
-                onClick={() => router.push("/consultation")}
-                className="px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-lg hover:from-blue-600 hover:to-indigo-600 transition-all duration-300 transform hover:scale-105"
+                onClick={handleGeneralConsultation}
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-lg hover:from-blue-600 hover:to-indigo-600 transition-all duration-300 transform hover:scale-105"
               >
+                <MessageCircle className="h-5 w-5" />
                 Получить консультацию
+              </button>
+              <button
+                onClick={handleTrainerSelection}
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg hover:from-blue-600 hover:to-cyan-600 transition-all duration-300 transform hover:scale-105"
+              >
+                <Bot className="h-5 w-5" />
+                AI подбор тренера
               </button>
               <button
                 onClick={() => router.push("/programs/yoga")}

@@ -1,8 +1,10 @@
+// components/ai-agent/AIAgent.tsx - Обновленная версия
 "use client"
 
 import React, { useState, useCallback, useMemo, lazy, Suspense, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Brain, Bot, Loader2 } from 'lucide-react';
+import { X, Brain, Bot, Loader2, MessageCircle, Users, Award, Star } from 'lucide-react';
+import { useAIAgent, generateInitialMessage, generateSuggestions, AI_ACTIONS } from '@/stores/useAIAgentStore';
 import { useHealthKit } from './hooks/useHealthKit';
 import { useChatLogic } from './hooks/useChatLogic';
 import { quickActionsConfig } from './config/quickActions';
@@ -28,6 +30,47 @@ const scaleIn = {
   exit: { opacity: 0, scale: 0.9 },
   transition: { type: "spring", damping: 30, stiffness: 300 }
 };
+
+// Компонент для отображения контекста тренера
+const TrainerContext: React.FC<{ trainer: any }> = ({ trainer }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 10 }}
+    animate={{ opacity: 1, y: 0 }}
+    className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-4 mb-4 border border-blue-200"
+  >
+    <div className="flex items-center gap-3 mb-3">
+      <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+        <Users className="h-5 w-5 text-white" />
+      </div>
+      <div>
+        <h4 className="font-semibold text-gray-900">{trainer.name}</h4>
+        <p className="text-sm text-gray-600">{trainer.specialty}</p>
+      </div>
+    </div>
+    
+    <div className="grid grid-cols-2 gap-3 text-sm">
+      <div className="flex items-center gap-2">
+        <Award className="h-4 w-4 text-blue-500" />
+        <span className="text-gray-600">{trainer.experience}</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <Star className="h-4 w-4 text-yellow-500" />
+        <span className="text-gray-600">{trainer.rating}/5</span>
+      </div>
+    </div>
+    
+    <div className="flex flex-wrap gap-2 mt-3">
+      {trainer.badges?.slice(0, 3).map((badge: string, index: number) => (
+        <span
+          key={index}
+          className="px-2 py-1 bg-white/80 text-xs rounded-full text-gray-700 border border-gray-200"
+        >
+          {badge}
+        </span>
+      ))}
+    </div>
+  </motion.div>
+);
 
 const TypingIndicator = () => (
   <motion.div {...fadeIn} className="flex justify-start mb-4">
@@ -78,7 +121,17 @@ const LoadingFallback = () => (
 );
 
 const AIAgent: React.FC = () => {
-  const [isOpen, setIsOpen] = useState(false);
+  const {
+    isOpen,
+    pendingAction,
+    context,
+    openAgent,
+    closeAgent,
+    clearPendingAction,
+    setContext,
+    addToHistory
+  } = useAIAgent();
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -135,6 +188,52 @@ const AIAgent: React.FC = () => {
     }
   }, [isOpen]);
 
+  // Обработка открытия агента с pending action
+  useEffect(() => {
+    if (isOpen && pendingAction && messages.length === 0) {
+      console.log('🤖 Processing pending action:', pendingAction, context);
+      
+      // Генерируем начальное сообщение на основе действия
+      const initialMessage = generateInitialMessage(pendingAction, context);
+      const suggestions = generateSuggestions(pendingAction, context);
+      
+      let welcomeText = "👋 Привет! Я ваш персональный AI-помощник FitFlow.\n\n";
+      
+      // Персонализируем приветствие на основе контекста
+      if (pendingAction === AI_ACTIONS.TRAINER_CONSULTATION && context.selectedTrainer) {
+        welcomeText += `Вижу, вас интересует тренер ${context.selectedTrainer.name}. Расскажу всё, что нужно знать!`;
+      } else if (pendingAction === AI_ACTIONS.FIND_TRAINER) {
+        welcomeText += "Помогу подобрать идеального тренера под ваши цели и предпочтения.";
+      } else if (pendingAction === AI_ACTIONS.GENERAL_CONSULTATION) {
+        welcomeText += "Готов ответить на любые вопросы о наших тренерах и услугах.";
+      } else if (pendingAction === AI_ACTIONS.CONSULTATION) {
+        welcomeText += "Готов помочь с фитнес-консультацией!";
+      } else {
+        welcomeText += "Чем могу помочь?";
+      }
+
+      const welcomeMessage: Message = {
+        id: Date.now().toString(),
+        text: welcomeText,
+        isBot: true,
+        timestamp: new Date(),
+        suggestions: suggestions
+      };
+
+      setMessages([welcomeMessage]);
+      
+      // Автоматически отправляем начальное сообщение через 1 секунду
+      if (initialMessage && initialMessage !== "Привет! Чем могу помочь?") {
+        setTimeout(() => {
+          processUserMessage(initialMessage);
+        }, 1000);
+      }
+      
+      // Очищаем pending action
+      clearPendingAction();
+    }
+  }, [isOpen, pendingAction, context, messages.length]);
+
   // Smooth scroll to bottom with animation
   const scrollToBottom = useCallback(() => {
     if (!scrollContainerRef.current || !messagesEndRef.current) return;
@@ -143,7 +242,7 @@ const AIAgent: React.FC = () => {
     const targetPosition = messagesEndRef.current.offsetTop;
     const startPosition = scrollContainer.scrollTop;
     const distance = targetPosition - startPosition;
-    const duration = 500; // 500ms smooth scroll
+    const duration = 500;
     let startTime: number | null = null;
 
     const animation = (currentTime: number) => {
@@ -151,7 +250,6 @@ const AIAgent: React.FC = () => {
       const timeElapsed = currentTime - startTime;
       const progress = Math.min(timeElapsed / duration, 1);
 
-      // Easing function for smooth animation
       const easeInOutCubic = (t: number) => {
         return t < 0.5 ? 4 * t * t * t : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1;
       };
@@ -172,33 +270,7 @@ const AIAgent: React.FC = () => {
     return () => clearTimeout(timer);
   }, [messages, scrollToBottom]);
 
-  // Debounced welcome message
-  const showWelcomeMessage = useCallback(() => {
-    if (!isOpen || messages.length > 0) return;
-
-    const welcomeMessage: Message = {
-      id: Date.now().toString(),
-      text: "👋 Добро пожаловать в FitFlow Pro!\n\nЯ ваш персональный AI-помощник. Чем могу помочь?",
-      isBot: true,
-      timestamp: new Date(),
-      suggestions: [
-        "Подобрать тренера",
-        "Выбрать абонемент",
-        "Программы тренировок",
-        "Записаться на занятие"
-      ]
-    };
-    setMessages([welcomeMessage]);
-  }, [isOpen, messages.length]);
-
-
-  // Use effect with cleanup
-  useEffect(() => {
-    const timer = setTimeout(showWelcomeMessage, 300);
-    return () => clearTimeout(timer);
-  }, [showWelcomeMessage]);
-
-  // Optimized message processing
+  // Обработка сообщения пользователя с учетом контекста
   const processUserMessage = useCallback(async (text: string) => {
     const userMessage: Message = {
       id: `${Date.now()}-user`,
@@ -210,12 +282,18 @@ const AIAgent: React.FC = () => {
     setMessages(prev => [...prev, userMessage]);
     setIsTyping(true);
 
+    // Добавляем в историю
+    addToHistory(text, 'user');
+
     try {
-      // Minimal delay for natural feel
       await new Promise(resolve => setTimeout(resolve, 500));
 
-      const botResponse = await generateBotResponse(text.toLowerCase());
+      // Генерируем ответ с учетом контекста
+      const botResponse = await generateBotResponseWithContext(text.toLowerCase());
       setMessages(prev => [...prev, botResponse]);
+
+      // Добавляем в историю
+      addToHistory(botResponse.text, 'system');
 
       if (audioConfig.enabled && botResponse.text) {
         speak(botResponse.text);
@@ -232,7 +310,21 @@ const AIAgent: React.FC = () => {
     } finally {
       setIsTyping(false);
     }
-  }, [generateBotResponse, audioConfig.enabled, speak]);
+  }, [generateBotResponse, audioConfig.enabled, speak, addToHistory, context]);
+
+  // Генерация ответа с учетом контекста
+  const generateBotResponseWithContext = useCallback(async (text: string) => {
+    // Используем контекст для более точных ответов
+    const contextualText = `
+      Контекст: ${context.page || 'общий'}
+      ${context.selectedTrainer ? `Тренер: ${context.selectedTrainer.name} (${context.selectedTrainer.specialty})` : ''}
+      ${context.selectedCategory ? `Категория: ${context.selectedCategory}` : ''}
+      ${context.intent ? `Цель: ${context.intent}` : ''}
+      Запрос: ${text}
+    `;
+
+    return await generateBotResponse(contextualText);
+  }, [generateBotResponse, context]);
 
   // Memoized quick action handler
   const handleQuickAction = useCallback((action: string) => {
@@ -298,7 +390,7 @@ const AIAgent: React.FC = () => {
             {...scaleIn}
             whileHover={{ scale: 1.1, rotate: 5 }}
             whileTap={{ scale: 0.9 }}
-            onClick={() => setIsOpen(true)}
+            onClick={() => openAgent()}
             className="fixed bottom-6 right-6 z-50 w-16 h-16 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-3xl shadow-2xl flex items-center justify-center text-white group"
           >
             <motion.div
@@ -340,13 +432,17 @@ const AIAgent: React.FC = () => {
                   </div>
                   <div>
                     <h3 className="font-bold text-xl">FitFlow AI</h3>
-                    <p className="text-sm text-white/80">Персональный помощник</p>
+                    <p className="text-sm text-white/80">
+                      {context.selectedTrainer 
+                        ? `Консультация по тренеру ${context.selectedTrainer.name}` 
+                        : 'Персональный помощник'}
+                    </p>
                   </div>
                 </div>
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
-                  onClick={() => setIsOpen(false)}
+                  onClick={closeAgent}
                   className="w-10 h-10 bg-white/20 rounded-2xl flex items-center justify-center hover:bg-white/30 transition-colors"
                 >
                   <X className="h-5 w-5" />
@@ -354,8 +450,15 @@ const AIAgent: React.FC = () => {
               </div>
             </div>
 
+            {/* Context Display */}
+            {context.selectedTrainer && (
+              <div className="p-4 bg-gray-50 shrink-0">
+                <TrainerContext trainer={context.selectedTrainer} />
+              </div>
+            )}
+
             {/* Quick Actions */}
-            {messages.length <= 1 && (
+            {messages.length <= 1 && !context.selectedTrainer && (
               <div className="border-b border-gray-100 shrink-0">
                 <Suspense fallback={<LoadingFallback />}>
                   <QuickActionsGrid

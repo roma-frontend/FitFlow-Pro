@@ -23,6 +23,7 @@ import { GlobalLoader } from "@/components/GlobalLoader";
 import { NextAuthProvider } from "@/components/providers/NextAuthProvider";
 import AIAgent from "@/components/ai-agent/AIAgent";
 import { SessionProviderWrapper } from "@/components/providers/SessionProviderWrapper";
+import AIAgentProvider from "@/components/providers/AIAgentProvider";
 
 const inter = Inter({
   subsets: ["latin", "cyrillic"],
@@ -202,7 +203,9 @@ export default function RootLayout({
                           <main className="flex-1 relative">
                             <GlobalLoader />
                             <SafeChildrenWrapper>
-                              {children}
+                              <AIAgentProvider>
+                                {children}
+                              </AIAgentProvider>
                             </SafeChildrenWrapper>
 
                             {/* ИИ-агент - доступен на всех страницах */}
