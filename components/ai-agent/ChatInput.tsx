@@ -98,7 +98,7 @@ export const ChatInput: React.FC<ChatInputProps> = memo(({
 }) => {
   const [isFocused, setIsFocused] = useState(false);
   const [showVoiceSelector, setShowVoiceSelector] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   // Auto-resize textarea
   useEffect(() => {
@@ -176,7 +176,7 @@ export const ChatInput: React.FC<ChatInputProps> = memo(({
             }}
             className="relative rounded-3xl"
           >
-            <input
+            <textarea
               ref={inputRef}
               value={value}
               onChange={(e) => onChange(e.target.value)}
@@ -186,7 +186,7 @@ export const ChatInput: React.FC<ChatInputProps> = memo(({
               placeholder="Задайте вопрос..."
               disabled={isTyping}
               rows={1}
-              className="w-full py-2 px-4 bg-white/90 backdrop-blur-sm border border-gray-200/50 rounded-3xl focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-300 transition-all resize-none text-gray-900 placeholder-gray-500 text-base leading-relaxed disabled:opacity-60 disabled:cursor-not-allowed"
+              className="w-full py-2 px-4 bg-white/90 backdrop-blur-sm border border-gray-200/50 rounded-3xl focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-300 transition-all resize-none text-gray-900 placeholder-gray-500 text-base leading-relaxed disabled:opacity-60 disabled:cursor-not-allowed min-h-[40px] max-h-[120px]"
             />
             
             {/* Voice Input Button */}
