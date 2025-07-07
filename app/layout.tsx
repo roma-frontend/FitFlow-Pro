@@ -15,14 +15,12 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import PWAInstallBanner from "@/components/PWAInstallBanner";
 import "@/styles/badge-animations.css";
-import "@/styles/ai-agent.css";
 import React from "react";
 import { DebugLogout } from "@/components/DebugLogout";
 import { AuthCleanupHandler } from "@/components/AuthCleanupHandler";
 import { AuthTransitionHandler } from "@/components/auth/AuthTransitionHandler";
 import { GlobalLoader } from "@/components/GlobalLoader";
 import { NextAuthProvider } from "@/components/providers/NextAuthProvider";
-import dynamic from "next/dynamic";
 import AIAgent from "@/components/ai-agent/AIAgent";
 import { SessionProviderWrapper } from "@/components/providers/SessionProviderWrapper";
 

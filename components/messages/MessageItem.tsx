@@ -34,7 +34,7 @@ const MessageItem: React.FC<MessageItemProps> = memo(({
       `}
       onClick={onSelect}
     >
-      <div className="flex items-start gap-3">
+      <div className="flex items-start gap-2">
         <div 
           className="mt-1 flex-shrink-0" 
           onClick={(e) => {
