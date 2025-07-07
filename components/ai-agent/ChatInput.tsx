@@ -146,7 +146,7 @@ export const ChatInput: React.FC<ChatInputProps> = memo(({
             placeholder="Задайте вопрос..."
             disabled={isTyping}
             rows={1}
-            className={`w-full py-2 px-4 bg-white border rounded-3xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-300 transition-all resize-none text-gray-900 placeholder-gray-500 text-base min-h-[40px] max-h-[120px] ${
+            className={`overflow-clip w-full py-2 ps-4 pr-12 bg-white border rounded-3xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-300 transition-all resize-none text-gray-900 placeholder-gray-500 text-sm min-h-[40px] max-h-[120px] ${
               isFocused ? 'border-blue-300' : 'border-gray-200'
             } ${isTyping ? 'opacity-60 cursor-not-allowed' : ''}`}
           />
