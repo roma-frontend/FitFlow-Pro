@@ -1,6 +1,7 @@
 // app/not-found.tsx
 import Link from 'next/link';
-import { Home, ArrowLeft } from 'lucide-react';
+import { Home } from 'lucide-react';
+import { BackButton } from '@/components/ui/BackButton';
 
 export default function NotFound() {
   return (
@@ -25,13 +26,7 @@ export default function NotFound() {
             На главную
           </Link>
 
-          <button
-            onClick={() => window.history.back()}
-            className="flex items-center justify-center gap-2 w-full px-6 py-3 bg-gray-100 text-gray-700 font-medium rounded-xl hover:bg-gray-200 transition-all"
-          >
-            <ArrowLeft className="h-5 w-5" />
-            Вернуться назад
-          </button>
+          <BackButton />
         </div>
 
         <div className="mt-8 pt-8 border-t border-gray-200">
