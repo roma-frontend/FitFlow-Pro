@@ -33,7 +33,7 @@ const MessageItem = memo<MessageItemProps>(({
       transition={{ delay: index * 0.05, duration: 0.3 }}
       className={`flex ${message.isBot ? 'justify-start' : 'justify-end'}`}
     >
-      <div className={`max-w-full ${message.isBot ? 'order-1' : 'order-2'}`}>
+      <div className={`max-w-[80%] ${message.isBot ? 'order-1' : 'order-2'}`}>
         {message.isBot && (
           <div className="flex items-center space-x-2 mb-1">
             <Bot className="h-4 w-4 text-blue-500" />
@@ -42,7 +42,7 @@ const MessageItem = memo<MessageItemProps>(({
         )}
         
         <div
-          className={`max-w-[80%] p-3 rounded-2xl ${
+          className={`max-w-[100%] p-3 rounded-2xl ${
             message.isBot
               ? 'bg-gray-100 text-gray-800'
               : 'bg-gradient-to-r from-blue-500 to-purple-500 text-white'

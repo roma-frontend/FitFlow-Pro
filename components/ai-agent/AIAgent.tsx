@@ -64,7 +64,7 @@ const AppleHealthStats: React.FC<{ data: ActivityData }> = ({ data }) => {
   ];
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className="bg-white border border-gray-200 rounded-xl p-4 mb-4"
@@ -160,7 +160,10 @@ const AIAgent: React.FC = () => {
             "Подобрать тренера",
             "Выбрать абонемент",
             "Программы тренировок",
-            "Записаться на занятие"
+            "Записаться на занятие",
+            "Записать сон",
+            "Добавить воду",
+            "Оценить стресс"
           ]
         };
         setMessages([welcomeMessage]);
@@ -186,7 +189,7 @@ const AIAgent: React.FC = () => {
     try {
       const botResponse = await generateBotResponse(text.toLowerCase());
       setMessages(prev => [...prev, botResponse]);
-      
+
       if (audioConfig.enabled && botResponse.text) {
         speak(botResponse.text);
       }
@@ -216,11 +219,11 @@ const AIAgent: React.FC = () => {
         }]);
         return;
       }
-      
+
       connectAppleHealth().then(success => {
         const message: Message = {
           id: Date.now().toString(),
-          text: success 
+          text: success
             ? "✅ Apple Health успешно подключен! Теперь я могу отслеживать вашу активность."
             : "❌ Не удалось подключить Apple Health. Проверьте разрешения в настройках.",
           isBot: true,
@@ -240,7 +243,7 @@ const AIAgent: React.FC = () => {
         'log_water': 'Добавить воду',
         'start_stretching': 'Программа растяжки'
       };
-      
+
       if (actionMessages[action]) {
         processUserMessage(actionMessages[action]);
       }
@@ -324,7 +327,7 @@ const AIAgent: React.FC = () => {
 
             {/* Quick Actions - Show only when no messages */}
             {messages.length <= 1 && (
-              <QuickActionsGrid 
+              <QuickActionsGrid
                 actions={quickActions}
                 onActionClick={handleQuickAction}
               />
@@ -332,12 +335,12 @@ const AIAgent: React.FC = () => {
 
             {/* Messages Area */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              <MessageList 
+              <MessageList
                 messages={messages}
                 recoveryData={recoveryData}
                 onSuggestionClick={processUserMessage}
               />
-              
+
               {activityData && <AppleHealthStats data={activityData} />}
               {isTyping && <TypingIndicator />}
               <div ref={messagesEndRef} />
