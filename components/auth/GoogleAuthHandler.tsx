@@ -1,13 +1,14 @@
-// components/auth/GoogleAuthHandler.tsx - ИСПРАВЛЕННАЯ ВЕРСИЯ
+// components/auth/GoogleAuthHandler.tsx - С SUSPENSE
 "use client";
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, Suspense } from 'react';
 import { useSession } from 'next-auth/react';
 import { useLoaderStore } from '@/stores/loaderStore';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import StaffLoginLoader from '@/app/staff-login/components/StaffLoginLoader';
 
-export function GoogleAuthHandler() {
+// Внутренний компонент который использует useSearchParams
+function GoogleAuthHandlerInner() {
   const { data: session, status } = useSession();
   const { showLoader, hideLoader, loaderType, loaderProps } = useLoaderStore();
   const router = useRouter();
@@ -80,4 +81,26 @@ export function GoogleAuthHandler() {
   }
 
   return null;
+}
+
+// Основной компонент с Suspense
+export function GoogleAuthHandler() {
+  const { loaderType, loaderProps } = useLoaderStore();
+  
+  // Если loader активен, показываем его без Suspense
+  if (loaderType === "login" && loaderProps) {
+    return (
+      <StaffLoginLoader
+        userRole={loaderProps.userRole || "member"}
+        userName={loaderProps.userName || "Пользователь"}
+        dashboardUrl={loaderProps.dashboardUrl || "/"}
+      />
+    );
+  }
+  
+  return (
+    <Suspense fallback={null}>
+      <GoogleAuthHandlerInner />
+    </Suspense>
+  );
 }

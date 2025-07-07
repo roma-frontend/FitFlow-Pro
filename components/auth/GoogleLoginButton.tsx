@@ -1,8 +1,8 @@
-// components/auth/GoogleLoginButton.tsx - УЛУЧШЕННАЯ ВЕРСИЯ
+// components/auth/GoogleLoginButton.tsx - С SUSPENSE BOUNDARY
 "use client";
 
 import { signIn } from "next-auth/react";
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -14,7 +14,8 @@ interface GoogleLoginButtonProps {
   disabled?: boolean;
 }
 
-export function GoogleLoginButton({ isStaff = false, className = "", disabled }: GoogleLoginButtonProps) {
+// Внутренний компонент который использует useSearchParams
+function GoogleLoginButtonInner({ isStaff = false, className = "", disabled }: GoogleLoginButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
   const searchParams = useSearchParams();
   const { toast } = useToast();
@@ -107,6 +108,23 @@ export function GoogleLoginButton({ isStaff = false, className = "", disabled }:
         </>
       )}
     </button>
+  );
+}
+
+// Основной компонент с Suspense
+export function GoogleLoginButton(props: GoogleLoginButtonProps) {
+  return (
+    <Suspense fallback={
+      <button
+        disabled
+        className={`w-full flex items-center justify-center gap-3 px-4 py-3 text-md border border-gray-300 rounded-2xl bg-gray-50 opacity-50 cursor-not-allowed ${props.className || ""}`}
+      >
+        <Loader2 className="h-5 w-5 animate-spin" />
+        <span className="font-medium">Загрузка...</span>
+      </button>
+    }>
+      <GoogleLoginButtonInner {...props} />
+    </Suspense>
   );
 }
 

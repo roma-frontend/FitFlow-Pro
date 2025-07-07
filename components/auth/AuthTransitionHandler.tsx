@@ -1,12 +1,13 @@
-// components/auth/AuthTransitionHandler.tsx
+// components/auth/AuthTransitionHandler.tsx - С SUSPENSE
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useLoaderStore } from '@/stores/loaderStore';
 import { Loader2 } from 'lucide-react';
 
-export function AuthTransitionHandler() {
+// Внутренний компонент который использует useSearchParams
+function AuthTransitionHandlerInner() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { showLoader, hideLoader } = useLoaderStore();
@@ -46,4 +47,13 @@ export function AuthTransitionHandler() {
   }
 
   return null;
+}
+
+// Основной компонент с Suspense
+export function AuthTransitionHandler() {
+  return (
+    <Suspense fallback={null}>
+      <AuthTransitionHandlerInner />
+    </Suspense>
+  );
 }
