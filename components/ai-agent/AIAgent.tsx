@@ -427,12 +427,12 @@ const AIAgent: React.FC = () => {
             <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 text-white">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
-                  <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center">
-                    <Brain className="h-6 w-6" />
+                  <div className="w-10 sm:w-12 h-10 sm:h-12 bg-white/20 rounded-2xl flex items-center justify-center">
+                    <Brain className="w-4 sm:h-6 h-4 sm:w-6" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-xl">FitFlow AI</h3>
-                    <p className="text-sm text-white/80">
+                    <h3 className="font-bold text-base md:text-xl">FitFlow AI</h3>
+                    <p className="text-xs md:text-sm text-white/80">
                       {context.selectedTrainer 
                         ? `Консультация по тренеру ${context.selectedTrainer.name}` 
                         : 'Персональный помощник'}
@@ -443,9 +443,9 @@ const AIAgent: React.FC = () => {
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   onClick={closeAgent}
-                  className="w-10 h-10 bg-white/20 rounded-2xl flex items-center justify-center hover:bg-white/30 transition-colors"
+                  className="w-8 sm:w-10 h-8 sm:h-10 bg-white/20 rounded-2xl flex items-center justify-center hover:bg-white/30 transition-colors"
                 >
-                  <X className="h-5 w-5" />
+                  <X className="w-4 sm:h-5 h-4 sm:w-5" />
                 </motion.button>
               </div>
             </div>
