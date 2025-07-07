@@ -1,4 +1,4 @@
-// components/auth/GoogleLoginButton.tsx - БЕЗ LOADER ПРИ КЛИКЕ
+// components/auth/GoogleLoginButton.tsx - УЛУЧШЕННАЯ ВЕРСИЯ
 "use client";
 
 import { signIn } from "next-auth/react";
@@ -6,6 +6,7 @@ import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useLoaderStore } from "@/stores/loaderStore";
 
 interface GoogleLoginButtonProps {
   isStaff?: boolean;
@@ -39,12 +40,27 @@ export function GoogleLoginButton({ isStaff = false, className = "", disabled }:
 
       console.log("🔐 Google Login - начало процесса:", { isStaff, targetUrl });
 
-      // Сохраняем состояние в sessionStorage (БЕЗ показа loader)
+      // Сохраняем состояние в sessionStorage
       if (typeof window !== 'undefined') {
         sessionStorage.setItem('google_login_in_progress', 'true');
         sessionStorage.setItem('google_login_is_staff', isStaff.toString());
         sessionStorage.setItem('google_login_target_url', targetUrl);
+        
+        // НОВОЕ: Устанавливаем флаг для плавного перехода
+        sessionStorage.setItem('is_redirecting', 'true');
       }
+      
+      // НОВОЕ: Показываем минимальный индикатор загрузки перед редиректом
+      const { showLoader } = useLoaderStore.getState();
+      showLoader("login", {
+        userRole: isStaff ? "admin" : "member",
+        userName: "Переход к Google...",
+        dashboardUrl: targetUrl
+      });
+      
+      // Небольшая задержка для отображения loader
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       await signIn("google", {
         callbackUrl: targetUrl,
         redirect: true, // Серверный редирект на Google
@@ -54,10 +70,15 @@ export function GoogleLoginButton({ isStaff = false, className = "", disabled }:
       console.error("Google login error:", error);
       setIsLoading(false);
 
+      // Очищаем loader и флаги при ошибке
+      const { hideLoader } = useLoaderStore.getState();
+      hideLoader();
+
       if (typeof window !== 'undefined') {
         sessionStorage.removeItem('google_login_in_progress');
         sessionStorage.removeItem('google_login_is_staff');
         sessionStorage.removeItem('google_login_target_url');
+        sessionStorage.removeItem('is_redirecting');
       }
 
       toast({

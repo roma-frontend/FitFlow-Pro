@@ -3,6 +3,74 @@
 @tailwind components;
 @tailwind utilities;
 
+html {
+  background-color: #f9fafb; /* gray-50 */
+}
+
+body {
+  background-color: inherit;
+  min-height: 100vh;
+}
+
+/* Плавные переходы для всех страниц */
+body > div#__next {
+  opacity: 1;
+  transition: opacity 0.15s ease-in-out;
+}
+
+body.page-transition-active > div#__next {
+  opacity: 0;
+}
+
+/* Специальные стили для login страниц */
+.login-page-wrapper {
+  min-height: 100vh;
+  background: linear-gradient(to bottom right, #3b82f6, #8b5cf6, #6366f1);
+}
+
+/* Предзагрузка градиентов */
+.preload-gradients {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+  background: linear-gradient(to bottom right, #3b82f6, #8b5cf6, #6366f1);
+}
+
+/* Анимация появления контента */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-content {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Loader overlay для переходов */
+.transition-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 1;
+  transition: opacity 0.2s ease-out;
+}
+
+.transition-loader.hiding {
+  opacity: 0;
+  pointer-events: none;
+}
 /* Базовые стили для всех элементов форм */
 @layer base {
 

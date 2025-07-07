@@ -88,49 +88,36 @@ export default function StaffLoginContent() {
   };
 
   useEffect(() => {
-  const checkGoogleOAuthReturn = () => {
-    // Проверяем если пользователь вернулся после Google OAuth
-    const googleLoginInProgress = sessionStorage.getItem('google_login_in_progress');
-    const urlParams = new URLSearchParams(window.location.search);
-    const code = urlParams.get('code');
-    
-    if (googleLoginInProgress === 'true' && code) {
-      console.log('🔄 Обнаружен возврат после Google OAuth на staff-login');
+    const checkGoogleOAuthReturn = () => {
+      // Проверяем если пользователь вернулся после Google OAuth
+      const googleLoginInProgress = sessionStorage.getItem('google_login_in_progress');
+      const urlParams = new URLSearchParams(window.location.search);
+      const code = urlParams.get('code');
+      const state = urlParams.get('state');
       
-      // Получаем сохраненные данные
-      const isStaff = sessionStorage.getItem('google_login_is_staff') === 'true';
-      const savedRedirect = sessionStorage.getItem('google_login_redirect');
-      
-      // Очищаем sessionStorage
-      sessionStorage.removeItem('google_login_in_progress');
-      sessionStorage.removeItem('google_login_is_staff');
-      sessionStorage.removeItem('google_login_staff_role');
-      sessionStorage.removeItem('google_login_redirect');
-      
-      // Получаем конкретную роль staff
-      const staffRole = sessionStorage.getItem('google_login_staff_role');
-      
-      // Показываем loader
-      const { showLoader } = useLoaderStore.getState();
-      showLoader("login", {
-        userRole: isStaff ? (staffRole || "admin") : "member",
-        userName: "Сотрудник",
-        dashboardUrl: savedRedirect || "/admin"
-      });
-      
-      setTimeout(() => {
-        const { hideLoader } = useLoaderStore.getState();
-        hideLoader();
+      // НОВОЕ: Проверяем и показываем loader сразу при возврате
+      if (googleLoginInProgress === 'true' && code && state) {
+        console.log('🔄 Обнаружен возврат после Google OAuth на staff-login - показываем loader');
         
-        const targetUrl = savedRedirect || "/admin";
-        window.location.href = targetUrl;
-      }, 2000);
-    }
-  };
-  
-  // Проверяем сразу при загрузке
-  checkGoogleOAuthReturn();
-}, []);
+        // Получаем сохраненные данные
+        const isStaff = sessionStorage.getItem('google_login_is_staff') === 'true';
+        const savedRedirect = sessionStorage.getItem('google_login_target_url') || 
+                             sessionStorage.getItem('google_login_redirect');
+        const staffRole = sessionStorage.getItem('google_login_staff_role');
+        
+        // Показываем loader немедленно
+        const { showLoader } = useLoaderStore.getState();
+        showLoader("login", {
+          userRole: isStaff ? (staffRole || "admin") : "member",
+          userName: "Завершение авторизации...",
+          dashboardUrl: savedRedirect || "/admin"
+        });
+      }
+    };
+    
+    // Проверяем сразу при загрузке
+    checkGoogleOAuthReturn();
+  }, []);
 
 
   if (showForgotPassword) {

@@ -19,6 +19,7 @@ import "@/styles/ai-agent.css";
 import React from "react";
 import { DebugLogout } from "@/components/DebugLogout";
 import { AuthCleanupHandler } from "@/components/AuthCleanupHandler";
+import { AuthTransitionHandler } from "@/components/auth/AuthTransitionHandler";
 import { GlobalLoader } from "@/components/GlobalLoader";
 import { NextAuthProvider } from "@/components/providers/NextAuthProvider";
 import dynamic from "next/dynamic";
@@ -220,6 +221,7 @@ export default function RootLayout({
                         <PWAOnboarding />
                         <PWAInstallBanner />
                         <AuthCleanupHandler />
+                        <AuthTransitionHandler />
 
                       </PWAWrapper>
                     </OptimizedProviders>

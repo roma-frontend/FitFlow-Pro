@@ -52,31 +52,22 @@ export default function MemberLoginContent() {
       const googleLoginInProgress = sessionStorage.getItem('google_login_in_progress');
       const urlParams = new URLSearchParams(window.location.search);
       const code = urlParams.get('code');
+      const state = urlParams.get('state');
       
-      if (googleLoginInProgress === 'true' && code) {
-        console.log('🔄 Обнаружен возврат после Google OAuth на member-login');
+      // НОВОЕ: Проверяем и показываем loader сразу
+      if (googleLoginInProgress === 'true' && code && state) {
+        console.log('🔄 Обнаружен возврат после Google OAuth на member-login - показываем loader');
         
         const isStaff = sessionStorage.getItem('google_login_is_staff') === 'true';
-        const savedRedirect = sessionStorage.getItem('google_login_redirect');
-        
-        sessionStorage.removeItem('google_login_in_progress');
-        sessionStorage.removeItem('google_login_is_staff');
-        sessionStorage.removeItem('google_login_redirect');
+        const savedRedirect = sessionStorage.getItem('google_login_target_url') || 
+                             sessionStorage.getItem('google_login_redirect');
         
         const { showLoader } = useLoaderStore.getState();
         showLoader("login", {
           userRole: isStaff ? "admin" : "member",
-          userName: "Пользователь",
+          userName: "Завершение авторизации...",
           dashboardUrl: savedRedirect || "/member-dashboard"
         });
-        
-        setTimeout(() => {
-          const { hideLoader } = useLoaderStore.getState();
-          hideLoader();
-          
-          const targetUrl = savedRedirect || "/member-dashboard";
-          window.location.href = targetUrl;
-        }, 2000);
       }
     };
 

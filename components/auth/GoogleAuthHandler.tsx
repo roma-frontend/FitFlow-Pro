@@ -1,86 +1,83 @@
-// components/auth/GoogleAuthHandler.tsx - ПОКАЗЫВАЕТ LOADER ПОСЛЕ ВОЗВРАТА ОТ GOOGLE
+// components/auth/GoogleAuthHandler.tsx - ИСПРАВЛЕННАЯ ВЕРСИЯ
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { useLoaderStore } from '@/stores/loaderStore';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import StaffLoginLoader from '@/app/staff-login/components/StaffLoginLoader';
 
 export function GoogleAuthHandler() {
   const { data: session, status } = useSession();
-  const showLoader = useLoaderStore((state) => state.showLoader);
-  const hideLoader = useLoaderStore((state) => state.hideLoader);
+  const { showLoader, hideLoader, loaderType, loaderProps } = useLoaderStore();
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const [isProcessing, setIsProcessing] = useState(false);
+  const processedRef = useRef(false);
 
+  // НОВОЕ: Показываем loader сразу при обнаружении возврата от Google
   useEffect(() => {
-    const handleGoogleCallback = async () => {
-      // Проверяем параметры URL для определения возврата от Google
-      const code = searchParams.get('code');
-      const state = searchParams.get('state');
-      const googleLoginInProgress = sessionStorage.getItem('google_login_in_progress');
+    // Проверяем параметры возврата от Google OAuth
+    const code = searchParams.get('code');
+    const state = searchParams.get('state');
+    const googleLoginInProgress = sessionStorage.getItem('google_login_in_progress');
+    
+    // Если есть признаки возврата от Google - СРАЗУ показываем loader
+    if (code && state && googleLoginInProgress === 'true' && !processedRef.current) {
+      console.log('🔄 Обнаружен возврат от Google OAuth - показываем loader немедленно');
+      processedRef.current = true;
       
-      // Если есть code и state от Google OAuth И у нас был флаг входа
-      if (code && state && googleLoginInProgress === 'true' && !isProcessing) {
-        console.log('🔄 Обнаружен возврат от Google OAuth');
-        setIsProcessing(true);
-        
-        // Устанавливаем флаг редиректа
-        sessionStorage.setItem('is_redirecting', 'true');
-        
-        const isStaff = sessionStorage.getItem('google_login_is_staff') === 'true';
-        const targetUrl = sessionStorage.getItem('google_login_target_url') || 
-                         (isStaff ? '/admin' : '/member-dashboard');
-        
-        // ТЕПЕРЬ показываем loader после возврата от Google
-        showLoader("login", {
-          userRole: isStaff ? "admin" : "member",
-          userName: "Авторизация через Google",
-          dashboardUrl: targetUrl
-        });
-        
-        // Ждем пока сессия обновится
-        if (status === 'loading') {
-          console.log('⏳ Ожидаем обновления сессии...');
-          return; // Выходим и ждем следующего вызова useEffect
-        }
-        
-        // Если сессия готова и пользователь авторизован
-        if (status === 'authenticated' && session?.user) {
-          console.log('✅ Google OAuth успешно завершен');
-          
-          // Очищаем флаги
-          sessionStorage.removeItem('google_login_in_progress');
-          sessionStorage.removeItem('google_login_is_staff');
-          sessionStorage.removeItem('google_login_target_url');
-          
-          // Ждем анимацию loader и делаем редирект
-          setTimeout(() => {
-            console.log('🚀 Redirecting to:', targetUrl);
-            window.location.replace(targetUrl);
-          }, 1500);
-        }
-      }
-      // Если статус изменился на authenticated, но мы уже обрабатываем
-      else if (status === 'authenticated' && isProcessing && session?.user) {
-        const targetUrl = sessionStorage.getItem('google_login_target_url') || '/member-dashboard';
-        
-        // Очищаем флаги
-        sessionStorage.removeItem('google_login_in_progress');
-        sessionStorage.removeItem('google_login_is_staff');
-        sessionStorage.removeItem('google_login_target_url');
-        
-        // Делаем финальный редирект
-        setTimeout(() => {
-          console.log('🚀 Final redirect to:', targetUrl);
-          window.location.replace(targetUrl);
-        }, 1500);
-      }
-    };
+      const isStaff = sessionStorage.getItem('google_login_is_staff') === 'true';
+      const savedTarget = sessionStorage.getItem('google_login_target_url');
+      const isStaffLogin = pathname.includes('staff-login');
+      
+      // Определяем роль и цель
+      const userRole = isStaff || isStaffLogin ? "admin" : "member";
+      const targetUrl = savedTarget || (isStaff || isStaffLogin ? '/admin' : '/member-dashboard');
+      
+      // СРАЗУ показываем loader
+      showLoader("login", {
+        userRole: userRole,
+        userName: "Авторизация через Google",
+        dashboardUrl: targetUrl
+      });
+      
+      // Устанавливаем флаг что мы в процессе
+      setIsProcessing(true);
+    }
+  }, [searchParams, pathname, showLoader]);
 
-    handleGoogleCallback();
-  }, [status, session, searchParams, showLoader, isProcessing]);
+  // Обработка завершения авторизации
+  useEffect(() => {
+    if (isProcessing && status === 'authenticated' && session?.user) {
+      console.log('✅ Google OAuth успешно завершен, сессия готова');
+      
+      const targetUrl = sessionStorage.getItem('google_login_target_url') || '/member-dashboard';
+      
+      // Очищаем флаги
+      sessionStorage.removeItem('google_login_in_progress');
+      sessionStorage.removeItem('google_login_is_staff');
+      sessionStorage.removeItem('google_login_target_url');
+      
+      // Небольшая задержка для плавности анимации
+      setTimeout(() => {
+        console.log('🚀 Redirecting to:', targetUrl);
+        window.location.replace(targetUrl);
+      }, 1000);
+    }
+  }, [status, session, isProcessing]);
+
+  // НОВОЕ: Рендерим loader если он активен
+  if (loaderType === "login" && loaderProps) {
+    return (
+      <StaffLoginLoader
+        userRole={loaderProps.userRole || "member"}
+        userName={loaderProps.userName || "Пользователь"}
+        dashboardUrl={loaderProps.dashboardUrl || "/"}
+      />
+    );
+  }
 
   return null;
 }
