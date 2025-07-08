@@ -51,7 +51,7 @@ const TypingIndicator = () => (
         </motion.div>
         <span className="text-xs font-medium text-gray-500">FitFlow AI печатает...</span>
       </div>
-      <motion.div 
+      <motion.div
         initial={{ scale: 0.95 }}
         animate={{ scale: 1 }}
         className="bg-white/90 backdrop-blur-sm p-4 rounded-3xl shadow-lg border border-gray-200/50"
@@ -61,13 +61,13 @@ const TypingIndicator = () => (
             <motion.div
               key={i}
               className="w-2.5 h-2.5 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full"
-              animate={{ 
+              animate={{
                 scale: [1, 1.5, 1],
                 opacity: [0.5, 1, 0.5]
               }}
-              transition={{ 
-                duration: 1.4, 
-                repeat: Infinity, 
+              transition={{
+                duration: 1.4,
+                repeat: Infinity,
                 delay,
                 ease: "easeInOut"
               }}
@@ -146,10 +146,10 @@ const AIAgent: React.FC<AIAgentProps> = ({ isOpen: propIsOpen, onClose, initialM
       waterIntake: 0,
       stressLevel: 3
     });
-    
+
     // Reset context in chat logic
     resetContext();
-    
+
     // Use prop onClose if provided, otherwise use store closeAgent
     if (onClose) {
       onClose();
@@ -163,16 +163,16 @@ const AIAgent: React.FC<AIAgentProps> = ({ isOpen: propIsOpen, onClose, initialM
     if (isOpen) {
       // Save current scroll position
       const scrollY = window.scrollY;
-      
+
       // Add styles to prevent scrolling
       document.body.style.position = 'fixed';
       document.body.style.top = `-${scrollY}px`;
       document.body.style.width = '100%';
       document.body.style.overflow = 'hidden';
-      
+
       // Add touch-action to prevent mobile scroll
       document.documentElement.style.touchAction = 'none';
-      
+
       return () => {
         // Restore scroll position and remove styles
         document.body.style.position = '';
@@ -180,7 +180,7 @@ const AIAgent: React.FC<AIAgentProps> = ({ isOpen: propIsOpen, onClose, initialM
         document.body.style.width = '';
         document.body.style.overflow = '';
         document.documentElement.style.touchAction = '';
-        
+
         // Restore scroll position
         window.scrollTo(0, scrollY);
       };
@@ -190,7 +190,7 @@ const AIAgent: React.FC<AIAgentProps> = ({ isOpen: propIsOpen, onClose, initialM
   // Smooth scroll to bottom with animation
   const scrollToBottom = useCallback(() => {
     if (!scrollContainerRef.current || !messagesEndRef.current) return;
-    
+
     const scrollContainer = scrollContainerRef.current;
     const targetPosition = messagesEndRef.current.offsetTop;
     const startPosition = scrollContainer.scrollTop;
@@ -202,19 +202,19 @@ const AIAgent: React.FC<AIAgentProps> = ({ isOpen: propIsOpen, onClose, initialM
       if (startTime === null) startTime = currentTime;
       const timeElapsed = currentTime - startTime;
       const progress = Math.min(timeElapsed / duration, 1);
-      
+
       // Easing function for smooth animation
       const easeInOutCubic = (t: number) => {
         return t < 0.5 ? 4 * t * t * t : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1;
       };
-      
+
       scrollContainer.scrollTop = startPosition + distance * easeInOutCubic(progress);
-      
+
       if (progress < 1) {
         requestAnimationFrame(animation);
       }
     };
-    
+
     requestAnimationFrame(animation);
   }, []);
 
@@ -238,7 +238,7 @@ const AIAgent: React.FC<AIAgentProps> = ({ isOpen: propIsOpen, onClose, initialM
         timestamp: new Date(),
         suggestions: suggestions
       };
-      
+
       setMessages([welcomeMessage]);
 
       // Auto process initial message if it's not just a greeting
@@ -263,7 +263,7 @@ const AIAgent: React.FC<AIAgentProps> = ({ isOpen: propIsOpen, onClose, initialM
   // Debounced welcome message
   const showWelcomeMessage = useCallback(() => {
     if (!isOpen || messages.length > 0) return;
-    
+
     const welcomeMessage: Message = {
       id: Date.now().toString(),
       text: "👋 Добро пожаловать в FitFlow Pro!\n\nЯ ваш персональный AI-помощник. Чем могу помочь?",
@@ -271,7 +271,7 @@ const AIAgent: React.FC<AIAgentProps> = ({ isOpen: propIsOpen, onClose, initialM
       timestamp: new Date(),
       suggestions: [
         "Подобрать тренера",
-        "Выбрать абонемент", 
+        "Выбрать абонемент",
         "Программы тренировок",
         "Записаться на занятие"
       ]
@@ -296,23 +296,23 @@ const AIAgent: React.FC<AIAgentProps> = ({ isOpen: propIsOpen, onClose, initialM
 
     setMessages(prev => [...prev, userMessage]);
     setIsTyping(true);
-    
+
     // Add to history
     addToHistory(text, 'user');
 
     try {
       // Minimal delay for natural feel
       await new Promise(resolve => setTimeout(resolve, 500));
-      
+
       // Generate response considering context
       let contextualText = text;
       if (context.selectedTrainer) {
         contextualText = `Контекст: тренер ${context.selectedTrainer.name} (${context.selectedTrainer.specialty}). Запрос: ${text}`;
       }
-      
+
       const botResponse = await generateBotResponse(contextualText.toLowerCase());
       setMessages(prev => [...prev, botResponse]);
-      
+
       // Add bot response to history
       addToHistory(botResponse.text, 'system');
 
@@ -416,7 +416,7 @@ const AIAgent: React.FC<AIAgentProps> = ({ isOpen: propIsOpen, onClose, initialM
             >
               <Brain className="w-6 md:h-8 h-6 md:w-8" />
             </motion.div>
-            
+
             {/* Pulse effect */}
             <motion.div
               className="absolute inset-0 rounded-3xl bg-gradient-to-r from-blue-600 to-indigo-500"
@@ -439,7 +439,7 @@ const AIAgent: React.FC<AIAgentProps> = ({ isOpen: propIsOpen, onClose, initialM
               className="fixed inset-0 bg-black/50 z-40 sm:hidden"
               onClick={handleClose}
             />
-            
+
             <motion.div
               {...scaleIn}
               className="fixed inset-0 sm:bottom-6 sm:right-6 sm:top-auto sm:left-auto z-50 w-full sm:w-[420px] h-full sm:h-[85vh] sm:max-h-[800px] bg-white/95 backdrop-blur-sm sm:rounded-3xl shadow-2xl sm:border border-gray-200/50 overflow-hidden flex flex-col"
@@ -483,11 +483,8 @@ const AIAgent: React.FC<AIAgentProps> = ({ isOpen: propIsOpen, onClose, initialM
                   </Suspense>
                 </div>
               )}
-
-              {/* Messages Area */}
-              <div 
+              <div className={`${messages.length > 1 ? 'block' : 'hidden'} sm:block flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 space-y-4 bg-gray-50/50 scroll-smooth`}
                 ref={scrollContainerRef}
-                className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 space-y-4 bg-gray-50/50 scroll-smooth"
                 style={{
                   // Prevent overscroll on mobile
                   overscrollBehavior: 'contain',
@@ -507,16 +504,15 @@ const AIAgent: React.FC<AIAgentProps> = ({ isOpen: propIsOpen, onClose, initialM
                     <AppleHealthStats data={activityData} />
                   </Suspense>
                 )}
-                
+
                 <AnimatePresence>
                   {isTyping && <TypingIndicator />}
                 </AnimatePresence>
-                
+
                 <div ref={messagesEndRef} />
               </div>
 
-              {/* Input Area */}
-              <div className="border-t border-gray-100 bg-white">
+              <div className={`${messages.length > 1 ? 'block' : 'hidden'} sm:block border-t border-gray-100 bg-white`}>
                 <ChatInput
                   value={inputText}
                   onChange={setInputText}

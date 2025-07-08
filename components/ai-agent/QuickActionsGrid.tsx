@@ -20,7 +20,7 @@ export const QuickActionsGrid: React.FC<QuickActionsGridProps> = memo(({ actions
       </div>
 
       {/* Grid Layout - Optimized */}
-      <div className="bg-white/95 backdrop-blur-sm grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
         {actions.map((action, index) => (
           <QuickActionButton
             key={action.action}
