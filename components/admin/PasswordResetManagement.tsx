@@ -68,7 +68,7 @@ export function PasswordResetManagement() {
   return (
     <div className="space-y-6">
       {/* Заголовок и навигация */}
-      <div className="flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-0 justify-between px-4 sm:px-0">
+      <div className="flex flex-wrap gap-2 items-start justify-between px-4 sm:px-0">
         <div>
           <h1 className="inline-flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-0 text-xl md:text-2xl font-bold sm:space-x-2 text-wrap">
             <Shield className="h-8 w-8 text-blue-600" />
@@ -79,7 +79,7 @@ export function PasswordResetManagement() {
           </p>
         </div>
 
-        <div className="flex items-center space-x-2">
+        <div className="flex flex-wrap gap-2">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             return (
