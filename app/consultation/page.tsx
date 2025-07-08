@@ -62,7 +62,7 @@ export default function ConsultationPage() {
             description: 'Найдем идеального тренера под ваши потребности',
             duration: '10-15 мин',
             features: ['Анализ предпочтений', 'Подбор по специализации', 'Сравнение вариантов'],
-            gradient: 'from-purple-500 to-pink-500',
+            gradient: 'from-blue-500 to-indigo-600',
             action: () => openWithAction(AI_ACTIONS.FIND_TRAINER, {
                 page: 'consultation',
                 intent: 'trainer_selection'
@@ -115,7 +115,7 @@ export default function ConsultationPage() {
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
             {/* Header Section */}
-            <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+            <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
                 <div className="absolute inset-0 bg-black/20"></div>
                 <div className="relative mx-auto px-4 py-20">
 
@@ -255,7 +255,7 @@ export default function ConsultationPage() {
                     <div className="grid md:grid-cols-3 gap-8">
                         {benefits.map((benefit, index) => (
                             <div key={index} className="text-center group">
-                                <div className="w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-500 rounded-3xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
+                                <div className="w-20 h-20 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-3xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
                                     <benefit.icon className="h-10 w-10 text-white" />
                                 </div>
                                 <h3 className="text-xl font-semibold mb-3 text-gray-900">
@@ -271,9 +271,9 @@ export default function ConsultationPage() {
 
                 {/* CTA Section */}
                 <div className="text-center">
-                    <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-dashed border-blue-200 max-w-4xl mx-auto">
+                    <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-dashed border-blue-200 max-w-4xl mx-auto">
                         <CardContent className="p-12">
-                            <div className="w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <div className="w-20 h-20 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center mx-auto mb-6">
                                 <Bot className="h-10 w-10 text-white" />
                             </div>
 
@@ -291,7 +291,7 @@ export default function ConsultationPage() {
                                         page: 'consultation',
                                         intent: 'general_consultation'
                                     })}
-                                    className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-2xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all transform hover:scale-105 shadow-lg"
+                                    className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-4 rounded-2xl font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all transform hover:scale-105 shadow-lg"
                                 >
                                     <MessageCircle className="h-5 w-5" />
                                     Начать консультацию
