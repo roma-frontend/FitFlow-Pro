@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import ShopView from '@/components/shop/ShopView';
 import PaymentView from '@/components/shop/Payment/PaymentView';
 import MainHeader from '@/components/MainHeader';
+import { ShopWithAI } from '@/components/shop/ShopWithAI';
 
 export default function ShopPage() {
   const { orderStep, setOrderStep } = useShopStore();
@@ -47,6 +48,8 @@ export default function ShopPage() {
     <div className="min-h-[100lvh] bg-gradient-to-br from-gray-50 to-gray-100">
       <MainHeader
       />
+
+<ShopWithAI />;
 
       {/* Дополнительная навигация для шагов (только если не на главном шаге магазина) */}
       {orderStep !== 'shop' && (

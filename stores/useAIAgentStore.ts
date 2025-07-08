@@ -26,7 +26,7 @@ interface AIContext {
   selectedTrainer?: TrainerContext;
   userPreferences?: UserPreferences;
   availableTrainers?: any[];
-  categories?: string[]; // Добавлено это поле
+  categories?: string[];
   searchTerm?: string;
   selectedCategory?: string;
   intent?: string;
@@ -36,6 +36,16 @@ interface AIContext {
     timestamp: Date;
     type: 'user' | 'system';
   }>;
+  // Новые поля для магазина
+  query?: string;
+  goals?: string[];
+  mode?: string;
+  products?: any[];
+  selectedProduct?: any;
+  compareProducts?: any[];
+  cartItems?: any[];
+  productId?: string;
+  productIds?: string[];
 }
 
 interface AIAgentState {
@@ -145,7 +155,12 @@ export const AI_ACTIONS = {
   RECOVERY_ANALYSIS: 'recovery_analysis',
   TRAINER_CONSULTATION: 'trainer_consultation',
   GENERAL_CONSULTATION: 'general_consultation',
-  TRAINER_SELECTION: 'trainer_selection'
+  TRAINER_SELECTION: 'trainer_selection',
+  // Новые действия для магазина
+  SHOP_CONSULTATION: 'shop_consultation',
+  PRODUCT_CONSULTATION: 'product_consultation',
+  PRODUCT_COMPARISON: 'product_comparison',
+  PURCHASE_ASSISTANCE: 'purchase_assistance',
 } as const;
 
 // Типы для TypeScript
@@ -224,6 +239,32 @@ export const generateInitialMessage = (action: string, context: AIContext): stri
     case AI_ACTIONS.CONSULTATION:
       return "Нужна консультация по фитнесу";
       
+    // Новые сообщения для магазина
+    case AI_ACTIONS.SHOP_CONSULTATION:
+      if (context.query) {
+        return `Ищу продукты по запросу "${context.query}". Помоги с выбором.`;
+      }
+      if (context.goals && context.goals.length > 0) {
+        return `Мои цели: ${context.goals.join(', ')}. Какие продукты мне подойдут?`;
+      }
+      return "Помоги выбрать подходящие продукты";
+      
+    case AI_ACTIONS.PRODUCT_CONSULTATION:
+      if (context.selectedProduct) {
+        return `Расскажи больше о продукте "${context.selectedProduct.name}". Подойдет ли он мне?`;
+      }
+      return "Помоги с выбором продукта";
+      
+    case AI_ACTIONS.PRODUCT_COMPARISON:
+      if (context.compareProducts && context.compareProducts.length > 0) {
+        const productNames = context.compareProducts.map(p => p.name).join(', ');
+        return `Сравни эти продукты: ${productNames}. Что лучше выбрать?`;
+      }
+      return "Помоги сравнить продукты";
+      
+    case AI_ACTIONS.PURCHASE_ASSISTANCE:
+      return "Помоги оформить заказ и проверить корзину";
+      
     default:
       return "Привет! Чем могу помочь?";
   }
@@ -264,6 +305,43 @@ export const generateSuggestions = (action: string, context: AIContext): string[
       }
       
       return suggestions;
+      
+    // Новые подсказки для магазина
+    case AI_ACTIONS.SHOP_CONSULTATION:
+      return [
+        "Что нужно для набора массы?",
+        "Продукты для похудения",
+        "Витамины и добавки",
+        "Протеиновые коктейли",
+        "Предтренировочные комплексы"
+      ];
+      
+    case AI_ACTIONS.PRODUCT_CONSULTATION:
+      return [
+        "Как принимать этот продукт?",
+        "Есть ли противопоказания?",
+        "Подойдет ли для моих целей?",
+        "Сколько нужно на курс?",
+        "Аналоги этого продукта"
+      ];
+      
+    case AI_ACTIONS.PRODUCT_COMPARISON:
+      return [
+        "В чем разница между продуктами?",
+        "Что лучше по соотношению цена/качество?",
+        "Какой быстрее действует?",
+        "Что подойдет новичку?",
+        "Рекомендации по выбору"
+      ];
+      
+    case AI_ACTIONS.PURCHASE_ASSISTANCE:
+      return [
+        "Проверить совместимость продуктов",
+        "Рассчитать общую стоимость",
+        "Есть ли скидки?",
+        "Когда лучше принимать?",
+        "Нужно ли что-то добавить?"
+      ];
       
     default:
       return [
