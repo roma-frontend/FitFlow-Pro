@@ -23,16 +23,17 @@ export const ShopRecommendations: React.FC<ShopRecommendationsProps> = memo(({
   const handleAddToCart = (recommendation: ShopRecommendation) => {
     const { product } = recommendation;
     
+    // Remove the quantity property from the object passed to addItem
+    // The quantity is handled by the second parameter
     addItem({
       id: product._id,
       name: product.name,
       price: product.price,
-      quantity: 1,
       imageUrl: product.imageUrl,
       category: product.category,
       inStock: product.inStock,
       nutrition: product.nutrition,
-    });
+    }, 1); // Pass quantity as the second parameter
 
     toast({
       title: "Товар добавлен в корзину",
