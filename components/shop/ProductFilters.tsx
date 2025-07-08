@@ -58,7 +58,6 @@ const ProductFilters = memo(() => {
     { value: 'price', label: 'По цене' },
     { value: 'popular', label: 'По популярности' },
     { value: 'inStock', label: 'По наличию' },
-    { value: 'newest', label: 'Сначала новые' },
   ];
 
   return (

@@ -121,20 +121,20 @@ export default function ShopView() {
   return (
     <div className="max-w-7xl mx-auto px-4">
       {/* Заголовок с градиентом */}
-      <div className="relative mb-8 p-6 bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl text-white overflow-hidden">
+      <div className="relative mb-8 p-6 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl text-white overflow-hidden">
         <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16"></div>
         <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full translate-y-12 -translate-x-12"></div>
         
         <div className="relative flex justify-between items-center">
           <div className="flex-1">
-            <div className="flex items-center gap-3 mb-2">
+            <div className="flex flex-wrap items-center gap-3 mb-2">
               <ShoppingBag className="w-8 h-8" />
               <h1 className="text-3xl font-bold">Магазин спортивного питания</h1>
             </div>
-            <p className="text-purple-100 text-lg mb-4">
+            <p className="text-blue-100 text-lg mb-4">
               Качественные добавки для ваших тренировок
             </p>
-            <div className="flex items-center gap-2 text-sm text-purple-100">
+            <div className="flex flex-wrap items-center gap-2 text-sm text-blue-100">
               <Sparkles className="w-4 h-4" />
               <span>AI-подбор товаров • Гарантия качества • Лучшие цены</span>
             </div>
@@ -162,18 +162,18 @@ export default function ShopView() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-xl p-6 mb-6"
+        className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6 mb-6"
       >
         <div className="flex flex-wrap gap-4 items-center justify-between">
           <div className="flex flex-wrap items-center gap-4">
-            <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-blue-500 rounded-2xl flex items-center justify-center">
+            <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-2xl flex items-center justify-center">
               <Sparkles className="h-6 w-6 text-white" />
             </div>
             <div>
-              <h3 className="font-semibold text-purple-900 mb-1">
+              <h3 className="font-semibold text-blue-900 mb-1">
                 Нужна помощь с выбором?
               </h3>
-              <p className="text-sm text-purple-700">
+              <p className="text-sm text-blue-700">
                 AI-помощник поможет найти идеальные товары для ваших целей
               </p>
             </div>
@@ -181,7 +181,7 @@ export default function ShopView() {
           
           <Button
             onClick={handleOpenAIAssistant}
-            className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white"
+            className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white"
           >
             <MessageCircle className="h-4 w-4 mr-2" />
             Получить помощь
@@ -195,7 +195,7 @@ export default function ShopView() {
           onClick={() => setShowAIFilters(false)}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
             !showAIFilters
-              ? 'bg-purple-500 text-white'
+              ? 'bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white'
               : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
           }`}
         >
@@ -206,7 +206,7 @@ export default function ShopView() {
           onClick={() => setShowAIFilters(true)}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
             showAIFilters
-              ? 'bg-purple-500 text-white'
+              ? 'bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white'
               : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
           }`}
         >

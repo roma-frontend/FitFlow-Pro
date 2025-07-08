@@ -169,7 +169,7 @@ export const SmartFiltersAI: React.FC<SmartFiltersAIProps> = memo(({
       <Button
         onClick={handleGetAIRecommendations}
         disabled={selectedGoals.length === 0}
-        className="w-full bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white"
+        className="w-full bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white"
       >
         <Brain className="h-4 w-4 mr-2" />
         Получить AI-рекомендации

@@ -83,7 +83,7 @@ export const ShopWithAI: React.FC = memo(() => {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
           <p className="text-gray-600">Загружаем товары...</p>
         </div>
       </div>
@@ -96,7 +96,7 @@ export const ShopWithAI: React.FC = memo(() => {
         <div className="text-red-600 mb-4">{error}</div>
         <button
           onClick={() => window.location.reload()}
-          className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600"
+          className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
         >
           Попробовать снова
         </button>
@@ -121,7 +121,7 @@ export const ShopWithAI: React.FC = memo(() => {
             onClick={() => setShowAIFilters(false)}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
               !showAIFilters
-                ? 'bg-purple-500 text-white'
+                ? 'bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
@@ -132,7 +132,7 @@ export const ShopWithAI: React.FC = memo(() => {
             onClick={() => setShowAIFilters(true)}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
               showAIFilters
-                ? 'bg-purple-500 text-white'
+                ? 'bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
@@ -165,13 +165,13 @@ export const ShopWithAI: React.FC = memo(() => {
       {/* AI Recommendations */}
       {recommendations.length > 0 && (
         <div className="mb-8">
-          <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-xl p-6">
-            <h2 className="text-xl font-semibold text-purple-900 mb-4">
+          <div className="bg-gradient-to-r from-blue-50 to-blue-50 border border-blue-200 rounded-xl p-6">
+            <h2 className="text-xl font-semibold text-blue-900 mb-4">
               🤖 Персональные рекомендации AI
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {recommendations.slice(0, 3).map((rec) => (
-                <div key={rec.product._id} className="bg-white rounded-lg p-4 border border-purple-200">
+                <div key={rec.product._id} className="bg-white rounded-lg p-4 border border-blue-200">
                   <div className="flex items-start gap-3">
                     <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden">
                       {rec.product.imageUrl ? (
@@ -194,12 +194,12 @@ export const ShopWithAI: React.FC = memo(() => {
                         {rec.reason}
                       </p>
                       <div className="flex items-center justify-between">
-                        <span className="text-lg font-bold text-purple-600">
+                        <span className="text-lg font-bold text-blue-600">
                           {rec.product.price.toLocaleString()}₽
                         </span>
                         <button
                           onClick={() => handleAddToCart(rec.product)}
-                          className="bg-purple-500 text-white px-3 py-1 rounded text-sm hover:bg-purple-600"
+                          className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600"
                         >
                           В корзину
                         </button>
@@ -236,7 +236,7 @@ export const ShopWithAI: React.FC = memo(() => {
           </p>
           <button
             onClick={() => setShowAIFilters(true)}
-            className="bg-purple-500 text-white px-6 py-3 rounded-lg hover:bg-purple-600"
+            className="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600"
           >
             Использовать AI-поиск
           </button>

@@ -28,8 +28,8 @@ export interface ProductsStore {
   setPriceRange: (range: [number, number] | null) => void;
   
   // Сортировка
-   sortBy: 'name' | 'price' | 'popular' | 'inStock' | 'newest';
-  setSortBy: (sort: 'name' | 'price' | 'popular' | 'inStock' | 'newest') => void;
+   sortBy: 'name' | 'price' | 'popular' | 'inStock';
+  setSortBy: (sort: 'name' | 'price' | 'popular' | 'inStock') => void;
   
   sortOrder: 'asc' | 'desc';
   setSortOrder: (order: 'asc' | 'desc') => void;
@@ -49,7 +49,7 @@ export const useProductsStore = create<ProductsStore>((set, get) => ({
   searchQuery: '',
   selectedCategory: 'all',
   priceRange: null,
-  sortBy: 'newest',
+  sortBy: 'name',
   sortOrder: 'desc',
   
   // Products data actions
@@ -116,9 +116,6 @@ export const useProductsStore = create<ProductsStore>((set, get) => ({
         case 'inStock':
           comparison = (b.inStock || 0) - (a.inStock || 0);
           break;
-        case 'newest':
-          comparison = (b.createdAt || 0) - (a.createdAt || 0);
-          break;
         default:
           comparison = 0;
       }
@@ -145,7 +142,7 @@ export const useProductsStore = create<ProductsStore>((set, get) => ({
     get().filterProducts();
   },
   
-  setSortBy: (sort: 'name' | 'price' | 'popular' | 'inStock' | 'newest') => {
+  setSortBy: (sort: 'name' | 'price' | 'popular' | 'inStock') => {
     set({ sortBy: sort });
     get().filterProducts();
   },
@@ -160,7 +157,7 @@ export const useProductsStore = create<ProductsStore>((set, get) => ({
       searchQuery: '',
       selectedCategory: 'all',
       priceRange: null,
-      sortBy: 'newest',
+      sortBy: 'name',
       sortOrder: 'desc',
     });
     get().filterProducts();
