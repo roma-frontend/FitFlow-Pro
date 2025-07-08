@@ -307,7 +307,7 @@ export default function MainHeader() {
 
   return (
     <>
-      <header className="bg-gradient-to-r from-blue-600 to-blue-600 shadow-lg sticky top-0 z-40">
+      <header className="bg-gradient-to-r from-blue-600 to-indigo-500 shadow-lg sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
           <div className="flex justify-between items-center h-14 sm:h-16">
             <Logo />

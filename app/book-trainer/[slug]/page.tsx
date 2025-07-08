@@ -18,14 +18,9 @@ import {
   AlertCircle,
   Loader2,
   Bell,
-  UserCircle,
   Menu,
-  Settings
 } from "lucide-react";
 import { 
-  Navigation,
-  QuickActions,
-  NotificationsDropdown,
   UserProfileDropdown,
   MobileMenu
 } from '@/components/member/header/components';
@@ -343,7 +338,7 @@ export default function BookTrainerPage() {
   return (
     <div className="min-h-[100lvh] bg-gradient-to-br from-blue-50 to-green-50">
       <>
-        <header className="sticky top-0 z-40 w-full border-b border-white/10 bg-gradient-to-r from-blue-600 via-blue-700 to-green-600 backdrop-blur supports-[backdrop-filter]:bg-gradient-to-r supports-[backdrop-filter]:from-blue-600/95 supports-[backdrop-filter]:via-blue-700/95 supports-[backdrop-filter]:to-green-600/95">
+        <header className="sticky top-0 z-40 w-full border-b border-white/10 bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-500 backdrop-blur supports-[backdrop-filter]:bg-gradient-to-r supports-[backdrop-filter]:from-blue-600/95 supports-[backdrop-filter]:via-blue-700/95 supports-[backdrop-filter]:to-indigo-500/95">
           <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
             <div className="flex h-16 items-center justify-between">
               {/* Left side - Navigation core */}
