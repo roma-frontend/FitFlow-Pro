@@ -1,14 +1,16 @@
+// components/shop/ProductCard.tsx
 import React, { memo } from 'react';
 import { ShopProduct } from '@/hooks/useShopProductsAPI';
 import { useCartStore } from '@/stores/cartStore';
 import { useToast } from '@/hooks/use-toast';
+import { useAIAgent } from '@/stores/useAIAgentStore';
 import { formatProductPrice, getStockStatus, getStockStatusText } from '@/hooks/useShopProducts';
 import { generateProductImageAlt, generateFallbackText } from '@/utils/altTextUtils';
 import { productToAddCartData } from '@/utils/cartUtils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ShoppingCart, Star } from 'lucide-react';
+import { ShoppingCart, Star, Bot } from 'lucide-react';
 import SafeImage from '@/components/common/SafeImage';
 
 interface ProductCardProps {
@@ -18,6 +20,7 @@ interface ProductCardProps {
 const ProductCard = memo(({ product }: ProductCardProps) => {
   const addItem = useCartStore(state => state.addItem);
   const { toast } = useToast();
+  const { openWithAction } = useAIAgent();
   const stockStatus = getStockStatus(product);
   
   const handleAddToCart = () => {
@@ -30,11 +33,21 @@ const ProductCard = memo(({ product }: ProductCardProps) => {
     });
   };
 
+  const handleAIConsultation = () => {
+    openWithAction('product_consultation', {
+      page: 'shop',
+      intent: 'product_consultation',
+      selectedProduct: product,
+      mode: 'recommendation',
+      productId: product._id,
+    });
+  };
+
   const imageAlt = generateProductImageAlt(product);
   const fallbackText = generateFallbackText(product.name);
 
   return (
-    <Card className="h-full flex flex-col hover:shadow-lg transition-shadow">
+    <Card className="h-full flex flex-col hover:shadow-lg transition-shadow group">
       <CardHeader className="p-4">
         <div className="relative w-full h-48 mb-3 bg-gray-100 rounded-lg overflow-hidden">
           <SafeImage
@@ -46,8 +59,18 @@ const ProductCard = memo(({ product }: ProductCardProps) => {
             fallbackText={fallbackText}
           />
           
+          {/* AI Button */}
+          <Button
+            onClick={handleAIConsultation}
+            size="sm"
+            className="absolute top-2 right-2 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white p-2 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-20"
+            aria-label={`Получить AI консультацию по ${product.name}`}
+          >
+            <Bot className="h-4 w-4" />
+          </Button>
+          
           {product.isPopular && (
-                        <Badge className="absolute top-2 right-2 bg-yellow-500 text-white z-20">
+            <Badge className="absolute top-2 right-12 bg-yellow-500 text-white z-20">
               <Star className="w-3 h-3 mr-1" aria-hidden="true" />
               <span className="sr-only">Популярный товар</span>
               Популярный
@@ -127,4 +150,3 @@ const ProductCard = memo(({ product }: ProductCardProps) => {
 ProductCard.displayName = 'ProductCard';
 
 export default ProductCard;
-

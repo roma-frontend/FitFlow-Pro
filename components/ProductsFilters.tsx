@@ -11,7 +11,9 @@ import { Search, Filter, X } from 'lucide-react';
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -41,6 +43,7 @@ export default function ProductsFilters() {
   ];
 
   const sortOptions = [
+    { value: '', label: 'Выберите сортировку', isHeader: true },
     { value: 'name', label: 'По названию' },
     { value: 'price', label: 'По цене' },
     { value: 'popularity', label: 'По популярности' },
@@ -55,10 +58,10 @@ export default function ProductsFilters() {
     setSortOrder('asc');
   };
 
-  const hasActiveFilters = 
-    searchQuery !== '' || 
-    selectedCategory !== 'all' || 
-    priceRange[0] !== 0 || 
+  const hasActiveFilters =
+    searchQuery !== '' ||
+    selectedCategory !== 'all' ||
+    priceRange[0] !== 0 ||
     priceRange[1] !== 10000;
 
   return (
@@ -136,7 +139,7 @@ export default function ProductsFilters() {
               />
             </div>
           </div>
-          
+
           {/* Быстрые фильтры по цене */}
           <div className="flex flex-wrap gap-2">
             <Button
@@ -177,11 +180,14 @@ export default function ProductsFilters() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {sortOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
+                <SelectGroup>
+                  <SelectLabel>Сортировка</SelectLabel>
+                  {sortOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
               </SelectContent>
             </Select>
           </div>
@@ -234,28 +240,28 @@ export default function ProductsFilters() {
               {searchQuery && (
                 <Badge variant="secondary" className="flex items-center gap-1">
                   Поиск: "{searchQuery}"
-                  <X 
-                    className="w-3 h-3 cursor-pointer" 
+                  <X
+                    className="w-3 h-3 cursor-pointer"
                     onClick={() => setSearchQuery('')}
                   />
                 </Badge>
               )}
-              
+
               {selectedCategory !== 'all' && (
                 <Badge variant="secondary" className="flex items-center gap-1">
                   {categories.find(c => c.value === selectedCategory)?.label}
-                  <X 
-                    className="w-3 h-3 cursor-pointer" 
+                  <X
+                    className="w-3 h-3 cursor-pointer"
                     onClick={() => setSelectedCategory('all')}
                   />
                 </Badge>
               )}
-              
+
               {(priceRange[0] !== 0 || priceRange[1] !== 10000) && (
                 <Badge variant="secondary" className="flex items-center gap-1">
                   {priceRange[0]}₽ - {priceRange[1]}₽
-                  <X 
-                    className="w-3 h-3 cursor-pointer" 
+                  <X
+                    className="w-3 h-3 cursor-pointer"
                     onClick={() => setPriceRange([0, 10000])}
                   />
                 </Badge>

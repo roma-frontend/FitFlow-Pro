@@ -1,8 +1,9 @@
-// components/shop/SmartFiltersAI.tsx
+// components/shop/SmartFiltersAI.tsx (обновленная версия)
 import React, { memo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Brain, Filter, Zap, Target, Dumbbell, Users } from 'lucide-react';
-import { useAIShopAgent } from '@/hooks/useAIShopAgent';
+import { useAIAgent } from '@/stores/useAIAgentStore';
+import { useAIShopStore } from '@/stores/aiShopStore';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
@@ -17,16 +18,17 @@ export const SmartFiltersAI: React.FC<SmartFiltersAIProps> = memo(({
   onBudgetSelect,
   onExperienceSelect
 }) => {
-  const { openShopConsultation, setUserProfile } = useAIShopAgent();
+  const { openWithAction } = useAIAgent();
+  const { setUserProfile, analyzeUserGoals } = useAIShopStore();
   const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
   const [selectedBudget, setSelectedBudget] = useState<{ min: number; max: number } | null>(null);
   const [selectedExperience, setSelectedExperience] = useState<string>('');
 
   const fitnessGoals = [
-    { id: 'weight_loss', label: 'Похудение', icon: Target, color: 'from-red-500 to-pink-500' },
-    { id: 'muscle_gain', label: 'Набор массы', icon: Dumbbell, color: 'from-blue-500 to-indigo-500' },
-    { id: 'endurance', label: 'Выносливость', icon: Zap, color: 'from-green-500 to-emerald-500' },
-    { id: 'recovery', label: 'Восстановление', icon: Users, color: 'from-purple-500 to-violet-500' },
+    { id: 'похудение', label: 'Похудение', icon: Target, color: 'from-red-500 to-pink-500' },
+    { id: 'набор_массы', label: 'Набор массы', icon: Dumbbell, color: 'from-blue-500 to-indigo-500' },
+    { id: 'выносливость', label: 'Выносливость', icon: Zap, color: 'from-green-500 to-emerald-500' },
+    { id: 'восстановление', label: 'Восстановление', icon: Users, color: 'from-purple-500 to-violet-500' },
   ];
 
   const budgetRanges = [
@@ -61,7 +63,7 @@ export const SmartFiltersAI: React.FC<SmartFiltersAIProps> = memo(({
     onExperienceSelect?.(experience);
   };
 
-  const handleGetAIRecommendations = () => {
+  const handleGetAIRecommendations = async () => {
     // Обновляем профиль пользователя
     setUserProfile({
       goals: selectedGoals,
@@ -69,8 +71,15 @@ export const SmartFiltersAI: React.FC<SmartFiltersAIProps> = memo(({
       experience: selectedExperience || 'beginner',
     });
 
+    // Получаем рекомендации
+    if (selectedGoals.length > 0) {
+      await analyzeUserGoals(selectedGoals);
+    }
+
     // Открываем AI консультацию с рекомендациями
-    openShopConsultation({
+    openWithAction('shop_consultation', {
+      page: 'shop',
+      intent: 'shop_consultation',
       mode: 'recommendation',
       goals: selectedGoals,
     });
@@ -78,7 +87,7 @@ export const SmartFiltersAI: React.FC<SmartFiltersAIProps> = memo(({
 
   return (
     <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-      <div className="flex items-center gap-3 mb-6">
+      <div className="flex flex-wrap items-center gap-3 mb-6">
         <Brain className="h-6 w-6 text-purple-600" />
         <h2 className="text-xl font-semibold text-gray-900">Умный подбор товаров</h2>
         <Badge className="bg-purple-100 text-purple-700">AI-powered</Badge>
@@ -87,7 +96,7 @@ export const SmartFiltersAI: React.FC<SmartFiltersAIProps> = memo(({
       {/* Goals Selection */}
       <div className="mb-6">
         <h3 className="font-medium text-gray-700 mb-3">Ваши цели:</h3>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid gap-3">
           {fitnessGoals.map((goal) => {
             const IconComponent = goal.icon;
             const isSelected = selectedGoals.includes(goal.id);
@@ -139,7 +148,7 @@ export const SmartFiltersAI: React.FC<SmartFiltersAIProps> = memo(({
       {/* Experience Level */}
       <div className="mb-6">
         <h3 className="font-medium text-gray-700 mb-3">Уровень опыта:</h3>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {experienceLevels.map((level) => (
             <button
               key={level.id}

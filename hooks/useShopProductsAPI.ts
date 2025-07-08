@@ -4,10 +4,10 @@ import { useState, useEffect, useMemo } from 'react';
 import { Id } from "@/convex/_generated/dataModel";
 
 export interface ShopProduct {
-  _id: Id<"products"> | string;
+  _id: Id<"products">;
   name: string;
   description: string;
-  category: 'supplements' | 'drinks' | 'snacks' | 'merchandise';
+  category: string;
   price: number;
   imageUrl?: string;
   inStock: number;
@@ -19,10 +19,13 @@ export interface ShopProduct {
     protein?: number;
     carbs?: number;
     fat?: number;
-    sugar?: number;
   };
   createdAt: number;
-  updatedAt?: number;
+  // AI-specific fields (optional)
+  tags?: string[];
+  targetGoals?: string[];
+  benefits?: string[];
+  rating?: number;
 }
 
 interface APIResponse {

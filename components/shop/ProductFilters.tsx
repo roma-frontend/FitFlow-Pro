@@ -53,11 +53,13 @@ const ProductFilters = memo(() => {
     { value: 'merchandise', label: 'Товары', count: products.filter(p => p.category === 'merchandise').length },
   ];
 
-const sortOptions = [
-  { value: 'name', label: 'По названию' },
-  { value: 'price', label: 'По цене' },
-  { value: 'popularity', label: 'По популярности' }, 
-];
+  const sortOptions = [
+    { value: 'name', label: 'По названию' },
+    { value: 'price', label: 'По цене' },
+    { value: 'popular', label: 'По популярности' },
+    { value: 'inStock', label: 'По наличию' },
+    { value: 'newest', label: 'Сначала новые' },
+  ];
 
   return (
     <Card>
@@ -86,7 +88,7 @@ const sortOptions = [
           </div>
 
           {/* Фильтры в одну строку на больших экранах */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="flex flex-wrap gap-4">
             {/* Категории */}
             <div>
               <label className="text-sm font-medium mb-2 block">Категория</label>
@@ -107,9 +109,13 @@ const sortOptions = [
             {/* Сортировка */}
             <div>
               <label className="text-sm font-medium mb-2 block">Сортировка</label>
-              <Select value={sortBy} onValueChange={handleSortChange}>
+              <Select
+                value={sortBy}
+                onValueChange={handleSortChange}
+                defaultValue={sortOptions[0].value}
+              >
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder={sortOptions.find(o => o.value === sortBy)?.label || sortOptions[0].label} />
                 </SelectTrigger>
                 <SelectContent>
                   {sortOptions.map((option) => (
@@ -150,6 +156,7 @@ const sortOptions = [
               variant={selectedCategory === 'all' ? 'default' : 'outline'}
               size="sm"
               onClick={() => handleCategoryChange('all')}
+              className='bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600'
             >
               Все
             </Button>

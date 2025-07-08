@@ -1,9 +1,12 @@
+// components/ai-agent/hooks/useChatLogic.ts
 
 import { useCallback, useState } from 'react';
 import { knowledgeBase } from '../config/knowledgeBase';
 import { recoveryKnowledgeBase } from '../config/recoveryKnowledge';
 import type { Message, AudioConfig, RecoveryData, ActivityData, Link, NutritionData, Trainer } from '../types';
 import { Heart, Dumbbell, Zap, Target, Users, Star, Moon, Droplet, AlertCircle, Activity, Calendar, User, ShoppingBag, CreditCard } from 'lucide-react';
+import { useAIShopStore } from '@/stores/aiShopStore';
+import { ShopProduct } from '@/types/shopAI';
 
 interface UseChatLogicProps {
   audioConfig: AudioConfig;
@@ -24,6 +27,16 @@ export const useChatLogic = ({
     trainer?: any;
     program?: any;
   }>({});
+  
+  // Добавляем shop store
+  const { 
+    analyzeUserGoals, 
+    findProductsByQuery, 
+    compareProducts,
+    setRecommendations,
+    currentProducts 
+  } = useAIShopStore();
+
   const voiceRssKey = process.env.NEXT_PUBLIC_VOICERSS_KEY || '';
   const nutritionixAppId = process.env.NEXT_PUBLIC_NUTRITIONIX_APP_ID || '';
   const nutritionixAppKey = process.env.NEXT_PUBLIC_NUTRITIONIX_APP_KEY || '';
@@ -92,7 +105,6 @@ export const useChatLogic = ({
 
   // Get nutrition info
   const getNutritionInfo = useCallback(async (query: string): Promise<NutritionData | null> => {
-    // Check if API keys are available
     if (!nutritionixAppId || !nutritionixAppKey || nutritionixAppId === 'your_id' || nutritionixAppKey === 'your_key') {
       console.warn("Nutritionix API keys not configured, using fallback data");
       return null;
@@ -113,32 +125,6 @@ export const useChatLogic = ({
       'творог': 'cottage cheese',
       'яйцо': 'egg',
       'яйца': 'eggs',
-      'молоко': 'milk',
-      'хлеб': 'bread',
-      'картофель': 'potato',
-      'картошка': 'potato',
-      'помидор': 'tomato',
-      'помидоры': 'tomatoes',
-      'огурец': 'cucumber',
-      'огурцы': 'cucumbers',
-      'сыр': 'cheese',
-      'рыба': 'fish',
-      'лосось': 'salmon',
-      'свинина': 'pork',
-      'масло': 'butter',
-      'оливковое масло': 'olive oil',
-      'мед': 'honey',
-      'мёд': 'honey',
-      'сахар': 'sugar',
-      'макароны': 'pasta',
-      'паста': 'pasta',
-      'кофе': 'coffee',
-      'чай': 'tea',
-      'сок': 'juice',
-      'апельсиновый сок': 'orange juice',
-      'орехи': 'nuts',
-      'миндаль': 'almonds',
-      'грецкие орехи': 'walnuts'
     };
 
     const normalizedQuery = query.trim().toLowerCase();
@@ -264,7 +250,7 @@ export const useChatLogic = ({
     }
   };
 
-  // Generate bot response
+  // Generate bot response - ИСПРАВЛЕНО: убрали рекурсивную зависимость
   const generateBotResponse = useCallback(async (text: string): Promise<Message> => {
     const generateId = () => `${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
@@ -272,8 +258,146 @@ export const useChatLogic = ({
     let suggestions: string[] = [];
     let links: Link[] = [];
 
+    // Shop-specific queries
+    if (text.match(/(магазин|купить|протеин|спортпит|питание.*спорт|bcaa|креатин|гейнер|добавк|витамин)/i)) {
+      // Поиск продуктов
+      if (text.match(/(покаж|найд|есть|какие)/i)) {
+        const searchQuery = text.replace(/(покажи|найди|есть|какие|в магазине|продукты)/gi, '').trim();
+        
+        try {
+          const foundProducts = await findProductsByQuery(searchQuery || 'все');
+          
+          if (foundProducts.length > 0) {
+            responseText = `🛒 Нашел ${foundProducts.length} товаров по вашему запросу:\n\n`;
+            
+            foundProducts.slice(0, 5).forEach((product: ShopProduct) => {
+              responseText += `**${product.name}**\n`;
+              responseText += `💰 ${product.price.toLocaleString()}₽`;
+              if (product.rating) responseText += ` ⭐ ${product.rating}`;
+              responseText += `\n📦 В наличии: ${product.inStock} шт.\n\n`;
+            });
+            
+            suggestions = [
+              "Показать все товары",
+              "Помоги выбрать",
+              "Сравнить товары",
+              "Что подойдет для похудения?"
+            ];
+          } else {
+            responseText = "😕 К сожалению, не нашел товаров по вашему запросу. Попробуйте другой поиск.";
+            suggestions = ["Показать все товары", "Популярные товары", "Категории товаров"];
+          }
+        } catch (error) {
+          responseText = "Произошла ошибка при поиске товаров. Попробуйте еще раз.";
+        }
+      }
+      // Рекомендации по целям
+      else if (text.match(/(для похудения|похудеть|сбросить вес|жиросжигание)/i)) {
+        try {
+          const recommendations = await analyzeUserGoals(['похудение']);
+          setRecommendations(recommendations);
+          
+          responseText = "🎯 Для похудения рекомендую:\n\n";
+          recommendations.slice(0, 3).forEach(rec => {
+            responseText += `**${rec.product.name}**\n`;
+            responseText += `${rec.reason}\n`;
+            responseText += `💰 ${rec.product.price.toLocaleString()}₽\n\n`;
+          });
+          
+          suggestions = ["Добавить в корзину", "Подробнее о продукте", "Другие цели"];
+        } catch (error) {
+          responseText = "Не удалось подобрать рекомендации. Попробуйте еще раз.";
+        }
+      }
+      else if (text.match(/(для массы|набрать массу|набор массы|мышечная масса)/i)) {
+        try {
+          const recommendations = await analyzeUserGoals(['набор_массы']);
+          setRecommendations(recommendations);
+          
+          responseText = "💪 Для набора массы рекомендую:\n\n";
+          recommendations.slice(0, 3).forEach(rec => {
+            responseText += `**${rec.product.name}**\n`;
+            responseText += `${rec.reason}\n`;
+            responseText += `💰 ${rec.product.price.toLocaleString()}₽\n\n`;
+          });
+          
+          suggestions = ["Добавить в корзину", "Программа питания", "Схема приема"];
+        } catch (error) {
+          responseText = "Не удалось подобрать рекомендации. Попробуйте еще раз.";
+        }
+      }
+      // Сравнение товаров
+      else if (text.match(/(сравни|что лучше|выбрать между)/i)) {
+        responseText = "🔍 Для сравнения товаров:\n\n" +
+          "1. Назовите конкретные товары\n" +
+          "2. Или выберите категорию для сравнения\n\n" +
+          "Например: 'Сравни протеин Gold Standard и Syntha-6'";
+        
+        suggestions = ["Сравнить протеины", "Сравнить креатин", "Лучшие BCAA"];
+      }
+      // Общий запрос о магазине
+      else {
+        responseText = "🛒 В нашем магазине спортивного питания:\n\n" +
+          "💊 **Протеины и гейнеры**\n" +
+          "🔥 **Жиросжигатели и L-карнитин**\n" +
+          "⚡ **Предтренировочные комплексы**\n" +
+          "💪 **Креатин и аминокислоты**\n" +
+          "🌱 **Витамины и минералы**\n\n" +
+          "Чем могу помочь в выборе?";
+        
+        links.push({
+          title: "Открыть магазин",
+          url: "/shop",
+          description: "Перейти к покупкам",
+          icon: ShoppingBag
+        });
+        
+        suggestions = [
+          "Что нужно для похудения?",
+          "Товары для набора массы",
+          "Популярные товары",
+          "Помощь с выбором"
+        ];
+      }
+    }
+    // Конкретные вопросы о продуктах
+    else if (text.match(/(протеин|bcaa|креатин|гейнер|жиросжигатель|витамины|омега|глютамин)/i)) {
+      const productType = text.match(/(протеин|bcaa|креатин|гейнер|жиросжигатель|витамины|омега|глютамин)/i)?.[0] || '';
+      
+      responseText = `📊 Информация о ${productType}:\n\n`;
+      
+      const productInfo: Record<string, string> = {
+        'протеин': '**Протеин** - основной строительный материал для мышц.\n\n' +
+          '✅ Способствует росту мышечной массы\n' +
+          '✅ Ускоряет восстановление\n' +
+          '✅ Помогает сохранить мышцы при похудении\n\n' +
+          '📋 Принимать: 1-2 порции в день (утром и после тренировки)',
+          
+        'bcaa': '**BCAA** - незаменимые аминокислоты.\n\n' +
+          '✅ Защищают мышцы от разрушения\n' +
+          '✅ Уменьшают усталость\n' +
+          '✅ Ускоряют восстановление\n\n' +
+          '📋 Принимать: до, во время и после тренировки',
+          
+        'креатин': '**Креатин** - увеличивает силу и выносливость.\n\n' +
+          '✅ Повышает силовые показатели\n' +
+          '✅ Увеличивает мышечную массу\n' +
+          '✅ Улучшает выносливость\n\n' +
+          '📋 Принимать: 3-5г ежедневно',
+      };
+      
+      responseText += productInfo[productType.toLowerCase()] || 
+        `${productType} - популярная спортивная добавка. Хотите узнать больше?`;
+      
+      suggestions = [
+        `Показать все ${productType}`,
+        "Как выбрать?",
+        "Схема приема",
+        "Лучшие бренды"
+      ];
+    }
     // Quick recovery commands
-    if (text === 'записать сон' || text === 'трекер сна') {
+    else if (text === 'записать сон' || text === 'трекер сна') {
       responseText = "Сколько часов вы спали? Например:\n• Спал 7 часов\n• Проспал 8.5 часов";
       suggestions = ["Спал 7 часов", "Спал 8 часов", "Спал 6.5 часов"];
     }
@@ -823,13 +947,28 @@ export const useChatLogic = ({
 
     return {
       id: generateId(),
-      text: responseText,
+      text: responseText || "Не понял ваш запрос. Попробуйте переформулировать.",
       isBot: true,
       timestamp: new Date(),
       suggestions,
       links
     };
-  }, [getNutritionInfo, findTrainerBySpecialty, recoveryData, setRecoveryData, calculateRecoveryScore]);
+  }, [
+    findProductsByQuery, 
+    analyzeUserGoals, 
+    setRecommendations, 
+    currentProducts,
+    recoveryData,
+    setRecoveryData,
+    calculateRecoveryScore,
+    getNutritionInfo,
+    findTrainerBySpecialty,
+    handleRecoveryCommand,
+    getRecoveryTips,
+    getRecoveryEmoji,
+    recoveryKnowledgeBase,
+    knowledgeBase
+  ]);
 
   return {
     generateBotResponse,
