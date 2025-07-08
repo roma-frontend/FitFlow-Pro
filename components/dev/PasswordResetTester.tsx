@@ -161,15 +161,15 @@ export function PasswordResetTester() {
             <label className="block text-sm font-medium mb-2">Тип пользователя</label>
             <div className="flex space-x-2">
               <Button
-                variant={userType === 'member' ? 'default' : 'outline'}
+                variant={userType === 'member' ? 'defaultSecond' : 'outline'}
                 size="sm"
                 onClick={() => setUserType('member')}
-                className='bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600'
+                // className='bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600'
               >
                 Участник
               </Button>
               <Button
-                variant={userType === 'staff' ? 'default' : 'outline'}
+                variant={userType === 'staff' ? 'defaultSecond' : 'outline'}
                 size="sm"
                 onClick={() => setUserType('staff')}
               >

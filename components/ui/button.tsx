@@ -11,9 +11,8 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default: "bg-blue-600 text-white hover:bg-blue-700 border border-blue-600",
+        defaultSecond: ["bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600", "text-white"],
         destructive: "bg-red-600 text-white hover:bg-red-700 border border-red-600",
-        
-        // 🔥 НОВЫЕ СОВРЕМЕННЫЕ ВАРИАНТЫ
         
         // Умный деструктивный с градиентом и анимацией
         destructiveSmart: [
