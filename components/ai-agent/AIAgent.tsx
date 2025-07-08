@@ -408,13 +408,13 @@ const AIAgent: React.FC<AIAgentProps> = ({ isOpen: propIsOpen, onClose, initialM
                 useAIAgentStore.getState().openAgent();
               }
             }}
-            className="fixed bottom-6 right-6 z-50 w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-3xl shadow-2xl flex items-center justify-center text-white group"
+            className="fixed bottom-6 right-6 z-50 w-12 md:w-16 h-12 md:h-16 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-3xl shadow-2xl flex items-center justify-center text-white group"
           >
             <motion.div
               animate={{ rotate: 360 }}
               transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
             >
-              <Brain className="h-8 w-8" />
+              <Brain className="w-6 md:h-8 h-6 md:w-8" />
             </motion.div>
             
             {/* Pulse effect */}

@@ -129,12 +129,12 @@ export default function ShopView() {
           <div className="flex-1">
             <div className="flex flex-wrap items-center gap-3 mb-2">
               <ShoppingBag className="w-8 h-8" />
-              <h1 className="text-3xl font-bold">Магазин спортивного питания</h1>
+              <h1 className="text-xl md:text-3xl font-bold">Магазин спортивного питания</h1>
             </div>
-            <p className="text-blue-100 text-lg mb-4">
+            <p className="text-blue-100 text-base md:text-lg mb-4">
               Качественные добавки для ваших тренировок
             </p>
-            <div className="flex flex-wrap items-center gap-2 text-sm text-blue-100">
+            <div className="flex flex-wrap items-center gap-2 text-xs md:text-sm text-blue-100">
               <Sparkles className="w-4 h-4" />
               <span>AI-подбор товаров • Гарантия качества • Лучшие цены</span>
             </div>
@@ -193,7 +193,7 @@ export default function ShopView() {
       <div className="flex justify-center gap-4 mb-6">
         <button
           onClick={() => setShowAIFilters(false)}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+          className={`flex flex-wrap items-center justify-center gap-2 px-4 py-4 rounded-lg transition-colors text-sm md:text-base ${
             !showAIFilters
               ? 'bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white'
               : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -204,7 +204,7 @@ export default function ShopView() {
         </button>
         <button
           onClick={() => setShowAIFilters(true)}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+          className={`flex flex-wrap items-center justify-center gap-2 px-4 py-4 rounded-lg transition-colors text-sm md:text-base ${
             showAIFilters
               ? 'bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white'
               : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -230,7 +230,7 @@ export default function ShopView() {
       </AnimatePresence>
 
       {/* Мобильные кнопки */}
-      <div className="lg:hidden mb-6 flex justify-end gap-3">
+      <div className="lg:hidden mb-6 flex sm:justify-end gap-3">
         <Button
           onClick={handleOpenAIAssistant}
           variant="outline"
