@@ -1,5 +1,5 @@
 
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { knowledgeBase } from '../config/knowledgeBase';
 import { recoveryKnowledgeBase } from '../config/recoveryKnowledge';
 import type { Message, AudioConfig, RecoveryData, ActivityData, Link, NutritionData, Trainer } from '../types';
@@ -20,9 +20,17 @@ export const useChatLogic = ({
   setActivityData,
   connectAppleHealth
 }: UseChatLogicProps) => {
+  const [currentContext, setCurrentContext] = useState<{
+    trainer?: any;
+    program?: any;
+  }>({});
   const voiceRssKey = process.env.NEXT_PUBLIC_VOICERSS_KEY || '';
   const nutritionixAppId = process.env.NEXT_PUBLIC_NUTRITIONIX_APP_ID || '';
   const nutritionixAppKey = process.env.NEXT_PUBLIC_NUTRITIONIX_APP_KEY || '';
+
+  const resetContext = useCallback(() => {
+    setCurrentContext({});
+  }, []);
 
   // Text-to-speech function
   const speak = useCallback(async (text: string) => {
@@ -826,6 +834,7 @@ export const useChatLogic = ({
   return {
     generateBotResponse,
     speak,
-    calculateRecoveryScore
+    calculateRecoveryScore,
+    resetContext
   };
 };

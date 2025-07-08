@@ -7,12 +7,9 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
-  Dumbbell,
   Users,
-  ArrowLeft,
   Star,
   Award,
-  Search,
   Bot,
   MessageCircle,
 } from "lucide-react";
@@ -20,7 +17,7 @@ import { memo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { trainersData } from "@/lib/trainers-data";
 import TrainersPageHeader from "./_components/TrainersHeader";
-import { useAIAgent, AI_ACTIONS } from "@/stores/useAIAgentStore";
+import { useAIAgent, AI_ACTIONS, useAIAgentStore } from "@/stores/useAIAgentStore";
 
 const TrainerCard = memo(({ trainer }: { trainer: any }) => {
   const router = useRouter();
@@ -156,7 +153,7 @@ TrainerCard.displayName = "TrainerCard";
 
 export default function TrainersPage() {
   const router = useRouter();
-  const { openTrainerSelection, openConsultation } = useAIAgent();
+  const { openWithAction, openTrainerConsultation, openTrainerSelection, openConsultation } = useAIAgent();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("Все");
 
@@ -188,10 +185,9 @@ export default function TrainersPage() {
 
   // Функция для открытия AI консультации по подбору тренера
   const handleGeneralConsultation = () => {
-    console.log('Opening general AI consultation');
-
-    // Открываем AI агента для общей консультации с контекстом текущих фильтров
-    openConsultation({
+    const { openAgent } = useAIAgentStore.getState();
+    
+    openAgent(AI_ACTIONS.GENERAL_CONSULTATION, {
       page: 'trainers',
       selectedCategory: selectedCategory !== "Все" ? selectedCategory : undefined,
       searchTerm: searchTerm || undefined,
