@@ -37,7 +37,12 @@ export const ShopWithAI: React.FC = memo(() => {
     // Filter by AI goals
     if (aiGoals.length > 0) {
       filtered = filtered.filter(product => {
-        return product.targetGoals?.some(goal =>
+        // Check if targetGoals exists and is not empty
+        if (!product.targetGoals || product.targetGoals.length === 0) {
+          return false;
+        }
+        
+        return product.targetGoals.some(goal =>
           aiGoals.some(aiGoal => goal.toLowerCase().includes(aiGoal.replace('_', ' ')))
         );
       });
@@ -54,16 +59,16 @@ export const ShopWithAI: React.FC = memo(() => {
   }, [products, aiGoals, aiBudget]);
 
   const handleAddToCart = (product: any) => {
+    // Fix: Remove quantity from the first parameter and pass it as the second parameter
     addItem({
       id: product._id,
       name: product.name,
       price: product.price,
-      quantity: 1,
       imageUrl: product.imageUrl,
       category: product.category,
       inStock: product.inStock,
       nutrition: product.nutrition,
-    });
+    }, 1); // Pass quantity as second parameter
 
     toast({
       title: "Товар добавлен в корзину",
