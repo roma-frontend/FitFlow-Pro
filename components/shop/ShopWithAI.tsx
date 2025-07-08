@@ -37,13 +37,16 @@ export const ShopWithAI: React.FC = memo(() => {
     // Filter by AI goals
     if (aiGoals.length > 0) {
       filtered = filtered.filter(product => {
+        // Type guard to ensure the product has targetGoals property
+        const productWithGoals = product as any;
+        
         // Check if targetGoals exists and is not empty
-        if (!product.targetGoals || product.targetGoals.length === 0) {
+        if (!productWithGoals.targetGoals || productWithGoals.targetGoals.length === 0) {
           return false;
         }
         
-        return product.targetGoals.some(goal =>
-          aiGoals.some(aiGoal => goal.toLowerCase().includes(aiGoal.replace('_', ' ')))
+        return productWithGoals.targetGoals.some((goal: string) =>
+          aiGoals.some((aiGoal: string) => goal.toLowerCase().includes(aiGoal.replace('_', ' ')))
         );
       });
     }
