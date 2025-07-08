@@ -44,7 +44,8 @@ export const ProductCardAI: React.FC<ProductCardAIProps> = memo(({ product, onAd
           <Button
             onClick={handleAIConsultation}
             size="sm"
-            className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white p-2 rounded-full shadow-lg"
+            className="w-8 h-8 absolute top-2 right-2 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white p-2 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-20 border-none"
+            aria-label={`Получить AI консультацию по ${product.name}`}
           >
             <Bot className="h-4 w-4" />
           </Button>
