@@ -74,7 +74,7 @@ export default function FunctionalProgramPage() {
             </Button>
 
             <Button
-              onClick={() => router.push("/</div>")}
+              onClick={() => router.push("/")}
               className="flex items-center gap-3 px-6 py-3 h-auto bg-gradient-to-r from-blue-50/80 via-white to-indigo-50/80 hover:from-blue-100/90 hover:via-white hover:to-indigo-100/90 border border-blue-200/60 hover:border-blue-300/80 rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 ease-out transform backdrop-blur-sm text-gray-600"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
