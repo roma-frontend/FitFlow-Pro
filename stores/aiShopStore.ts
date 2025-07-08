@@ -17,6 +17,7 @@ interface AIShopContext {
     budget?: { min: number; max: number };
     experience: string;
   };
+  isOpen: boolean; // Добавлено новое поле
 }
 
 interface AIShopStore extends AIShopContext {
@@ -27,6 +28,11 @@ interface AIShopStore extends AIShopContext {
   setConversationMode: (mode: AIShopContext['conversationMode']) => void;
   updateCartContext: (items: any[]) => void;
   resetShopContext: () => void;
+  
+  // Новые методы для управления открытием/закрытием
+  openAgent: () => void;
+  closeAgent: () => void;
+  toggleAgent: () => void;
   
   // AI Methods
   analyzeUserGoals: (goals: string[]) => Promise<ShopRecommendation[]>;
@@ -53,6 +59,7 @@ export const useAIShopStore = create<AIShopStore>()(
       recommendations: [],
       cartItems: [],
       conversationMode: 'discovery',
+      isOpen: false, // Начальное состояние
 
       // Actions
       setUserProfile: (profile) =>
@@ -83,6 +90,11 @@ export const useAIShopStore = create<AIShopStore>()(
           recommendations: [],
           conversationMode: 'discovery',
         }),
+
+      // Новые методы для управления открытием/закрытием
+      openAgent: () => set({ isOpen: true }),
+      closeAgent: () => set({ isOpen: false }),
+      toggleAgent: () => set((state) => ({ isOpen: !state.isOpen })),
 
       // AI Methods
       analyzeUserGoals: async (goals) => {

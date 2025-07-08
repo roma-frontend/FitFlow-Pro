@@ -45,7 +45,7 @@ export const useAIShopAgent = () => {
   // Помощь с конкретным продуктом
   const openProductConsultation = useCallback((product: ShopProduct) => {
     aiShop.setConversationMode('recommendation');
-        
+
     aiAgent.openAgent('product_consultation', {
       page: 'shop',
       intent: 'product_consultation',
@@ -59,8 +59,6 @@ export const useAIShopAgent = () => {
   return {
     openShopConsultation,
     openProductConsultation,
-    // Добавляем методы из aiShop store
     ...aiShop,
-    // НЕ возвращаем isOpen от aiAgent чтобы избежать конфликтов
   };
 };

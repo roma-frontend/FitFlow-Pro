@@ -408,7 +408,7 @@ const AIAgent: React.FC<AIAgentProps> = ({ isOpen: propIsOpen, onClose, initialM
                 useAIAgentStore.getState().openAgent();
               }
             }}
-            className="fixed bottom-6 right-6 z-50 w-16 h-16 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-3xl shadow-2xl flex items-center justify-center text-white group"
+            className="fixed bottom-6 right-6 z-50 w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-3xl shadow-2xl flex items-center justify-center text-white group"
           >
             <motion.div
               animate={{ rotate: 360 }}
@@ -419,7 +419,7 @@ const AIAgent: React.FC<AIAgentProps> = ({ isOpen: propIsOpen, onClose, initialM
             
             {/* Pulse effect */}
             <motion.div
-              className="absolute inset-0 rounded-3xl bg-gradient-to-r from-blue-600 to-cyan-600"
+              className="absolute inset-0 rounded-3xl bg-gradient-to-r from-blue-600 to-indigo-500"
               animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0, 0.5] }}
               transition={{ duration: 2, repeat: Infinity }}
             />
@@ -450,7 +450,7 @@ const AIAgent: React.FC<AIAgentProps> = ({ isOpen: propIsOpen, onClose, initialM
               }}
             >
               {/* Header */}
-              <div className="bg-gradient-to-r from-blue-600 to-cyan-600 p-6 text-white">
+              <div className="bg-gradient-to-r from-blue-500 to-indigo-500 p-6 text-white">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4">
                     <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center">
