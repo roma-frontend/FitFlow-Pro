@@ -10,8 +10,7 @@ import StaffLoginLoader from '@/app/staff-login/components/StaffLoginLoader';
 // Внутренний компонент который использует useSearchParams
 function GoogleAuthHandlerInner() {
   const { data: session, status } = useSession();
-  const { showLoader, hideLoader, loaderType, loaderProps } = useLoaderStore();
-  const router = useRouter();
+  const { showLoader, loaderType, loaderProps } = useLoaderStore();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [isProcessing, setIsProcessing] = useState(false);
@@ -76,6 +75,7 @@ function GoogleAuthHandlerInner() {
         userRole={loaderProps.userRole || "member"}
         userName={loaderProps.userName || "Пользователь"}
         dashboardUrl={loaderProps.dashboardUrl || "/"}
+        isOpen={true}
       />
     );
   }
@@ -94,6 +94,7 @@ export function GoogleAuthHandler() {
         userRole={loaderProps.userRole || "member"}
         userName={loaderProps.userName || "Пользователь"}
         dashboardUrl={loaderProps.dashboardUrl || "/"}
+        isOpen={true}
       />
     );
   }
