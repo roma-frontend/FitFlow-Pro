@@ -113,9 +113,9 @@ export default function ConsultationPage() {
     ];
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
+        <div className="min-h-[100lvh] bg-gradient-to-br from-blue-50 via-white to-indigo-50">
             {/* Header Section */}
-            <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
+            <div className="relative overflow-hidden bg-gradient-to-r from-blue-500 to-indigo-500 text-white">
                 <div className="absolute inset-0 bg-black/20"></div>
                 <div className="relative mx-auto px-4 py-20">
 
@@ -291,7 +291,7 @@ export default function ConsultationPage() {
                                         page: 'consultation',
                                         intent: 'general_consultation'
                                     })}
-                                    className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-4 rounded-2xl font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all transform hover:scale-105 shadow-lg"
+                                    className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-8 py-4 rounded-2xl font-semibold hover:from-blue-600 hover:to-indigo-600 transition-all transform hover:scale-105 shadow-lg"
                                 >
                                     <MessageCircle className="h-5 w-5" />
                                     Начать консультацию

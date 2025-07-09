@@ -33,7 +33,7 @@ export function MemberHeader({ user, onLogout }: MemberHeaderProps) {
 
   return (
     <>
-      <header className="sticky top-0 z-40 w-full border-b border-white/10 bg-gradient-to-r from-blue-600 to-indigo-500 backdrop-blur supports-[backdrop-filter]:bg-gradient-to-r supports-[backdrop-filter]:from-blue-600/95 supports-[backdrop-filter]:via-blue-700/95 supports-[backdrop-filter]:to-indigo-500/95">
+      <header className="sticky top-0 z-40 w-full border-b border-white/10 bg-gradient-to-r from-blue-500 to-indigo-500 backdrop-blur supports-[backdrop-filter]:bg-gradient-to-r supports-[backdrop-filter]:from-blue-600/95 supports-[backdrop-filter]:via-blue-600/95 supports-[backdrop-filter]:to-indigo-500/95">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between">
             {/* Logo */}

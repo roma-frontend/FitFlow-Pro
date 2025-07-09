@@ -1,4 +1,4 @@
-// app/member-dashboard/page.tsx - исправленная версия с правильным logout loader
+// app/member-dashboard/page.tsx - исправленная версия без мигания "Доступ запрещен"
 "use client";
 
 import { useState, useEffect } from "react";
@@ -334,15 +334,40 @@ export default function MemberDashboard() {
     );
   }
 
-  // Проверка доступа
-  if (!isLoggingOut && !isLogoutLoader() && (accessDenied || !user || (user.role !== "member" && user.role !== "client"))) {
+  // ПОКАЗЫВАЕМ ЗАГРУЗКУ ПОКА НЕ ПРОВЕРЕНА АВТОРИЗАЦИЯ
+  if (loading || !authChecked) {
+    console.log("⏳ MemberDashboard: показываем индикатор загрузки...", {
+      loading,
+      authChecked
+    });
+    
+    return (
+      <div className="min-h-[100lvh] bg-gradient-to-br from-blue-50 to-green-50 flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardContent className="p-8 text-center">
+            <Loader2 className="h-12 w-12 text-blue-500 mx-auto mb-4 animate-spin" />
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">
+              Загрузка личного кабинета...
+            </h2>
+            <p className="text-gray-600">
+              Проверяем ваши данные
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Проверка доступа ТОЛЬКО ПОСЛЕ authChecked
+  if (!isLoggingOut && !isLogoutLoader() && authChecked && (accessDenied || !user || (user.role !== "member" && user.role !== "client"))) {
     console.log("🚫 MemberDashboard: показываем отказ в доступе", {
       accessDenied,
       hasUser: !!user,
       userRole: user?.role,
       expectedRoles: ["member", "client"],
       isLoggingOut,
-      loaderType
+      loaderType,
+      authChecked
     });
 
     return (
