@@ -2,11 +2,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import FitnessLoader from "@/components/ui/FitnessLoader";
 import { UserRole } from "@/lib/permissions";
 import { useRoleTexts } from "@/lib/roleTexts";
-import { useLoaderStore } from "@/stores/loaderStore";
 
 interface StaffLogoutLoaderProps {
   userRole: UserRole;
