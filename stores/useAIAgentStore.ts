@@ -21,6 +21,25 @@ interface UserPreferences {
   rating?: number;
 }
 
+interface AnalysisResult {
+  id: string;
+  progressPotential: number;
+  bodyType: string;
+  estimatedBodyFat: number;
+  estimatedMuscleMass: number;
+  fitnessScore: number;
+  recommendations: {
+    primaryGoal: string;
+    secondaryGoals: string[];
+    estimatedTimeToGoal: number;
+    weeklyTrainingHours: number;
+  };
+  futureProjections?: any;
+  bodyComposition?: any;
+  comparisonWithOriginal?: any;
+  [key: string]: any;
+}
+
 interface AIContext {
   page?: string;
   selectedTrainer?: TrainerContext;
@@ -36,7 +55,7 @@ interface AIContext {
     timestamp: Date;
     type: 'user' | 'system';
   }>;
-  // Новые поля для магазина
+  // Поля для магазина
   query?: string;
   goals?: string[];
   mode?: string;
@@ -46,6 +65,21 @@ interface AIContext {
   cartItems?: any[];
   productId?: string;
   productIds?: string[];
+  // Поля для анализа тела и прогресса
+  personalizedPlan?: any;
+  analysisResult?: AnalysisResult;
+  concerns?: string[];
+  bodyType?: string;
+  comparison?: any;
+  analysisId?: string;
+  originalAnalysisId?: string;
+  currentMetrics?: {
+    bodyFat: number;
+    muscleMass: number;
+    fitnessScore?: number;
+  };
+  projectedResults?: any;
+  newAnalysis?: any;
 }
 
 interface AIAgentState {
@@ -53,7 +87,7 @@ interface AIAgentState {
   pendingAction: string | null;
   context: AIContext;
   isInitialized: boolean;
-  
+
   // Actions
   openAgent: (action?: string, context?: AIContext) => void;
   closeAgent: () => void;
@@ -74,7 +108,7 @@ export const useAIAgentStore = create<AIAgentState>()(
 
         openAgent: (action, context) => {
           console.log('🤖 Opening AI Agent:', { action, context });
-          
+
           set({
             isOpen: true,
             pendingAction: action || null,
@@ -101,8 +135,8 @@ export const useAIAgentStore = create<AIAgentState>()(
 
         setContext: (context) => {
           set(state => ({
-            context: { 
-              ...state.context, 
+            context: {
+              ...state.context,
               ...context,
               lastInteraction: new Date()
             }
@@ -161,6 +195,10 @@ export const AI_ACTIONS = {
   PRODUCT_CONSULTATION: 'product_consultation',
   PRODUCT_COMPARISON: 'product_comparison',
   PURCHASE_ASSISTANCE: 'purchase_assistance',
+  BODY_ANALYSIS_CONSULTATION: 'body_analysis_consultation',
+  PLAN_ADJUSTMENT: 'plan_adjustment',
+  COMPARE_PROGRESS: 'compare_progress',
+  PROGRESS_UPDATE: 'progress_update',
 } as const;
 
 // Типы для TypeScript
@@ -169,7 +207,7 @@ export type AIAction = typeof AI_ACTIONS[keyof typeof AI_ACTIONS];
 // Хук для удобного использования в компонентах
 export const useAIAgent = () => {
   const store = useAIAgentStore();
-  
+
   // Общая консультация (например, по нажатию "Получить консультацию")
   const openConsultation = (context?: AIContext) => {
     const finalContext = {
@@ -178,7 +216,7 @@ export const useAIAgent = () => {
     };
     store.openAgent(AI_ACTIONS.GENERAL_CONSULTATION, finalContext);
   };
-  
+
   // Консультация по конкретному тренеру (по нажатию AI кнопки на карточке)
   const openTrainerConsultation = (trainer: TrainerContext) => {
     store.openAgent(AI_ACTIONS.TRAINER_CONSULTATION, {
@@ -187,7 +225,7 @@ export const useAIAgent = () => {
       page: 'trainers'
     });
   };
-  
+
   // Подбор тренера (AI подбор)
   const openTrainerSelection = (availableTrainers: any[], categories: string[]) => {
     store.openAgent(AI_ACTIONS.TRAINER_SELECTION, {
@@ -220,10 +258,10 @@ export const generateInitialMessage = (action: string, context: AIContext): stri
         return `Расскажи мне больше о тренере ${context.selectedTrainer.name}. Подойдет ли он мне?`;
       }
       return "Помоги выбрать подходящего тренера";
-      
+
     case AI_ACTIONS.TRAINER_SELECTION:
       return "Помоги подобрать персонального тренера под мои цели";
-      
+
     case AI_ACTIONS.GENERAL_CONSULTATION:
       if (context.selectedCategory && context.selectedCategory !== "Все") {
         return `Интересуюсь тренерами в категории "${context.selectedCategory}". Что можешь посоветовать?`;
@@ -232,13 +270,13 @@ export const generateInitialMessage = (action: string, context: AIContext): stri
         return `Ищу тренера по запросу "${context.searchTerm}". Помоги с выбором.`;
       }
       return "Хочу получить консультацию по выбору тренера";
-      
+
     case AI_ACTIONS.FIND_TRAINER:
       return "Помоги найти подходящего тренера";
-      
+
     case AI_ACTIONS.CONSULTATION:
       return "Нужна консультация по фитнесу";
-      
+
     // Новые сообщения для магазина
     case AI_ACTIONS.SHOP_CONSULTATION:
       if (context.query) {
@@ -248,23 +286,41 @@ export const generateInitialMessage = (action: string, context: AIContext): stri
         return `Мои цели: ${context.goals.join(', ')}. Какие продукты мне подойдут?`;
       }
       return "Помоги выбрать подходящие продукты";
-      
+
     case AI_ACTIONS.PRODUCT_CONSULTATION:
       if (context.selectedProduct) {
         return `Расскажи больше о продукте "${context.selectedProduct.name}". Подойдет ли он мне?`;
       }
       return "Помоги с выбором продукта";
-      
+
     case AI_ACTIONS.PRODUCT_COMPARISON:
       if (context.compareProducts && context.compareProducts.length > 0) {
         const productNames = context.compareProducts.map(p => p.name).join(', ');
         return `Сравни эти продукты: ${productNames}. Что лучше выбрать?`;
       }
       return "Помоги сравнить продукты";
-      
+
     case AI_ACTIONS.PURCHASE_ASSISTANCE:
       return "Помоги оформить заказ и проверить корзину";
-      
+
+    case AI_ACTIONS.BODY_ANALYSIS_CONSULTATION:
+      if (context.personalizedPlan) {
+        return `Отличные результаты анализа! Ваш потенциал трансформации ${context.analysisResult?.progressPotential}%. Давайте обсудим ваш персональный план.`;
+      }
+      return "Давайте обсудим результаты вашего AI анализа тела";
+
+    case AI_ACTIONS.PLAN_ADJUSTMENT:
+      return `Понимаю ваши опасения: ${context.concerns?.join(', ')}. Давайте скорректируем план под ваши потребности.`;
+
+    case AI_ACTIONS.COMPARE_PROGRESS:
+      return `Сравним ваши результаты с другими клиентами с типом телосложения ${context.bodyType}`;
+
+    case AI_ACTIONS.PROGRESS_UPDATE:
+      if (context.comparison) {
+        return `Поздравляю с прогрессом! Давайте проанализируем ваши изменения за этот период.`;
+      }
+      return "Давайте оценим ваш прогресс";
+
     default:
       return "Привет! Чем могу помочь?";
   }
@@ -273,6 +329,43 @@ export const generateInitialMessage = (action: string, context: AIContext): stri
 // Утилита для генерации контекстных подсказок
 export const generateSuggestions = (action: string, context: AIContext): string[] => {
   switch (action) {
+
+    case AI_ACTIONS.BODY_ANALYSIS_CONSULTATION:
+      return [
+        "Расскажи подробнее о плане",
+        "Почему именно этот тренер?",
+        "Можно изменить питание?",
+        "Когда начинать?",
+        "Сколько это будет стоить?"
+      ];
+
+    case AI_ACTIONS.PLAN_ADJUSTMENT:
+      return [
+        "У меня аллергия на...",
+        "Не могу тренироваться так часто",
+        "Бюджет меньше",
+        "Предпочитаю другой тип тренировок",
+        "Нужен женский тренер"
+      ];
+
+    case AI_ACTIONS.COMPARE_PROGRESS:
+      return [
+        "Покажи средние результаты",
+        "Кто достиг лучших результатов?",
+        "Что они делали по-другому?",
+        "Мой прогресс нормальный?",
+        "Как ускорить результаты?"
+      ];
+
+    case AI_ACTIONS.PROGRESS_UPDATE:
+      return [
+        "Что изменилось?",
+        "Нужно корректировать план?",
+        "Почему прогресс медленный?",
+        "Что делать дальше?",
+        "Новые рекомендации"
+      ];
+
     case AI_ACTIONS.TRAINER_CONSULTATION:
       return [
         "Какой опыт у тренера?",
@@ -281,7 +374,7 @@ export const generateSuggestions = (action: string, context: AIContext): string[
         "Когда можно записаться?",
         "Отзывы других клиентов"
       ];
-      
+
     case AI_ACTIONS.TRAINER_SELECTION:
       return [
         "Хочу похудеть",
@@ -290,7 +383,7 @@ export const generateSuggestions = (action: string, context: AIContext): string[
         "Реабилитация после травмы",
         "Подготовка к соревнованиям"
       ];
-      
+
     case AI_ACTIONS.GENERAL_CONSULTATION:
       const suggestions = [
         "Какие виды тренировок есть?",
@@ -298,14 +391,14 @@ export const generateSuggestions = (action: string, context: AIContext): string[
         "Как часто нужно заниматься?",
         "Нужно ли спортивное питание?"
       ];
-      
+
       // Добавляем контекстные подсказки
       if (context.selectedCategory && context.selectedCategory !== "Все") {
         suggestions.unshift(`Лучшие тренеры по ${context.selectedCategory}`);
       }
-      
+
       return suggestions;
-      
+
     // Новые подсказки для магазина
     case AI_ACTIONS.SHOP_CONSULTATION:
       return [
@@ -315,7 +408,7 @@ export const generateSuggestions = (action: string, context: AIContext): string[
         "Протеиновые коктейли",
         "Предтренировочные комплексы"
       ];
-      
+
     case AI_ACTIONS.PRODUCT_CONSULTATION:
       return [
         "Как принимать этот продукт?",
@@ -324,7 +417,7 @@ export const generateSuggestions = (action: string, context: AIContext): string[
         "Сколько нужно на курс?",
         "Аналоги этого продукта"
       ];
-      
+
     case AI_ACTIONS.PRODUCT_COMPARISON:
       return [
         "В чем разница между продуктами?",
@@ -333,7 +426,7 @@ export const generateSuggestions = (action: string, context: AIContext): string[
         "Что подойдет новичку?",
         "Рекомендации по выбору"
       ];
-      
+
     case AI_ACTIONS.PURCHASE_ASSISTANCE:
       return [
         "Проверить совместимость продуктов",
@@ -342,7 +435,7 @@ export const generateSuggestions = (action: string, context: AIContext): string[
         "Когда лучше принимать?",
         "Нужно ли что-то добавить?"
       ];
-      
+
     default:
       return [
         "Подобрать тренера",
