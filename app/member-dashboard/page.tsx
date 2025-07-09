@@ -330,6 +330,7 @@ export default function MemberDashboard() {
         userRole={user?.role || "member"}
         userName={user?.name || user?.email?.split("@")[0] || "Участник"}
         redirectUrl="/"
+        isOpen={isLoggingOut}
       />
     );
   }

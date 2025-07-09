@@ -7,7 +7,7 @@ import StaffLogoutLoader from "@/app/staff-login/components/StaffLogoutLoader";
 export function GlobalLoader() {
   const { loaderType, loaderProps } = useLoaderStore();
   
-  console.log('🔄 GlobalLoader состояние:', { loaderType, loaderProps }); // ✅ Отладка
+  console.log('🔄 GlobalLoader состояние:', { loaderType, loaderProps });
   
   if (!loaderType) return null;
   

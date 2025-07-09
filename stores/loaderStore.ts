@@ -6,7 +6,7 @@ export type LoaderType = "login" | "logout" | null
 interface LoaderState {
     loaderType: LoaderType;
     loaderProps?: any;
-    isLoaderActive: boolean; // Добавляем computed свойство
+    isLoaderActive: boolean;
     showLoader: (type: LoaderType, props?: any) => void;
     hideLoader: () => void;
 }

@@ -19,7 +19,6 @@ import React from "react";
 import { DebugLogout } from "@/components/DebugLogout";
 import { AuthCleanupHandler } from "@/components/AuthCleanupHandler";
 import { AuthTransitionHandler } from "@/components/auth/AuthTransitionHandler";
-import { GlobalLoader } from "@/components/GlobalLoader";
 import { NextAuthProvider } from "@/components/providers/NextAuthProvider";
 import AIAgent from "@/components/ai-agent/AIAgent";
 import { SessionProviderWrapper } from "@/components/providers/SessionProviderWrapper";
@@ -201,7 +200,6 @@ export default function RootLayout({
                       <PWAWrapper>
                         <div className="min-h-[100lvh] flex flex-col bg-background text-foreground">
                           <main className="flex-1 relative">
-                            <GlobalLoader />
                             <SafeChildrenWrapper>
                               <AIAgentProvider>
                                 {children}

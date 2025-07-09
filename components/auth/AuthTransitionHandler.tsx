@@ -3,14 +3,11 @@
 
 import { useEffect, useState, Suspense } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { useLoaderStore } from '@/stores/loaderStore';
 import { Loader2 } from 'lucide-react';
 
 // Внутренний компонент который использует useSearchParams
 function AuthTransitionHandlerInner() {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const { showLoader, hideLoader } = useLoaderStore();
   const [isTransitioning, setIsTransitioning] = useState(false);
 
   useEffect(() => {

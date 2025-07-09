@@ -72,7 +72,7 @@ export function WelcomeHeader({
         case "admin": return "Администратор";
         case "manager": return "Менеджер";
         case "trainer": return "Тренер";
-        default: return "Администратор"; // Default для админ дашборда
+        default: return "Администратор";
       }
     };
 
