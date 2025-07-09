@@ -4,7 +4,7 @@ import { useCallback, useState } from 'react';
 import { knowledgeBase } from '../config/knowledgeBase';
 import { recoveryKnowledgeBase } from '../config/recoveryKnowledge';
 import type { Message, AudioConfig, RecoveryData, ActivityData, Link, NutritionData, Trainer } from '../types';
-import { Heart, Dumbbell, Zap, Target, Users, Star, Moon, Droplet, AlertCircle, Activity, Calendar, User, ShoppingBag, CreditCard } from 'lucide-react';
+import { Heart, Dumbbell, Zap, Target, Users, Star, Moon, Droplet, AlertCircle, Activity, Calendar, User, ShoppingBag, CreditCard, Camera } from 'lucide-react';
 import { useAIShopStore } from '@/stores/aiShopStore';
 import { ShopProduct } from '@/types/shopAI';
 
@@ -27,14 +27,14 @@ export const useChatLogic = ({
     trainer?: any;
     program?: any;
   }>({});
-  
+
   // Добавляем shop store
-  const { 
-    analyzeUserGoals, 
-    findProductsByQuery, 
+  const {
+    analyzeUserGoals,
+    findProductsByQuery,
     compareProducts,
     setRecommendations,
-    currentProducts 
+    currentProducts
   } = useAIShopStore();
 
   const voiceRssKey = process.env.NEXT_PUBLIC_VOICERSS_KEY || '';
@@ -263,20 +263,20 @@ export const useChatLogic = ({
       // Поиск продуктов
       if (text.match(/(покаж|найд|есть|какие)/i)) {
         const searchQuery = text.replace(/(покажи|найди|есть|какие|в магазине|продукты)/gi, '').trim();
-        
+
         try {
           const foundProducts = await findProductsByQuery(searchQuery || 'все');
-          
+
           if (foundProducts.length > 0) {
             responseText = `🛒 Нашел ${foundProducts.length} товаров по вашему запросу:\n\n`;
-            
+
             foundProducts.slice(0, 5).forEach((product: ShopProduct) => {
               responseText += `**${product.name}**\n`;
               responseText += `💰 ${product.price.toLocaleString()}₽`;
               if (product.rating) responseText += ` ⭐ ${product.rating}`;
               responseText += `\n📦 В наличии: ${product.inStock} шт.\n\n`;
             });
-            
+
             suggestions = [
               "Показать все товары",
               "Помоги выбрать",
@@ -291,19 +291,34 @@ export const useChatLogic = ({
           responseText = "Произошла ошибка при поиске товаров. Попробуйте еще раз.";
         }
       }
+
+      else if (text.match(/(анализ.*тел|фото.*анализ|трансформац|потенциал.*изменен|body.*analysis)/i)) {
+        responseText = "🎯 AI Анализ тела - это революционная технология!...";
+
+        links.push({
+          title: "Начать AI анализ тела",
+          url: "#",
+          description: "Узнайте свой потенциал трансформации",
+          icon: Camera,
+          onClick: () => {
+            const event = new CustomEvent('open-body-analysis');
+            window.dispatchEvent(event);
+          }
+        });
+      }
       // Рекомендации по целям
       else if (text.match(/(для похудения|похудеть|сбросить вес|жиросжигание)/i)) {
         try {
           const recommendations = await analyzeUserGoals(['похудение']);
           setRecommendations(recommendations);
-          
+
           responseText = "🎯 Для похудения рекомендую:\n\n";
           recommendations.slice(0, 3).forEach(rec => {
             responseText += `**${rec.product.name}**\n`;
             responseText += `${rec.reason}\n`;
             responseText += `💰 ${rec.product.price.toLocaleString()}₽\n\n`;
           });
-          
+
           suggestions = ["Добавить в корзину", "Подробнее о продукте", "Другие цели"];
         } catch (error) {
           responseText = "Не удалось подобрать рекомендации. Попробуйте еще раз.";
@@ -313,14 +328,14 @@ export const useChatLogic = ({
         try {
           const recommendations = await analyzeUserGoals(['набор_массы']);
           setRecommendations(recommendations);
-          
+
           responseText = "💪 Для набора массы рекомендую:\n\n";
           recommendations.slice(0, 3).forEach(rec => {
             responseText += `**${rec.product.name}**\n`;
             responseText += `${rec.reason}\n`;
             responseText += `💰 ${rec.product.price.toLocaleString()}₽\n\n`;
           });
-          
+
           suggestions = ["Добавить в корзину", "Программа питания", "Схема приема"];
         } catch (error) {
           responseText = "Не удалось подобрать рекомендации. Попробуйте еще раз.";
@@ -332,7 +347,7 @@ export const useChatLogic = ({
           "1. Назовите конкретные товары\n" +
           "2. Или выберите категорию для сравнения\n\n" +
           "Например: 'Сравни протеин Gold Standard и Syntha-6'";
-        
+
         suggestions = ["Сравнить протеины", "Сравнить креатин", "Лучшие BCAA"];
       }
       // Общий запрос о магазине
@@ -344,14 +359,14 @@ export const useChatLogic = ({
           "💪 **Креатин и аминокислоты**\n" +
           "🌱 **Витамины и минералы**\n\n" +
           "Чем могу помочь в выборе?";
-        
+
         links.push({
           title: "Открыть магазин",
           url: "/shop",
           description: "Перейти к покупкам",
           icon: ShoppingBag
         });
-        
+
         suggestions = [
           "Что нужно для похудения?",
           "Товары для набора массы",
@@ -363,32 +378,32 @@ export const useChatLogic = ({
     // Конкретные вопросы о продуктах
     else if (text.match(/(протеин|bcaa|креатин|гейнер|жиросжигатель|витамины|омега|глютамин)/i)) {
       const productType = text.match(/(протеин|bcaa|креатин|гейнер|жиросжигатель|витамины|омега|глютамин)/i)?.[0] || '';
-      
+
       responseText = `📊 Информация о ${productType}:\n\n`;
-      
+
       const productInfo: Record<string, string> = {
         'протеин': '**Протеин** - основной строительный материал для мышц.\n\n' +
           '✅ Способствует росту мышечной массы\n' +
           '✅ Ускоряет восстановление\n' +
           '✅ Помогает сохранить мышцы при похудении\n\n' +
           '📋 Принимать: 1-2 порции в день (утром и после тренировки)',
-          
+
         'bcaa': '**BCAA** - незаменимые аминокислоты.\n\n' +
           '✅ Защищают мышцы от разрушения\n' +
           '✅ Уменьшают усталость\n' +
           '✅ Ускоряют восстановление\n\n' +
           '📋 Принимать: до, во время и после тренировки',
-          
+
         'креатин': '**Креатин** - увеличивает силу и выносливость.\n\n' +
           '✅ Повышает силовые показатели\n' +
           '✅ Увеличивает мышечную массу\n' +
           '✅ Улучшает выносливость\n\n' +
           '📋 Принимать: 3-5г ежедневно',
       };
-      
-      responseText += productInfo[productType.toLowerCase()] || 
+
+      responseText += productInfo[productType.toLowerCase()] ||
         `${productType} - популярная спортивная добавка. Хотите узнать больше?`;
-      
+
       suggestions = [
         `Показать все ${productType}`,
         "Как выбрать?",
@@ -954,9 +969,9 @@ export const useChatLogic = ({
       links
     };
   }, [
-    findProductsByQuery, 
-    analyzeUserGoals, 
-    setRecommendations, 
+    findProductsByQuery,
+    analyzeUserGoals,
+    setRecommendations,
     currentProducts,
     recoveryData,
     setRecoveryData,

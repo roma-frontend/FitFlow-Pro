@@ -7,7 +7,7 @@ import { useAuth, useApiRequest } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, Heart, Zap, Home, Target, Loader2 } from "lucide-react";
+import { AlertCircle, Heart, Zap, Home, Target, Loader2, Camera } from "lucide-react";
 
 import { useWelcomeToast } from "@/hooks/useWelcomeToast"
 
@@ -23,6 +23,8 @@ import SidebarCards from "@/components/member/SidebarCards";
 import TipsSection from "@/components/member/TipsSection";
 import { useLoaderStore, type LoaderType } from "@/stores/loaderStore";
 import StaffLogoutLoader from "@/app/staff-login/components/StaffLogoutLoader";
+import BodyAnalysisTrigger from "@/components/BodyAnalysisTrigger";
+import BodyProgressTracker from "@/components/member/BodyProgressTracker";
 
 interface Workout {
   id: string;
@@ -214,7 +216,7 @@ export default function MemberDashboard() {
 
       // НЕ скрываем loader - он должен оставаться до конца
       await logout(true); // skipRedirect = true
-      
+
     } catch (error) {
       console.error("❌ Ошибка выхода:", error);
       // При ошибке скрываем loader и делаем редирект
@@ -341,7 +343,7 @@ export default function MemberDashboard() {
       loading,
       authChecked
     });
-    
+
     return (
       <div className="min-h-[100lvh] bg-gradient-to-br from-blue-50 to-green-50 flex items-center justify-center">
         <Card className="w-full max-w-md">

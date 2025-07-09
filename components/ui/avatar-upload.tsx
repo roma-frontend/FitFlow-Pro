@@ -214,7 +214,7 @@ export function AvatarUpload({
               }}
             />
           ) : (
-            <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-xl font-semibold">
+            <AvatarFallback className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white text-xl font-semibold">
               {getInitials(userName)}
             </AvatarFallback>
           )}

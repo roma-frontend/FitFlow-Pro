@@ -23,6 +23,7 @@ import { NextAuthProvider } from "@/components/providers/NextAuthProvider";
 import AIAgent from "@/components/ai-agent/AIAgent";
 import { SessionProviderWrapper } from "@/components/providers/SessionProviderWrapper";
 import AIAgentProvider from "@/components/providers/AIAgentProvider";
+import BodyAnalysisTrigger from "@/components/BodyAnalysisTrigger";
 
 const inter = Inter({
   subsets: ["latin", "cyrillic"],
@@ -202,6 +203,7 @@ export default function RootLayout({
                           <main className="flex-1 relative">
                             <SafeChildrenWrapper>
                               <AIAgentProvider>
+                                <BodyAnalysisTrigger variant="floating" />
                                 {children}
                               </AIAgentProvider>
                             </SafeChildrenWrapper>

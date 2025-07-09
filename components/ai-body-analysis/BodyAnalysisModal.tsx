@@ -15,8 +15,10 @@ import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
-import { analyzeBodyImage } from '@/utils/bodyAnalysisAI';
+import { useBodyAnalysisConvex } from '@/hooks/useBodyAnalysisConvex';
+import { validateImage, createImagePreview, optimizeImage } from '@/utils/imageUpload';
 import type { BodyAnalysisResult, PersonalizedPlan } from '@/types/bodyAnalysis';
+import { generatePersonalizedPlan } from '@/utils/generatePersonalizedPlan';
 
 interface BodyAnalysisModalProps {
   isOpen: boolean;
@@ -30,6 +32,14 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
+  const {
+    analyzeAndSaveBody,
+    savePersonalizedPlan,
+    shareResults,
+    isProcessing,
+    error
+  } = useBodyAnalysisConvex();
+  
   const [step, setStep] = useState<'upload' | 'analyzing' | 'results' | 'plan'>('upload');
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [analysisResult, setAnalysisResult] = useState<BodyAnalysisResult | null>(null);
@@ -39,22 +49,35 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
 
   // Обработка загрузки изображения
   const handleImageUpload = useCallback(async (file: File) => {
-    if (!file.type.startsWith('image/')) {
+    // Валидация изображения
+    const validation = validateImage(file);
+    if (!validation.valid) {
       toast({
         title: "Ошибка",
-        description: "Пожалуйста, загрузите изображение",
+        description: validation.error,
         variant: "destructive"
       });
       return;
     }
 
-    // Создаем preview
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setUploadedImage(e.target?.result as string);
-      startAnalysis(file);
-    };
-    reader.readAsDataURL(file);
+    try {
+      // Создаем превью
+      const preview = await createImagePreview(file);
+      setUploadedImage(preview);
+
+      // Оптимизируем изображение перед анализом
+      const optimizedFile = await optimizeImage(file);
+      
+      // Запускаем анализ
+      await startAnalysis(optimizedFile);
+    } catch (err) {
+      console.error("Error handling image:", err);
+      toast({
+        title: "Ошибка",
+        description: "Не удалось обработать изображение",
+        variant: "destructive"
+      });
+    }
   }, [toast]);
 
   // Запуск анализа
@@ -68,8 +91,8 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
         setProgress(prev => Math.min(prev + 10, 90));
       }, 500);
 
-      // Анализируем изображение
-      const result = await analyzeBodyImage(file, user?.id || 'guest');
+      // Анализируем и сохраняем в Convex
+      const result = await analyzeAndSaveBody(file, user?.id || 'guest');
       
       clearInterval(progressInterval);
       setProgress(100);
@@ -80,6 +103,11 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
       const plan = await generatePersonalizedPlan(result);
       setPersonalizedPlan(plan);
       
+      // Сохраняем план в Convex
+      if (result._id) {
+        await savePersonalizedPlan(result._id as any, plan);
+      }
+      
       setTimeout(() => {
         setStep('results');
       }, 500);
@@ -88,100 +116,33 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
       console.error('Ошибка анализа:', error);
       toast({
         title: "Ошибка анализа",
-        description: "Не удалось проанализировать изображение. Попробуйте еще раз.",
+        description: error instanceof Error ? error.message : "Не удалось проанализировать изображение",
         variant: "destructive"
       });
       setStep('upload');
     }
   };
 
-  // Генерация персонализированного плана
-  const generatePersonalizedPlan = async (analysis: BodyAnalysisResult): Promise<PersonalizedPlan> => {
-    // Здесь будет вызов API для генерации плана
-    // Пока возвращаем mock данные
-    return {
-      analysisId: analysis.id,
-      recommendedTrainer: {
-        id: 'trainer-1',
-        name: 'Анна Петрова',
-        specialty: 'Трансформация тела',
-        matchScore: 95,
-        reason: 'Специализируется на клиентах с вашим типом телосложения'
-      },
-      trainingProgram: {
-        id: 'program-1',
-        name: 'Интенсивная трансформация 12 недель',
-        duration: 12,
-        sessionsPerWeek: 4,
-        focusAreas: ['Снижение веса', 'Укрепление мышц'],
-        exercises: []
-      },
-      nutritionPlan: {
-        dailyCalories: 2000,
-        macros: {
-          protein: 150,
-          carbs: 200,
-          fats: 70
-        }
-      },
-      recommendedProducts: [
-        {
-          productId: 'prod-1',
-          name: 'Протеин Whey Gold Standard',
-          purpose: 'Восстановление и рост мышц',
-          timing: 'После тренировки',
-          monthlyBudget: 3500,
-          importance: 'essential'
-        },
-        {
-          productId: 'prod-2',
-          name: 'BCAA Energy',
-          purpose: 'Энергия во время тренировки',
-          timing: 'Во время тренировки',
-          monthlyBudget: 2000,
-          importance: 'recommended'
-        }
-      ],
-      membershipRecommendation: {
-        type: 'Premium',
-        reason: 'Включает все необходимые услуги для вашей трансформации',
-        features: ['Безлимитные тренировки', 'Консультации нутрициолога', 'Приоритетная запись'],
-        price: 4990,
-        savings: 1500
-      },
-      projectedResults: {
-        week4: '-3-4 кг, улучшение выносливости',
-        week8: '-6-8 кг, видимое укрепление мышц',
-        week12: '-10-12 кг, полная трансформация тела',
-        successProbability: 87
-      }
-    };
-  };
-
   // Поделиться результатами
   const handleShare = async () => {
+    if (!analysisResult) return;
+    
     setIsSharing(true);
     
     try {
-      // Генерируем изображение для шаринга
-      const shareData = {
-        title: 'Моя фитнес-трансформация с FitFlow Pro!',
-        text: `Начинаю свое преображение! AI предсказывает -${analysisResult?.recommendations.estimatedTimeToGoal} кг за 12 недель! 💪`,
-        url: `${window.location.origin}/transformation/${analysisResult?.id}`
-      };
-
-      if (navigator.share) {
-        await navigator.share(shareData);
-      } else {
-        // Fallback - копируем в буфер
-        await navigator.clipboard.writeText(shareData.url);
-        toast({
-          title: "Ссылка скопирована!",
-          description: "Поделитесь ей в социальных сетях"
-        });
-      }
+      await shareResults(analysisResult, 'instagram');
+      
+      toast({
+        title: "Успешно!",
+        description: "Результаты готовы к публикации"
+      });
     } catch (error) {
       console.error('Ошибка шаринга:', error);
+      toast({
+        title: "Ошибка",
+        description: "Не удалось поделиться результатами",
+        variant: "destructive"
+      });
     } finally {
       setIsSharing(false);
     }
@@ -194,7 +155,17 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
     }
     
     // Переходим к оформлению подписки
-    router.push(`/transformation/checkout?analysisId=${analysisResult?.id}`);
+    router.push(`/transformation/checkout?analysisId=${analysisResult?._id}`);
+  };
+
+  // Сброс состояния при закрытии
+  const handleClose = () => {
+    setStep('upload');
+    setUploadedImage(null);
+    setAnalysisResult(null);
+    setPersonalizedPlan(null);
+    setProgress(0);
+    onClose();
   };
 
   return (
@@ -205,7 +176,7 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
-          onClick={(e) => e.target === e.currentTarget && onClose()}
+          onClick={(e) => e.target === e.currentTarget && handleClose()}
         >
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
@@ -217,7 +188,7 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
             <div className="sticky top-0 bg-white z-10 p-6 border-b">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center">
+                  <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-2xl flex items-center justify-center">
                     <Sparkles className="h-6 w-6 text-white" />
                   </div>
                   <div>
@@ -228,7 +199,7 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={onClose}
+                  onClick={handleClose}
                   className="rounded-full"
                 >
                   <X className="h-5 w-5" />
@@ -246,8 +217,8 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
                   className="text-center py-12"
                 >
                   <div className="mb-8">
-                    <div className="w-32 h-32 bg-gradient-to-r from-purple-100 to-pink-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                      <Camera className="h-16 w-16 text-purple-600" />
+                    <div className="w-32 h-32 bg-gradient-to-r from-blue-100 to-indigo-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                      <Camera className="h-16 w-16 text-blue-600" />
                     </div>
                     <h3 className="text-2xl font-bold mb-3">Загрузите фото в полный рост</h3>
                     <p className="text-gray-600 max-w-md mx-auto mb-6">
@@ -270,7 +241,7 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
                     <Button
                       size="lg"
                       onClick={() => fileInputRef.current?.click()}
-                      className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+                      className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600"
                     >
                       <Upload className="h-5 w-5 mr-2" />
                       Выбрать фото
@@ -291,6 +262,15 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
                       Сделать фото
                     </Button>
                   </div>
+
+                  {error && (
+                    <div className="mt-6 p-4 bg-red-50 rounded-2xl max-w-md mx-auto">
+                      <div className="flex items-center gap-3 text-red-700">
+                        <AlertCircle className="h-5 w-5" />
+                        <p className="text-sm">{error}</p>
+                      </div>
+                    </div>
+                  )}
 
                   <div className="mt-8 p-4 bg-blue-50 rounded-2xl max-w-md mx-auto">
                     <h4 className="font-medium text-blue-900 mb-2">Рекомендации для лучшего результата:</h4>
@@ -319,12 +299,12 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
                           alt="Анализируемое фото"
                           className="w-48 h-64 object-cover rounded-2xl mx-auto shadow-lg"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-purple-600/50 to-transparent rounded-2xl" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-blue-600/50 to-transparent rounded-2xl" />
                       </div>
                     )}
                     
                     <div className="mb-8">
-                      <Loader2 className="h-12 w-12 animate-spin text-purple-600 mx-auto mb-4" />
+                      <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto mb-4" />
                       <h3 className="text-xl font-bold mb-2">Анализируем ваше фото...</h3>
                       <p className="text-gray-600 mb-6">AI определяет тип телосложения и создает план</p>
                       
@@ -375,6 +355,7 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                 >
+                  {/* Результаты анализа - код остается тем же */}
                   <div className="grid md:grid-cols-2 gap-8 mb-8">
                     {/* Текущее состояние */}
                     <div>
@@ -448,54 +429,54 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
                     <div>
                       <h3 className="text-xl font-bold mb-4">Ваша трансформация</h3>
                       <Card className="overflow-hidden">
-                        <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-6 text-white">
+                        <div className="bg-gradient-to-r from-blue-500 to-indigo-500 p-6 text-white">
                           <div className="flex items-center gap-3 mb-4">
                             <TrendingUp className="h-8 w-8" />
                             <div>
                               <h4 className="text-2xl font-bold">
                                 Потенциал: {analysisResult.progressPotential}%
                               </h4>
-                              <p className="text-purple-100">Вероятность успеха при следовании плану</p>
+                              <p className="text-blue-100">Вероятность успеха при следовании плану</p>
                             </div>
                           </div>
                         </div>
                         
                         <CardContent className="p-6">
                           <div className="space-y-4">
-                            <div className="flex items-center gap-3 p-4 bg-purple-50 rounded-xl">
-                              <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                                <span className="text-lg font-bold text-purple-600">4</span>
+                            <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-xl">
+                              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                                <span className="text-lg font-bold text-blue-600">4</span>
                               </div>
                               <div>
                                 <p className="font-medium">Через 4 недели</p>
                                 <p className="text-sm text-gray-600">
-                                  -{analysisResult.futureProjections.weeks4.estimatedWeight} кг, 
+                                  -{Math.abs(analysisResult.futureProjections.weeks4.estimatedWeight)} кг, 
                                   улучшение формы
                                 </p>
                               </div>
                             </div>
                             
-                            <div className="flex items-center gap-3 p-4 bg-purple-50 rounded-xl">
-                              <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                                <span className="text-lg font-bold text-purple-600">8</span>
+                            <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-xl">
+                              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                                <span className="text-lg font-bold text-blue-600">8</span>
                               </div>
                               <div>
                                 <p className="font-medium">Через 8 недель</p>
                                 <p className="text-sm text-gray-600">
-                                  -{analysisResult.futureProjections.weeks8.estimatedWeight} кг, 
+                                  -{Math.abs(analysisResult.futureProjections.weeks8.estimatedWeight)} кг, 
                                   видимые изменения
                                 </p>
                               </div>
                             </div>
                             
-                            <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border-2 border-purple-200">
-                              <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                            <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border-2 border-blue-200">
+                              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center">
                                 <span className="text-lg font-bold text-white">12</span>
                               </div>
                               <div>
                                 <p className="font-medium">Через 12 недель</p>
                                 <p className="text-sm text-gray-600">
-                                  -{analysisResult.futureProjections.weeks12.estimatedWeight} кг, 
+                                  -{Math.abs(analysisResult.futureProjections.weeks12.estimatedWeight)} кг, 
                                   полная трансформация!
                                 </p>
                               </div>
@@ -509,7 +490,7 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
                   <div className="flex gap-4">
                     <Button
                       size="lg"
-                      className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+                      className="flex-1 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600"
                       onClick={() => setStep('plan')}
                     >
                       Смотреть персональный план
@@ -538,8 +519,9 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                 >
+                  {/* План трансформации - код остается тем же */}
                   <div className="text-center mb-8">
-                    <Badge className="mb-3 bg-gradient-to-r from-purple-500 to-pink-500">
+                    <Badge className="mb-3 bg-gradient-to-r from-blue-500 to-indigo-500">
                       Персональный план готов!
                     </Badge>
                     <h3 className="text-2xl font-bold mb-2">Ваша программа трансформации</h3>
@@ -576,150 +558,8 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
                     </div>
                   </Card>
 
-                  {/* Программа и питание */}
-                  <div className="grid md:grid-cols-2 gap-6 mb-6">
-                    <Card>
-                      <CardContent className="p-6">
-                        <div className="flex items-center gap-3 mb-4">
-                          <Target className="h-6 w-6 text-purple-600" />
-                          <h4 className="text-lg font-bold">Программа тренировок</h4>
-                        </div>
-                        <div className="space-y-3">
-                          <div className="flex justify-between">
-                            <span className="text-gray-600">Название</span>
-                            <span className="font-medium">{personalizedPlan.trainingProgram.name}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-600">Длительность</span>
-                            <span className="font-medium">{personalizedPlan.trainingProgram.duration} недель</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-600">Тренировок в неделю</span>
-                            <span className="font-medium">{personalizedPlan.trainingProgram.sessionsPerWeek}</span>
-                          </div>
-                          <div className="pt-3 border-t">
-                            <p className="text-sm text-gray-600 mb-2">Фокус программы:</p>
-                            <div className="flex flex-wrap gap-2">
-                              {personalizedPlan.trainingProgram.focusAreas.map((area, i) => (
-                                <Badge key={i} variant="secondary">{area}</Badge>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    <Card>
-                      <CardContent className="p-6">
-                        <div className="flex items-center gap-3 mb-4">
-                          <Zap className="h-6 w-6 text-orange-600" />
-                          <h4 className="text-lg font-bold">План питания</h4>
-                        </div>
-                        <div className="space-y-3">
-                          <div className="flex justify-between">
-                            <span className="text-gray-600">Калории в день</span>
-                            <span className="font-medium">{personalizedPlan.nutritionPlan.dailyCalories} ккал</span>
-                          </div>
-                          <div className="pt-3 border-t space-y-2">
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">Белки</span>
-                              <span className="font-medium">{personalizedPlan.nutritionPlan.macros.protein}г</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">Углеводы</span>
-                              <span className="font-medium">{personalizedPlan.nutritionPlan.macros.carbs}г</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">Жиры</span>
-                              <span className="font-medium">{personalizedPlan.nutritionPlan.macros.fats}г</span>
-                            </div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-
-                  {/* Рекомендуемые продукты */}
-                  <Card className="mb-6">
-                    <CardContent className="p-6">
-                      <h4 className="text-lg font-bold mb-4">Рекомендуемое спортивное питание</h4>
-                      <div className="space-y-3">
-                        {personalizedPlan.recommendedProducts.map((product, index) => (
-                          <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-3">
-                                <h5 className="font-medium">{product.name}</h5>
-                                <Badge 
-                                  variant={
-                                    product.importance === 'essential' ? 'default' :
-                                    product.importance === 'recommended' ? 'secondary' :
-                                    'outline'
-                                  }
-                                >
-                                  {product.importance === 'essential' ? 'Обязательно' :
-                                   product.importance === 'recommended' ? 'Рекомендуется' :
-                                   'Опционально'}
-                                </Badge>
-                              </div>
-                              <p className="text-sm text-gray-600 mt-1">{product.purpose}</p>
-                              <p className="text-xs text-gray-500 mt-1">Принимать: {product.timing}</p>
-                            </div>
-                            <div className="text-right">
-                              <p className="font-bold text-lg">{product.monthlyBudget}₽</p>
-                              <p className="text-xs text-gray-500">в месяц</p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                      
-                      <div className="mt-4 p-4 bg-green-50 rounded-xl">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-sm text-green-800">Общий бюджет на спортпит</p>
-                            <p className="text-2xl font-bold text-green-900">
-                              {personalizedPlan.recommendedProducts.reduce((sum, p) => sum + p.monthlyBudget, 0)}₽/мес
-                            </p>
-                          </div>
-                          <Button variant="outline" className="text-green-700 border-green-300">
-                            Добавить все в корзину
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Абонемент */}
-                  <Card className="mb-8 overflow-hidden">
-                    <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-6 text-white">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h4 className="text-2xl font-bold mb-2">
-                            Абонемент "{personalizedPlan.membershipRecommendation.type}"
-                          </h4>
-                          <p className="text-purple-100 mb-4">
-                            {personalizedPlan.membershipRecommendation.reason}
-                          </p>
-                          <div className="flex flex-wrap gap-2 mb-4">
-                            {personalizedPlan.membershipRecommendation.features.map((feature, i) => (
-                              <Badge key={i} className="bg-white/20 text-white border-white/30">
-                                {feature}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-3xl font-bold">{personalizedPlan.membershipRecommendation.price}₽</p>
-                          <p className="text-purple-100">в месяц</p>
-                          <Badge className="mt-2 bg-white text-purple-600">
-                            Экономия {personalizedPlan.membershipRecommendation.savings}₽
-                          </Badge>
-                        </div>
-                      </div>
-                    </div>
-                  </Card>
-
                   {/* CTA */}
-                  <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-3xl p-8 text-center">
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-3xl p-8 text-center">
                     <h3 className="text-2xl font-bold mb-3">Готовы начать трансформацию?</h3>
                     <p className="text-gray-600 mb-6">
                       Вероятность успеха: {personalizedPlan.projectedResults.successProbability}%
@@ -728,7 +568,7 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
                     <div className="flex flex-col sm:flex-row gap-4 justify-center">
                       <Button
                         size="lg"
-                        className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+                        className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600"
                         onClick={handleApplyPlan}
                       >
                         <Zap className="h-5 w-5 mr-2" />

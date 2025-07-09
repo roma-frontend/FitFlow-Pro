@@ -1,6 +1,7 @@
 // utils/bodyAnalysisAI.ts
 import * as tf from '@tensorflow/tfjs';
-import { BodyAnalysisResult, BodyGoals } from '@/types/bodyAnalysis';
+import { BodyAnalysisResult, VisualData, FutureProjections } from '@/types/bodyAnalysis';
+import { Id } from '@/convex/_generated/dataModel';
 
 // Инициализация модели
 let poseDetectionModel: any = null;
@@ -9,12 +10,10 @@ let bodySegmentationModel: any = null;
 // Загрузка моделей TensorFlow.js
 export const initializeModels = async () => {
   try {
-    // Используем PoseNet для определения позы
     const poseNet = await tf.loadLayersModel(
       'https://tfhub.dev/tensorflow/tfjs-model/posenet/mobilenet/float/075/1/default/1'
     );
     
-    // Используем BodyPix для сегментации тела
     const bodyPix = await tf.loadLayersModel(
       'https://tfhub.dev/tensorflow/tfjs-model/bodypix/mobilenet/float/050/1/default/1'
     );
@@ -23,44 +22,60 @@ export const initializeModels = async () => {
     bodySegmentationModel = bodyPix;
   } catch (error) {
     console.error('Ошибка загрузки моделей:', error);
-    // Fallback на упрощенный анализ
   }
 };
+
+const calculateWaistWidth = (segmentationData: any): number => {
+  const middleY = Math.floor(segmentationData.height * 0.5);
+  let leftX = 0;
+  let rightX = segmentationData.width;
+
+  for (let x = 0; x < segmentationData.width; x++) {
+    if (segmentationData.data[middleY * segmentationData.width + x] > 0) {
+      leftX = x;
+      break;
+    }
+  }
+
+  for (let x = segmentationData.width - 1; x >= 0; x--) {
+    if (segmentationData.data[middleY * segmentationData.width + x] > 0) {
+      rightX = x;
+      break;
+    }
+  }
+
+  return rightX - leftX;
+};
+
 
 // Основная функция анализа
 export const analyzeBodyImage = async (
   imageFile: File,
   userId: string
 ): Promise<BodyAnalysisResult> => {
-  // Конвертируем изображение в тензор
   const imageTensor = await imageToTensor(imageFile);
-  
-  // Анализируем позу и сегментацию
   const poseData = await analyzePose(imageTensor);
   const segmentationData = await analyzeBodySegmentation(imageTensor);
-  
-  // Определяем тип телосложения
+  const analyzedImageUrl = await createAnalyzedImage(imageFile, segmentationData);
+
+  tf.dispose([imageTensor]);
+
   const bodyType = determineBodyType(poseData, segmentationData);
-  
-  // Рассчитываем метрики
   const metrics = calculateBodyMetrics(segmentationData);
-  
-  // Определяем проблемные зоны
   const problemAreas = identifyProblemAreas(segmentationData, bodyType);
-  
-  // Генерируем рекомендации
   const recommendations = generateRecommendations(bodyType, metrics, problemAreas);
-  
-  // Создаем визуализацию будущих результатов
-  const futureProjections = await generateFutureProjections(
-    metrics,
-    bodyType,
-    recommendations
-  );
-  
-  // Сохраняем результат
+  const futureProjections = generateFutureProjections(metrics, bodyType, recommendations);
+
+  // Рассчитываем метрики тела
+  const bodyMetrics = {
+    shoulderWidth: calculateDistance(poseData.keypoints, 'leftShoulder', 'rightShoulder'),
+    waistWidth: calculateWaistWidth(segmentationData),
+    hipWidth: calculateDistance(poseData.keypoints, 'leftHip', 'rightHip'),
+    bodyRatio: calculateBodyRatio(segmentationData),
+  };
+
   const result: BodyAnalysisResult = {
-    id: `analysis_${userId}_${Date.now()}`,
+    _id: `analysis_${userId}_${Date.now()}` as Id<"bodyAnalyses">,
     userId,
     date: new Date(),
     bodyType,
@@ -73,14 +88,15 @@ export const analyzeBodyImage = async (
     recommendations,
     currentVisualData: {
       imageUrl: URL.createObjectURL(imageFile),
-      analyzedImageUrl: await createAnalyzedImage(imageFile, segmentationData),
-      bodyOutlineData: segmentationData
+      analyzedImageUrl,
+      bodyOutlineData: null // Или пустой массив, если требуется
     },
-    futureProjections
+    futureProjections,
+    bodyMetrics // Добавляем рассчитанные метрики
   };
-  
-  // Сохраняем в базу данных
+
   await saveAnalysisResult(result);
+  URL.revokeObjectURL(result.currentVisualData.imageUrl);
   
   return result;
 };
@@ -110,7 +126,7 @@ const analyzePose = async (imageTensor: tf.Tensor3D): Promise<any> => {
       score: 0.85
     };
   }
-  
+
   const predictions = await poseDetectionModel.estimateSinglePose(imageTensor);
   return predictions;
 };
@@ -121,7 +137,7 @@ const analyzeBodySegmentation = async (imageTensor: tf.Tensor3D): Promise<any> =
     // Возвращаем mock данные
     return generateMockSegmentation();
   }
-  
+
   const segmentation = await bodySegmentationModel.segmentPerson(imageTensor);
   return segmentation;
 };
@@ -132,11 +148,11 @@ const determineBodyType = (poseData: any, segmentationData: any): BodyAnalysisRe
   const shoulderWidth = calculateDistance(poseData.keypoints, 'leftShoulder', 'rightShoulder');
   const hipWidth = calculateDistance(poseData.keypoints, 'leftHip', 'rightHip');
   const ratio = shoulderWidth / hipWidth;
-  
+
   // Анализируем распределение массы тела
   const upperBodyMass = calculateBodyPartMass(segmentationData, 'upper');
   const lowerBodyMass = calculateBodyPartMass(segmentationData, 'lower');
-  
+
   if (ratio > 1.3 && upperBodyMass > lowerBodyMass * 1.2) {
     return 'mesomorph'; // Атлетическое телосложение
   } else if (ratio < 1.1 && lowerBodyMass > upperBodyMass * 1.1) {
@@ -144,7 +160,7 @@ const determineBodyType = (poseData: any, segmentationData: any): BodyAnalysisRe
   } else if (shoulderWidth < hipWidth * 0.9) {
     return 'ectomorph'; // Худощавое телосложение
   }
-  
+
   return 'mixed';
 };
 
@@ -156,15 +172,15 @@ const calculateBodyMetrics = (segmentationData: any): {
 } => {
   // Используем AI для оценки процента жира и мышц
   // В реальности это сложный алгоритм, здесь упрощенная версия
-  
+
   const totalPixels = segmentationData.data.length;
   const bodyPixels = segmentationData.data.filter((pixel: number) => pixel > 0).length;
   const bodyRatio = bodyPixels / totalPixels;
-  
+
   // Оценка на основе визуальных признаков
   const visualBodyFat = estimateBodyFatFromVisual(segmentationData);
   const visualMuscleMass = estimateMuscleMassFromVisual(segmentationData);
-  
+
   return {
     bodyFat: Math.round(visualBodyFat),
     muscleMass: Math.round(visualMuscleMass),
@@ -174,21 +190,21 @@ const calculateBodyMetrics = (segmentationData: any): {
 
 // Определение проблемных зон
 const identifyProblemAreas = (
-  segmentationData: any, 
+  segmentationData: any,
   bodyType: BodyAnalysisResult['bodyType']
 ): BodyAnalysisResult['problemAreas'] => {
   const areas: BodyAnalysisResult['problemAreas'] = [];
-  
+
   // Анализируем распределение жира по зонам
   const zones = ['живот', 'бедра', 'руки', 'спина', 'грудь'] as const;
-  
+
   zones.forEach(zone => {
     const fatDistribution = analyzeFatDistribution(segmentationData, zone);
     let severity: 'low' | 'medium' | 'high' = 'low';
-    
+
     if (fatDistribution > 30) severity = 'high';
     else if (fatDistribution > 20) severity = 'medium';
-    
+
     if (severity !== 'low') {
       areas.push({
         area: zone,
@@ -197,7 +213,7 @@ const identifyProblemAreas = (
       });
     }
   });
-  
+
   return areas;
 };
 
@@ -209,7 +225,7 @@ const generateRecommendations = (
 ): BodyAnalysisResult['recommendations'] => {
   let primaryGoal = '';
   const secondaryGoals: string[] = [];
-  
+
   // Определяем основную цель
   if (metrics.bodyFat > 25) {
     primaryGoal = 'Снижение процента жира';
@@ -221,17 +237,17 @@ const generateRecommendations = (
     primaryGoal = 'Поддержание формы и рельеф';
     secondaryGoals.push('Улучшение функциональности');
   }
-  
+
   // Добавляем цели для проблемных зон
   problemAreas.forEach(area => {
     if (area.severity === 'high') {
       secondaryGoals.push(`Работа над зоной: ${area.area}`);
     }
   });
-  
+
   // Рассчитываем время достижения цели
   const estimatedTime = calculateTimeToGoal(primaryGoal, metrics, bodyType);
-  
+
   return {
     primaryGoal,
     secondaryGoals: secondaryGoals.slice(0, 3),
@@ -241,15 +257,14 @@ const generateRecommendations = (
 };
 
 // Генерация визуализации будущих результатов
-const generateFutureProjections = async (
+const generateFutureProjections = (
   metrics: any,
   bodyType: BodyAnalysisResult['bodyType'],
   recommendations: BodyAnalysisResult['recommendations']
-): Promise<BodyAnalysisResult['futureProjections']> => {
-  // Рассчитываем прогрессию на основе типа тела и целей
-  const weeklyFatLoss = bodyType === 'endomorph' ? 0.7 : 0.5; // кг в неделю
-  const weeklyMuscleGain = bodyType === 'ectomorph' ? 0.3 : 0.2; // кг в неделю
-  
+): FutureProjections => {
+  const weeklyFatLoss = bodyType === 'endomorph' ? 0.7 : 0.5;
+  const weeklyMuscleGain = bodyType === 'ectomorph' ? 0.3 : 0.2;
+
   return {
     weeks4: {
       estimatedWeight: -(weeklyFatLoss * 4),
@@ -276,11 +291,11 @@ const generateFutureProjections = async (
 const calculateDistance = (keypoints: any[], point1: string, point2: string): number => {
   const p1 = keypoints.find(kp => kp.part === point1);
   const p2 = keypoints.find(kp => kp.part === point2);
-  
+
   if (!p1 || !p2) return 0;
-  
+
   return Math.sqrt(
-    Math.pow(p1.position.x - p2.position.x, 2) + 
+    Math.pow(p1.position.x - p2.position.x, 2) +
     Math.pow(p1.position.y - p2.position.y, 2)
   );
 };
@@ -297,24 +312,24 @@ const evaluatePosture = (poseData: any): 'good' | 'fair' | 'poor' => {
 
 const calculateFitnessScore = (metrics: any, bodyType: string): number => {
   let score = 50;
-  
+
   if (metrics.bodyFat < 20) score += 20;
   else if (metrics.bodyFat < 25) score += 10;
-  
+
   if (metrics.muscleMass > 40) score += 20;
   else if (metrics.muscleMass > 35) score += 10;
-  
+
   if (bodyType === 'mesomorph') score += 10;
-  
+
   return Math.min(100, score);
 };
 
 const calculateProgressPotential = (metrics: any, bodyType: string): number => {
   let potential = 70;
-  
+
   if (bodyType === 'mesomorph') potential += 15;
   if (metrics.bodyFat > 25) potential += 10; // Больше потенциал для изменений
-  
+
   return Math.min(100, potential);
 };
 
@@ -334,8 +349,8 @@ const analyzeFatDistribution = (segmentation: any, zone: string): number => {
 };
 
 const generateAreaRecommendation = (
-  area: string, 
-  severity: string, 
+  area: string,
+  severity: string,
   bodyType: string
 ): string => {
   const recommendations: Record<string, string> = {
@@ -345,7 +360,7 @@ const generateAreaRecommendation = (
     'спина': 'Тяги и подтягивания',
     'грудь': 'Жим лежа и отжимания'
   };
-  
+
   return recommendations[area] || 'Комплексные упражнения';
 };
 
@@ -356,35 +371,140 @@ const calculateTimeToGoal = (goal: string, metrics: any, bodyType: string): numb
   } else if (goal.includes('массы')) {
     return 16; // 16 недель для набора мышечной массы
   }
-  
+
   return 8; // 8 недель для общего улучшения формы
 };
 
-const createAnalyzedImage = async (
-  originalFile: File, 
-  segmentationData: any
-): Promise<string> => {
-  // Создаем изображение с наложенным анализом
-  // В реальности здесь будет Canvas манипуляция
-  return URL.createObjectURL(originalFile);
+const calculateBodyRatio = (segmentationData: any): number => {
+  const totalPixels = segmentationData.width * segmentationData.height;
+  const bodyPixels = segmentationData.data.filter((p: number) => p > 0).length;
+  return bodyPixels / totalPixels;
+};
+
+const createAnalyzedImage = async (file: File, segmentationData: any): Promise<string> => {
+  return new Promise((resolve) => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+
+    img.onload = () => {
+      canvas.width = img.width;
+      canvas.height = img.height;
+
+      // Рисуем оригинальное изображение
+      ctx?.drawImage(img, 0, 0);
+
+      if (ctx) {
+        // Рисуем упрощенный контур тела
+        drawSimplifiedBodyOutline(ctx, segmentationData);
+
+        // Добавляем ключевые точки
+        drawKeyPoints(ctx, segmentationData);
+      }
+
+      resolve(canvas.toDataURL('image/jpeg', 0.8));
+    };
+
+    img.src = URL.createObjectURL(file);
+  });
 };
 
 const saveAnalysisResult = async (result: BodyAnalysisResult): Promise<void> => {
-  // Сохраняем результат в базу данных
   try {
     const response = await fetch('/api/body-analysis/save', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(result)
+      body: JSON.stringify({
+        ...result,
+        currentVisualData: {
+          imageUrl: result.currentVisualData.imageUrl,
+          analyzedImageUrl: result.currentVisualData.analyzedImageUrl
+        }
+      })
     });
+
+    const data = await response.json();
     
     if (!response.ok) {
-      throw new Error('Failed to save analysis');
+      throw new Error(data.error || 'Failed to save analysis');
     }
+
+    console.log("Analysis saved successfully:", data.data);
   } catch (error) {
     console.error('Error saving analysis:', error);
+    throw error;
   }
 };
+
+const drawSimplifiedBodyOutline = (ctx: CanvasRenderingContext2D, data: any) => {
+  const step = 5; // Шаг для уменьшения количества точек
+  const points = [];
+
+  // Собираем ключевые точки контура
+  for (let y = 0; y < data.height; y += step) {
+    for (let x = 0; x < data.width; x += step) {
+      if (data.data[y * data.width + x] > 0) {
+        points.push({ x, y });
+      }
+    }
+  }
+
+  // Рисуем контур
+  if (points.length > 0) {
+    ctx.strokeStyle = 'rgba(255, 0, 0, 0.7)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, points[0].y);
+
+    for (let i = 1; i < points.length; i++) {
+      ctx.lineTo(points[i].x, points[i].y);
+    }
+
+    ctx.closePath();
+    ctx.stroke();
+  }
+};
+
+
+const drawKeyPoints = (ctx: CanvasRenderingContext2D, data: any) => {
+  const keyPoints = [
+    { name: 'shoulder', yRatio: 0.2 },
+    { name: 'waist', yRatio: 0.4 },
+    { name: 'hips', yRatio: 0.6 }
+  ];
+
+  ctx.fillStyle = 'blue';
+
+  keyPoints.forEach(point => {
+    const y = Math.floor(data.height * point.yRatio);
+    let leftX = 0;
+    let rightX = data.width;
+
+    // Находим крайние точки на этом уровне
+    for (let x = 0; x < data.width; x++) {
+      if (data.data[y * data.width + x] > 0) {
+        leftX = x;
+        break;
+      }
+    }
+
+    for (let x = data.width - 1; x >= 0; x--) {
+      if (data.data[y * data.width + x] > 0) {
+        rightX = x;
+        break;
+      }
+    }
+
+    // Рисуем точки
+    if (leftX < rightX) {
+      ctx.beginPath();
+      ctx.arc(leftX, y, 5, 0, Math.PI * 2);
+      ctx.arc(rightX, y, 5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  });
+};
+
 
 // Mock функции для тестирования без загруженных моделей
 const generateMockKeypoints = () => {

@@ -128,6 +128,200 @@ export default defineSchema({
     .index("archived_status", ["isArchived", "status"])
     .index("priority_status", ["priority", "status"]),
 
+    bodyAnalyses: defineTable({
+    userId: v.string(),
+    bodyType: v.union(
+      v.literal("ectomorph"),
+      v.literal("mesomorph"),
+      v.literal("endomorph"),
+      v.literal("mixed")
+    ),
+    estimatedBodyFat: v.number(),
+    estimatedMuscleMass: v.number(),
+    posture: v.union(v.literal("good"), v.literal("fair"), v.literal("poor")),
+    fitnessScore: v.number(),
+    progressPotential: v.number(),
+    problemAreas: v.array(
+      v.object({
+        area: v.union(
+          v.literal("живот"),
+          v.literal("бедра"),
+          v.literal("руки"),
+          v.literal("спина"),
+          v.literal("грудь")
+        ),
+        severity: v.union(v.literal("low"), v.literal("medium"), v.literal("high")),
+        recommendation: v.string(),
+      })
+    ),
+    recommendations: v.object({
+      primaryGoal: v.string(),
+      secondaryGoals: v.array(v.string()),
+      estimatedTimeToGoal: v.number(),
+      weeklyTrainingHours: v.number(),
+    }),
+    currentVisualData: v.object({
+      imageUrl: v.string(),
+      analyzedImageUrl: v.optional(v.string()),
+      bodyOutlineData: v.optional(v.any()),
+    }),
+    futureProjections: v.object({
+      weeks4: v.object({
+        estimatedWeight: v.number(),
+        estimatedBodyFat: v.number(),
+        estimatedMuscleMass: v.number(),
+        confidenceLevel: v.number(),
+      }),
+      weeks8: v.object({
+        estimatedWeight: v.number(),
+        estimatedBodyFat: v.number(),
+        estimatedMuscleMass: v.number(),
+        confidenceLevel: v.number(),
+      }),
+      weeks12: v.object({
+        estimatedWeight: v.number(),
+        estimatedBodyFat: v.number(),
+        estimatedMuscleMass: v.number(),
+        confidenceLevel: v.number(),
+      }),
+    }),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_user", ["userId"]),
+
+  // Чекпоинты прогресса
+  progressCheckpoints: defineTable({
+    userId: v.string(),
+    analysisId: v.id("bodyAnalyses"),
+    weight: v.number(),
+    bodyFat: v.number(),
+    muscleMass: v.number(),
+    photoUrl: v.string(),
+    aiScore: v.number(),
+    achievements: v.optional(v.array(v.string())),
+    comparisonWithProjection: v.optional(v.object({
+      onTrack: v.boolean(),
+      deviationPercent: v.number(),
+    })),
+    createdAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_analysis", ["analysisId"]),
+
+  // Лидерборд трансформаций
+  transformationLeaderboard: defineTable({
+    userId: v.string(),
+    userName: v.string(),
+    userImageUrl: v.optional(v.string()),
+    analysisId: v.id("bodyAnalyses"),
+    startWeight: v.number(),
+    currentWeight: v.number(),
+    weightLost: v.number(),
+    bodyFatLost: v.number(),
+    muscleMassGained: v.number(),
+    weeks: v.number(),
+    score: v.number(),
+    isActive: v.boolean(),
+    isPublic: v.boolean(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("score_active", ["isActive", "score"])
+    .index("user_active", ["userId", "isActive"]),
+
+  // Персонализированные планы
+  personalizedPlans: defineTable({
+    userId: v.string(),
+    analysisId: v.id("bodyAnalyses"),
+    recommendedTrainer: v.object({
+      id: v.string(),
+      name: v.string(),
+      specialty: v.string(),
+      matchScore: v.number(),
+      reason: v.string(),
+    }),
+    trainingProgram: v.object({
+      id: v.string(),
+      name: v.string(),
+      duration: v.number(),
+      sessionsPerWeek: v.number(),
+      focusAreas: v.array(v.string()),
+    }),
+    nutritionPlan: v.object({
+      dailyCalories: v.number(),
+      macros: v.object({
+        protein: v.number(),
+        carbs: v.number(),
+        fats: v.number(),
+      }),
+    }),
+    recommendedProducts: v.array(
+      v.object({
+        productId: v.string(),
+        name: v.string(),
+        purpose: v.string(),
+        timing: v.string(),
+        monthlyBudget: v.number(),
+        importance: v.union(
+          v.literal("essential"),
+          v.literal("recommended"),
+          v.literal("optional")
+        ),
+      })
+    ),
+    membershipRecommendation: v.object({
+      type: v.string(),
+      reason: v.string(),
+      features: v.array(v.string()),
+      price: v.number(),
+      savings: v.number(),
+    }),
+    projectedResults: v.object({
+      week4: v.string(),
+      week8: v.string(),
+      week12: v.string(),
+      successProbability: v.number(),
+    }),
+    createdAt: v.number(),
+  }).index("by_analysis", ["analysisId"]),
+
+  // Достижения пользователей
+  userAchievements: defineTable({
+    userId: v.string(),
+    achievementId: v.string(),
+    title: v.string(),
+    description: v.string(),
+    category: v.string(),
+    unlockedAt: v.number(),
+    reward: v.optional(v.object({
+      type: v.union(
+        v.literal("discount"),
+        v.literal("product"),
+        v.literal("session"),
+        v.literal("badge")
+      ),
+      value: v.string(),
+    })),
+  })
+    .index("by_user", ["userId"])
+    .index("user_achievement", ["userId", "achievementId"]),
+
+  // Бонусы пользователей
+  userBonuses: defineTable({
+    userId: v.string(),
+    type: v.union(
+      v.literal("discount"),
+      v.literal("product"),
+      v.literal("session"),
+      v.literal("badge")
+    ),
+    value: v.string(),
+    description: v.string(),
+    isUsed: v.boolean(),
+    expiresAt: v.number(),
+    createdAt: v.number(),
+  }).index("by_user", ["userId"]),
+
   messageGroups: defineTable({
     name: v.string(),
     description: v.optional(v.string()),
