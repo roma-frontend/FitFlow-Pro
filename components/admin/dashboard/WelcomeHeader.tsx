@@ -83,7 +83,6 @@ export function WelcomeHeader({
       redirectUrl: "/"
     });
     
-    // ✅ ИЗМЕНИЛИ: Выполняем logout с пропуском редиректа
     await logout(true);
   };
 

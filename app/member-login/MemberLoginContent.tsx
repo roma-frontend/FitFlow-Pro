@@ -81,7 +81,7 @@ export default function MemberLoginContent() {
         userRole={loaderProps?.userRole || "member"}
         userName={loaderProps?.userName || "Участник"}
         dashboardUrl={loaderProps?.dashboardUrl || "/member-dashboard"}
-        isOpen={}
+        isOpen={showFullScreenLoader}
       />
     );
   }
