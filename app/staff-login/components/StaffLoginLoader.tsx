@@ -1,4 +1,4 @@
-// app/staff-login/components/StaffLoginLoader.tsx - ИСПРАВЛЕННАЯ ВЕРСИЯ
+// app/staff-login/components/StaffLoginLoader.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -10,6 +10,7 @@ interface StaffLoginLoaderProps {
   userRole: UserRole;
   userName: string;
   dashboardUrl: string;
+  isOpen: boolean;
 }
 
 // Маппинг ролей на варианты лоадера
@@ -112,12 +113,39 @@ const roleTexts: Record<UserRole, {
   }
 };
 
-export default function StaffLoginLoader({ userRole, userName, dashboardUrl }: StaffLoginLoaderProps) {
+export default function StaffLoginLoader({ userRole, userName, dashboardUrl, isOpen }: StaffLoginLoaderProps) {
   const router = useRouter();
   const [progress, setProgress] = useState(0);
-
   // Безопасное получение текстов для роли
   const currentRoleTexts = roleTexts[userRole] || roleTexts["member"];
+
+  useEffect(() => {
+      if (isOpen) {
+        // Save current scroll position
+        const scrollY = window.scrollY;
+  
+        // Add styles to prevent scrolling
+        document.body.style.position = 'fixed';
+        document.body.style.top = `-${scrollY}px`;
+        document.body.style.width = '100%';
+        document.body.style.overflow = 'hidden';
+  
+        // Add touch-action to prevent mobile scroll
+        document.documentElement.style.touchAction = 'none';
+  
+        return () => {
+          // Restore scroll position and remove styles
+          document.body.style.position = '';
+          document.body.style.top = '';
+          document.body.style.width = '';
+          document.body.style.overflow = '';
+          document.documentElement.style.touchAction = '';
+  
+          // Restore scroll position
+          window.scrollTo(0, scrollY);
+        };
+      }
+    }, [isOpen]);
 
   useEffect(() => {
     // Проверяем, что dashboardUrl валиден

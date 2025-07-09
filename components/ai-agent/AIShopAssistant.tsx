@@ -195,7 +195,7 @@ export const AIShopAssistant: React.FC<AIShopAssistantProps> = memo(({
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.9 }}
-        className="fixed inset-0 sm:bottom-6 sm:right-6 sm:top-auto sm:left-auto z-50 w-full sm:w-[480px] h-full sm:h-[90vh] sm:max-h-[800px] bg-white sm:rounded-3xl shadow-2xl sm:border border-gray-200 overflow-hidden flex flex-col"
+        className="fixed inset-0 sm:bottom-6 sm:right-6 sm:top-auto sm:left-auto z-50 w-full sm:w-[480px] h-full sm:h-[90vh] sm:max-h-[796px] bg-white sm:rounded-3xl shadow-2xl sm:border border-gray-200 overflow-hidden flex flex-col"
       >
         {/* Header */}
         <div className="bg-gradient-to-r from-purple-600 to-blue-600 p-6 text-white">

@@ -45,7 +45,7 @@ export default function HomePage() {
   return (
     <>
       <AuthPreserver />
-      <div className="min-h-[100lvh] bg-gradient-to-br from-blue-50 to-green-50 w-full overflow-x-hidden">
+      <div className="min-h-[100lvh] bg-gradient-to-br from-blue-50 to-indigo-50 w-full overflow-x-hidden">
         {/* HEADER */}
         <div className="w-full">
           <MainHeader />
@@ -62,7 +62,7 @@ export default function HomePage() {
 
         {/* PWA BANNER - только в продакшене */}
         {!isDevelopment && !isInstalled && isPWABannerVisible && (
-          <div className="hidden sm:block w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg">
+          <div className="hidden sm:block w-full bg-gradient-to-r from-blue-600 to-purple-500 text-white shadow-lg">
             <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 xl:px-8">
               <div className="flex items-center justify-between gap-2 py-2 sm:py-3">
                 {/* Основной контент баннера */}

@@ -12,6 +12,7 @@ interface StaffLogoutLoaderProps {
   userRole: UserRole;
   userName: string;
   redirectUrl: string;
+  isOpen?: boolean;
 }
 
 // Маппинг ролей на варианты лоадера
@@ -70,11 +71,37 @@ const roleToLogoutTexts: Record<UserRole, string[]> = {
   ]
 };
 
-export default function StaffLogoutLoader({ userRole, userName, redirectUrl }: StaffLogoutLoaderProps) {
-  const router = useRouter();
+export default function StaffLogoutLoader({ userRole, userName, redirectUrl, isOpen }: StaffLogoutLoaderProps) {
   const roleTexts = useRoleTexts(userRole);
   const [progress, setProgress] = useState(0);
-  const hideLoader = useLoaderStore((state) => state.hideLoader);
+
+  useEffect(() => {
+    if (isOpen) {
+      // Save current scroll position
+      const scrollY = window.scrollY;
+
+      // Add styles to prevent scrolling
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
+      document.body.style.overflow = 'hidden';
+
+      // Add touch-action to prevent mobile scroll
+      document.documentElement.style.touchAction = 'none';
+
+      return () => {
+        // Restore scroll position and remove styles
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+        document.body.style.overflow = '';
+        document.documentElement.style.touchAction = '';
+
+        // Restore scroll position
+        window.scrollTo(0, scrollY);
+      };
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     // Симулируем прогресс выхода

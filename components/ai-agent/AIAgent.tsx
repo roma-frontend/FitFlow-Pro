@@ -442,7 +442,7 @@ const AIAgent: React.FC<AIAgentProps> = ({ isOpen: propIsOpen, onClose, initialM
 
             <motion.div
               {...scaleIn}
-              className="fixed inset-0 sm:bottom-6 sm:right-6 sm:top-auto sm:left-auto z-50 w-full sm:w-[420px] h-full sm:h-[85vh] sm:max-h-[800px] bg-white/95 backdrop-blur-sm sm:rounded-3xl shadow-2xl sm:border border-gray-200/50 overflow-hidden flex flex-col"
+              className="fixed inset-0 sm:bottom-6 sm:right-6 sm:top-auto sm:left-auto z-50 w-full sm:w-[420px] h-full sm:h-[85vh] sm:max-h-[796px] bg-white/95 backdrop-blur-sm sm:rounded-3xl shadow-2xl sm:border border-gray-200/50 overflow-hidden flex flex-col"
               style={{
                 // Prevent touch events from propagating on mobile
                 touchAction: 'pan-y',
