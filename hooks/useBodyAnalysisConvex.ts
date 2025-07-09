@@ -29,7 +29,7 @@ export function useBodyAnalysisConvex() {
     // Unified API fetch function with JWT auth
     const fetchApi = async <T>(endpoint: string, options?: RequestInit): Promise<ApiResponse<T>> => {
         try {
-            const token = await getTokenInfo(); // Get the user's auth token
+            const token = localStorage.getItem('auth_token');
             const response = await fetch(`/api/${endpoint}`, {
                 ...options,
                 headers: {
