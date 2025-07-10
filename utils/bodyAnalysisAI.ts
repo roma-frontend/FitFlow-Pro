@@ -89,10 +89,10 @@ export const analyzeBodyImage = async (
     currentVisualData: {
       imageUrl: URL.createObjectURL(imageFile),
       analyzedImageUrl,
-      bodyOutlineData: null // Или пустой массив, если требуется
+      bodyOutlineData: null
     },
     futureProjections,
-    bodyMetrics // Добавляем рассчитанные метрики
+    bodyMetrics
   };
 
   await saveAnalysisResult(result);
