@@ -28,11 +28,18 @@ export async function POST(request: NextRequest) {
     const userId = sessionData.user.id;
     const body = await request.json();
 
-    // Сохраняем прогресс в Convex
-    const result = await convex.mutation(api.bodyAnalysis.updateProgress, {
+    // Валидируем данные перед отправкой
+    const progressData = {
       userId,
-      ...body
-    });
+      weight: body.weight,
+      photoUrl: body.photoUrl,
+      originalAnalysisId: body.originalAnalysisId,
+      newAnalysisData: body.newAnalysisData,
+      // Добавьте другие поля по необходимости
+    };
+
+    // Сохраняем прогресс в Convex
+    const result = await convex.mutation("bodyAnalysis:updateProgress", progressData);
 
     return NextResponse.json({
       success: true,
@@ -70,7 +77,7 @@ export async function GET(request: NextRequest) {
     const userId = sessionData.user.id;
 
     // Получаем чекпоинты из Convex
-    const checkpoints = await convex.query(api.bodyAnalysis.getProgressCheckpoints, { userId });
+    const checkpoints = await convex.query("bodyAnalysis:getProgressCheckpoints", { userId });
 
     return NextResponse.json({
       success: true,
