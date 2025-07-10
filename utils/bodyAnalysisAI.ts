@@ -75,7 +75,7 @@ export const analyzeBodyImage = async (
   };
 
   const result: BodyAnalysisResult = {
-    _id: `analysis_${userId}_${Date.now()}` as Id<"bodyAnalyses">,
+    _id: `analysis_${userId}_${Date.now()}` as Id<"bodyAnalysis">,
     userId,
     date: new Date(),
     bodyType,
