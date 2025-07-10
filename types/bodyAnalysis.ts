@@ -22,7 +22,7 @@ export interface BodyAnalysisResult {
   currentVisualData: VisualData;
   futureProjections: FutureProjections;
   bodyMetrics: BodyMetrics;
-  personalizedPlan: PersonalizedPlan;
+  personalizedPlan?: PersonalizedPlan;
 }
 
 export interface BodyAnalysisHookReturn {
