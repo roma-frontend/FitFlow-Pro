@@ -326,7 +326,7 @@ export const getTransformationLeaderboard = query({
         .take(100);
 
       let userRank = 0;
-      let userEntry = null;
+      let userEntry: any = null;
 
       // Если передан userId, находим позицию пользователя
       if (args.userId) {
