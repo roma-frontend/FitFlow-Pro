@@ -1,26 +1,13 @@
-// convex/bodyAnalysis.ts - исправленная версия с улучшенной авторизацией
+// convex/bodyAnalysis.ts - версия для кастомной аутентификации
 
 import { mutation, query, internalMutation } from "./_generated/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 
-// Вспомогательная функция для проверки авторизации
-async function requireAuth(ctx: any) {
-  const identity = await ctx.auth.getUserIdentity();
-  
-  if (!identity) {
-    console.error("Authentication failed - no identity found");
-    throw new Error("Unauthorized - Please log in");
-  }
-  
-  console.log("Authenticated user:", identity.subject);
-  return identity;
-}
-
-// Сохранение анализа тела - теперь с улучшенной авторизацией
+// Сохранение анализа тела с явной передачей userId
 export const saveBodyAnalysis = mutation({
   args: {
-    // Убираем userId из аргументов - будем получать его из токена
+    userId: v.string(), // Передаем userId явно
     bodyType: v.union(
       v.literal("ectomorph"),
       v.literal("mesomorph"),
@@ -79,37 +66,36 @@ export const saveBodyAnalysis = mutation({
   },
   handler: async (ctx, args) => {
     try {
-      // Проверяем авторизацию
-      const identity = await requireAuth(ctx);
-      const userId = identity.subject;
-      
-      // Добавляем временные метки
+      // Для кастомной аутентификации просто проверяем, что userId передан
+      if (!args.userId) {
+        throw new Error("Unauthorized - userId is required");
+      }
+
       const now = Date.now();
-      
+
       // Сохраняем в базу данных
       const analysisData = {
-        userId,
         ...args,
         createdAt: now,
         updatedAt: now,
       };
-      
-      console.log("Saving analysis for user:", userId);
-      
+
+      console.log("Saving body analysis for user:", args.userId);
+
       const analysisId = await ctx.db.insert("bodyAnalyses", analysisData);
-      
+
       // Запускаем проверку достижений
       await ctx.scheduler.runAfter(0, internal.bodyAnalysis.checkAndAwardAchievements, {
-        userId,
+        userId: args.userId,
         achievementType: "first_analysis",
       });
-      
-      return { 
-        success: true, 
+
+      return {
+        success: true,
         analysisId,
         message: "Analysis saved successfully"
       };
-      
+
     } catch (error) {
       console.error("Error in saveBodyAnalysis:", error);
       throw error;
@@ -117,115 +103,20 @@ export const saveBodyAnalysis = mutation({
   },
 });
 
-// Альтернативная версия с явной передачей userId (для случаев, когда нужен другой подход)
-export const saveBodyAnalysisWithUserId = mutation({
+// Получение текущего анализа - с передачей userId
+export const getCurrentAnalysis = query({
   args: {
-    userId: v.string(),
-    // ... все остальные аргументы как в оригинале
-    bodyType: v.union(
-      v.literal("ectomorph"),
-      v.literal("mesomorph"),
-      v.literal("endomorph"),
-      v.literal("mixed")
-    ),
-    estimatedBodyFat: v.number(),
-    estimatedMuscleMass: v.number(),
-    posture: v.union(v.literal("good"), v.literal("fair"), v.literal("poor")),
-    fitnessScore: v.number(),
-    progressPotential: v.number(),
-    problemAreas: v.array(
-      v.object({
-        area: v.union(
-          v.literal("живот"),
-          v.literal("бедра"),
-          v.literal("руки"),
-          v.literal("спина"),
-          v.literal("грудь")
-        ),
-        severity: v.union(v.literal("low"), v.literal("medium"), v.literal("high")),
-        recommendation: v.string(),
-      })
-    ),
-    recommendations: v.object({
-      primaryGoal: v.string(),
-      secondaryGoals: v.array(v.string()),
-      estimatedTimeToGoal: v.number(),
-      weeklyTrainingHours: v.number(),
-    }),
-    currentVisualData: v.object({
-      imageUrl: v.string(),
-      analyzedImageUrl: v.string(),
-      bodyOutlineData: v.optional(v.any())
-    }),
-    futureProjections: v.object({
-      weeks4: v.object({
-        estimatedWeight: v.number(),
-        estimatedBodyFat: v.number(),
-        estimatedMuscleMass: v.number(),
-        confidenceLevel: v.number(),
-      }),
-      weeks8: v.object({
-        estimatedWeight: v.number(),
-        estimatedBodyFat: v.number(),
-        estimatedMuscleMass: v.number(),
-        confidenceLevel: v.number(),
-      }),
-      weeks12: v.object({
-        estimatedWeight: v.number(),
-        estimatedBodyFat: v.number(),
-        estimatedMuscleMass: v.number(),
-        confidenceLevel: v.number(),
-      }),
-    }),
+    userId: v.string(), // Передаем userId явно
   },
   handler: async (ctx, args) => {
     try {
-      // Опциональная проверка авторизации
-      const identity = await ctx.auth.getUserIdentity();
-      
-      // Если есть авторизация, проверяем соответствие userId
-      if (identity && identity.subject !== args.userId) {
-        throw new Error("Unauthorized - User ID mismatch");
+      if (!args.userId) {
+        throw new Error("userId is required");
       }
-      
-      // Добавляем временные метки
-      const now = Date.now();
-      
-      // Сохраняем в базу данных
-      const analysisData = {
-        ...args,
-        createdAt: now,
-        updatedAt: now,
-      };
-      
-      console.log("Saving analysis for userId:", args.userId);
-      
-      const analysisId = await ctx.db.insert("bodyAnalyses", analysisData);
-      
-      return { 
-        success: true, 
-        analysisId,
-        message: "Analysis saved successfully"
-      };
-      
-    } catch (error) {
-      console.error("Error in saveBodyAnalysisWithUserId:", error);
-      throw error;
-    }
-  },
-});
-
-// Получение текущего анализа
-export const getCurrentAnalysis = query({
-  args: {},
-  handler: async (ctx) => {
-    try {
-      const identity = await requireAuth(ctx);
-      const userId = identity.subject;
 
       const analysis = await ctx.db
         .query("bodyAnalyses")
-        .withIndex("by_user", (q) => q.eq("userId", userId))
+        .withIndex("by_user", (q) => q.eq("userId", args.userId))
         .order("desc")
         .first();
 
@@ -253,15 +144,18 @@ export const getCurrentAnalysis = query({
 
 // Получение чекпоинтов прогресса
 export const getProgressCheckpoints = query({
-  args: {},
-  handler: async (ctx) => {
+  args: {
+    userId: v.string(), // Передаем userId явно
+  },
+  handler: async (ctx, args) => {
     try {
-      const identity = await requireAuth(ctx);
-      const userId = identity.subject;
+      if (!args.userId) {
+        throw new Error("userId is required");
+      }
 
       const checkpoints = await ctx.db
         .query("progressCheckpoints")
-        .withIndex("by_user", (q) => q.eq("userId", userId))
+        .withIndex("by_user", (q) => q.eq("userId", args.userId))
         .order("asc")
         .collect();
 
@@ -289,6 +183,7 @@ export const getProgressCheckpoints = query({
 // Обновление прогресса
 export const updateProgress = mutation({
   args: {
+    userId: v.string(), // Передаем userId явно
     photoUrl: v.string(),
     originalAnalysisId: v.id("bodyAnalyses"),
     newAnalysisData: v.object({
@@ -352,17 +247,18 @@ export const updateProgress = mutation({
   },
   handler: async (ctx, args) => {
     try {
-      const identity = await requireAuth(ctx);
-      const userId = identity.subject;
+      if (!args.userId) {
+        throw new Error("userId is required");
+      }
 
       // Получаем оригинальный анализ
       const originalAnalysis = await ctx.db.get(args.originalAnalysisId);
       if (!originalAnalysis) {
         throw new Error("Original analysis not found");
       }
-      
+
       // Проверяем, что анализ принадлежит текущему пользователю
-      if (originalAnalysis.userId !== userId) {
+      if (originalAnalysis.userId !== args.userId) {
         throw new Error("Unauthorized - Analysis belongs to another user");
       }
 
@@ -371,7 +267,7 @@ export const updateProgress = mutation({
 
       // Создаем новый чекпоинт
       const checkpointId = await ctx.db.insert("progressCheckpoints", {
-        userId,
+        userId: args.userId,
         analysisId: args.originalAnalysisId,
         weight: args.weight || comparison.currentWeight,
         bodyFat: args.newAnalysisData.estimatedBodyFat,
@@ -388,13 +284,13 @@ export const updateProgress = mutation({
 
       // Проверяем достижения
       await ctx.scheduler.runAfter(0, internal.bodyAnalysis.checkProgressAchievements, {
-        userId,
+        userId: args.userId,
         comparison,
       });
 
       // Обновляем лидерборд
       await ctx.scheduler.runAfter(0, internal.bodyAnalysis.updateLeaderboard, {
-        userId,
+        userId: args.userId,
         comparison,
         analysisId: args.originalAnalysisId,
       });
@@ -417,12 +313,11 @@ export const updateProgress = mutation({
 
 // Получение лидерборда трансформаций
 export const getTransformationLeaderboard = query({
-  args: {},
-  handler: async (ctx) => {
+  args: {
+    userId: v.optional(v.string()), // userId опциональный для лидерборда
+  },
+  handler: async (ctx, args) => {
     try {
-      const identity = await requireAuth(ctx);
-      const userId = identity.subject;
-
       // Получаем топ трансформаций
       const leaderboard = await ctx.db
         .query("transformationLeaderboard")
@@ -430,20 +325,24 @@ export const getTransformationLeaderboard = query({
         .order("desc")
         .take(100);
 
-      // Находим позицию текущего пользователя
-      const userEntry = await ctx.db
-        .query("transformationLeaderboard")
-        .withIndex("user_active", (q) => q.eq("userId", userId).eq("isActive", true))
-        .first();
-
       let userRank = 0;
-      if (userEntry) {
-        const betterEntries = await ctx.db
+      let userEntry = null;
+
+      // Если передан userId, находим позицию пользователя
+      if (args.userId) {
+        userEntry = await ctx.db
           .query("transformationLeaderboard")
-          .withIndex("score_active", (q) => q.eq("isActive", true))
-          .filter((q) => q.gt(q.field("score"), userEntry.score))
-          .collect();
-        userRank = betterEntries.length + 1;
+          .withIndex("user_active", (q) => q.eq("userId", args.userId).eq("isActive", true))
+          .first();
+
+        if (userEntry) {
+          const betterEntries = await ctx.db
+            .query("transformationLeaderboard")
+            .withIndex("score_active", (q) => q.eq("isActive", true))
+            .filter((q) => q.gt(q.field("score"), userEntry.score))
+            .collect();
+          userRank = betterEntries.length + 1;
+        }
       }
 
       // Форматируем данные
@@ -454,7 +353,7 @@ export const getTransformationLeaderboard = query({
         result: `${entry.weightLost}кг за ${entry.weeks} недель`,
         duration: `${entry.weeks} недель`,
         score: entry.score,
-        isCurrentUser: entry.userId === userId,
+        isCurrentUser: args.userId ? entry.userId === args.userId : false,
       }));
 
       return {
@@ -471,6 +370,7 @@ export const getTransformationLeaderboard = query({
 // Сохранение персонализированного плана
 export const savePersonalizedPlan = mutation({
   args: {
+    userId: v.string(), // Передаем userId явно
     analysisId: v.id("bodyAnalyses"),
     recommendedTrainer: v.object({
       id: v.string(),
@@ -524,8 +424,10 @@ export const savePersonalizedPlan = mutation({
   },
   handler: async (ctx, args) => {
     try {
-      const identity = await requireAuth(ctx);
-      const userId = identity.subject;
+      if (!args.userId) {
+        throw new Error("userId is required");
+      }
+
       const now = Date.now();
 
       // Проверяем, что анализ принадлежит текущему пользователю
@@ -533,14 +435,20 @@ export const savePersonalizedPlan = mutation({
       if (!analysis) {
         throw new Error("Analysis not found");
       }
-      
-      if (analysis.userId !== userId) {
+
+      if (analysis.userId !== args.userId) {
         throw new Error("Unauthorized - Analysis belongs to another user");
       }
 
       const planId = await ctx.db.insert("personalizedPlans", {
-        userId,
-        ...args,
+        userId: args.userId,
+        analysisId: args.analysisId,
+        recommendedTrainer: args.recommendedTrainer,
+        trainingProgram: args.trainingProgram,
+        nutritionPlan: args.nutritionPlan,
+        recommendedProducts: args.recommendedProducts,
+        membershipRecommendation: args.membershipRecommendation,
+        projectedResults: args.projectedResults,
         createdAt: now,
       });
 
@@ -558,20 +466,22 @@ export const savePersonalizedPlan = mutation({
 // Получение персонализированного плана
 export const getPersonalizedPlan = query({
   args: {
+    userId: v.string(), // Передаем userId явно
     analysisId: v.id("bodyAnalyses"),
   },
   handler: async (ctx, args) => {
     try {
-      const identity = await requireAuth(ctx);
-      const userId = identity.subject;
+      if (!args.userId) {
+        throw new Error("userId is required");
+      }
 
       // Проверяем, что анализ принадлежит текущему пользователю
       const analysis = await ctx.db.get(args.analysisId);
       if (!analysis) {
         throw new Error("Analysis not found");
       }
-      
-      if (analysis.userId !== userId) {
+
+      if (analysis.userId !== args.userId) {
         throw new Error("Unauthorized - Analysis belongs to another user");
       }
 

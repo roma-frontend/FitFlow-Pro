@@ -1,179 +1,100 @@
-// app/api/personalized-plan/route.ts
+// app/api/personalized-plan/route.ts - Персонализированный план
+
 import { NextRequest, NextResponse } from 'next/server';
+import { getSession } from '@/lib/simple-auth';
 import { ConvexHttpClient } from "convex/browser";
+import { api } from "@/convex/_generated/api";
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
-export async function GET(request: NextRequest) {
-  try {
-    console.log("🔄 API GET: Начало получения персонализированного плана");
-    
-    // Получаем параметры из query
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
-    const planId = searchParams.get('planId');
-    const analysisId = searchParams.get('analysisId');
-    
-    if (!userId) {
-      throw new Error("Отсутствует обязательный параметр: userId");
-    }
-    
-    console.log("📞 API GET: Получаем персонализированный план для пользователя:", userId);
-    
-    const plan = await convex.query("personalizedPlan:get", {
-      userId,
-      planId: planId || undefined,
-      analysisId: analysisId || undefined
-    });
-    
-    console.log("✅ API GET: Получен персонализированный план:", plan ? "найден" : "не найден");
-    
-    return NextResponse.json({ 
-      success: true, 
-      data: plan || null
-    });
-  } catch (error) {
-    console.error("❌ API GET: Ошибка:", error);
-    
-    return NextResponse.json(
-      { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Ошибка получения персонализированного плана',
-        data: null
-      },
-      { status: 500 }
-    );
-  }
-}
-
 export async function POST(request: NextRequest) {
   try {
-    console.log("🔄 API POST: Начало создания персонализированного плана");
-    
-    const body = await request.json();
-    console.log("📦 API POST: Получены данные:", body);
-    
-    // Валидация данных
-    if (!body.userId || !body.analysisId) {
-      throw new Error("Отсутствуют обязательные поля: userId, analysisId");
-    }
-    
-    console.log("📞 API POST: Вызываем Convex mutation");
-    
-    const result = await convex.mutation("personalizedPlan:create", {
-      userId: body.userId,
-      analysisId: body.analysisId,
-      workoutPlan: body.workoutPlan,
-      nutritionPlan: body.nutritionPlan,
-      goals: body.goals,
-      recommendations: body.recommendations,
-      duration: body.duration,
-      difficulty: body.difficulty,
-      notes: body.notes
-    });
-    
-    console.log("✅ API POST: Персонализированный план создан:", result);
-    
-    return NextResponse.json({ 
-      success: true, 
-      data: result,
-      message: 'Персонализированный план успешно создан'
-    });
-  } catch (error) {
-    console.error("❌ API POST: Ошибка:", error);
-    
-    return NextResponse.json(
-      { 
+    const sessionToken = request.cookies.get('session_id')?.value;
+    if (!sessionToken) {
+      return NextResponse.json({ 
         success: false, 
-        error: error instanceof Error ? error.message : 'Ошибка создания персонализированного плана'
-      },
-      { status: 500 }
-    );
-  }
-}
-
-export async function PUT(request: NextRequest) {
-  try {
-    console.log("🔄 API PUT: Начало обновления персонализированного плана");
-    
-    const body = await request.json();
-    console.log("📦 API PUT: Получены данные:", body);
-    
-    // Валидация данных
-    if (!body.userId || !body.planId) {
-      throw new Error("Отсутствуют обязательные поля: userId, planId");
+        error: 'Не авторизован' 
+      }, { status: 401 });
     }
-    
-    console.log("📞 API PUT: Вызываем Convex mutation");
-    
-    const result = await convex.mutation("personalizedPlan:update", {
-      userId: body.userId,
-      planId: body.planId,
-      workoutPlan: body.workoutPlan,
-      nutritionPlan: body.nutritionPlan,
-      goals: body.goals,
-      recommendations: body.recommendations,
-      duration: body.duration,
-      difficulty: body.difficulty,
-      notes: body.notes
-    });
-    
-    console.log("✅ API PUT: Персонализированный план обновлен:", result);
-    
-    return NextResponse.json({ 
-      success: true, 
-      data: result,
-      message: 'Персонализированный план успешно обновлен'
-    });
-  } catch (error) {
-    console.error("❌ API PUT: Ошибка:", error);
-    
-    return NextResponse.json(
-      { 
+
+    const sessionData = await getSession(sessionToken);
+    if (!sessionData) {
+      return NextResponse.json({ 
         success: false, 
-        error: error instanceof Error ? error.message : 'Ошибка обновления персонализированного плана'
-      },
-      { status: 500 }
-    );
-  }
-}
-
-export async function DELETE(request: NextRequest) {
-  try {
-    console.log("🔄 API DELETE: Начало удаления персонализированного плана");
-    
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
-    const planId = searchParams.get('planId');
-    
-    // Валидация данных
-    if (!userId || !planId) {
-      throw new Error("Отсутствуют обязательные параметры: userId, planId");
+        error: 'Сессия недействительна' 
+      }, { status: 401 });
     }
-    
-    console.log("📞 API DELETE: Вызываем Convex mutation");
-    
-    const result = await convex.mutation("personalizedPlan:delete", {
+
+    const userId = sessionData.user.id;
+    const body = await request.json();
+
+    // Сохраняем план в Convex
+    const result = await convex.mutation(api.bodyAnalysis.savePersonalizedPlan, {
       userId,
-      planId
+      ...body
     });
-    
-    console.log("✅ API DELETE: Персонализированный план удален:", result);
-    
-    return NextResponse.json({ 
-      success: true, 
-      data: result,
-      message: 'Персонализированный план успешно удален'
+
+    return NextResponse.json({
+      success: true,
+      data: result
     });
+
   } catch (error) {
-    console.error("❌ API DELETE: Ошибка:", error);
-    
-    return NextResponse.json(
-      { 
+    console.error('❌ Ошибка сохранения плана:', error);
+    return NextResponse.json({
+      success: false,
+      error: 'Ошибка сохранения плана',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
+  }
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    const sessionToken = request.cookies.get('session_id')?.value;
+    if (!sessionToken) {
+      return NextResponse.json({ 
         success: false, 
-        error: error instanceof Error ? error.message : 'Ошибка удаления персонализированного плана'
-      },
-      { status: 500 }
-    );
+        error: 'Не авторизован' 
+      }, { status: 401 });
+    }
+
+    const sessionData = await getSession(sessionToken);
+    if (!sessionData) {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Сессия недействительна' 
+      }, { status: 401 });
+    }
+
+    const userId = sessionData.user.id;
+    const { searchParams } = new URL(request.url);
+    const analysisId = searchParams.get('analysisId');
+
+    if (!analysisId) {
+      return NextResponse.json({
+        success: false,
+        error: 'analysisId не указан'
+      }, { status: 400 });
+    }
+
+    // Получаем план из Convex
+    const plan = await convex.query(api.bodyAnalysis.getPersonalizedPlan, {
+      userId,
+      analysisId: analysisId as any
+    });
+
+    return NextResponse.json({
+      success: true,
+      data: plan
+    });
+
+  } catch (error) {
+    console.error('❌ Ошибка получения плана:', error);
+    return NextResponse.json({
+      success: false,
+      error: 'Ошибка получения данных',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
   }
 }
