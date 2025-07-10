@@ -1,4 +1,4 @@
-// app/api/upload/route.ts - УЛУЧШЕННАЯ ВЕРСИЯ С ДЕТАЛЬНЫМ ЛОГИРОВАНИЕМ
+// app/api/upload/route.ts - ИСПРАВЛЕННАЯ ВЕРСИЯ
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/simple-auth';
 
@@ -13,9 +13,13 @@ export async function POST(request: NextRequest) {
 
     const jwtToken = sessionId || authToken || sessionIdDebug;
 
+    // ✅ ИСПРАВЛЕНИЕ: Возвращаем NextResponse вместо null
     if (!jwtToken) {
       console.log('❌ JWT токен не найден в куки');
-      return null;
+      return NextResponse.json({
+        error: 'Токен авторизации не найден',
+        details: 'Необходимо войти в систему'
+      }, { status: 401 });
     }
 
     // ✅ ИСПРАВЛЕНИЕ: Детальная проверка сессии

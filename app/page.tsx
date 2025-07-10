@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { AuthPreserver } from "@/components/home/AuthPreserver";
 import { usePersistentAuth } from "@/hooks/usePersistentAuth";
 import BodyAnalysisSection from "@/components/home/BodyAnalysisSection";
+import BodyAnalysisTeaser from "@/components/BodyAnalysisTeaser";
 
 export default function HomePage() {
   const { authStatus } = useAuth();
@@ -119,6 +120,10 @@ export default function HomePage() {
 
             <section className="py-6 sm:py-8 lg:py-12 w-full">
               <StatsSection />
+            </section>
+
+            <section className="py-6 sm:py-8 lg:py-12 w-full">
+              <BodyAnalysisTeaser />
             </section>
 
             <section className="py-6 sm:py-8 lg:py-12 w-full">
