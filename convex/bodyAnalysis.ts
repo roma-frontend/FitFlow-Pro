@@ -1,13 +1,26 @@
-// convex/bodyAnalysis.ts - обновленная версия для работы с Convex
+// convex/bodyAnalysis.ts - исправленная версия с улучшенной авторизацией
 
 import { mutation, query, internalMutation } from "./_generated/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 
-// Сохранение анализа тела
+// Вспомогательная функция для проверки авторизации
+async function requireAuth(ctx: any) {
+  const identity = await ctx.auth.getUserIdentity();
+  
+  if (!identity) {
+    console.error("Authentication failed - no identity found");
+    throw new Error("Unauthorized - Please log in");
+  }
+  
+  console.log("Authenticated user:", identity.subject);
+  return identity;
+}
+
+// Сохранение анализа тела - теперь с улучшенной авторизацией
 export const saveBodyAnalysis = mutation({
   args: {
-    userId: v.string(),
+    // Убираем userId из аргументов - будем получать его из токена
     bodyType: v.union(
       v.literal("ectomorph"),
       v.literal("mesomorph"),
@@ -63,34 +76,141 @@ export const saveBodyAnalysis = mutation({
         confidenceLevel: v.number(),
       }),
     }),
-    createdAt: v.number(),
-    updatedAt: v.number(),
   },
   handler: async (ctx, args) => {
-    // 1. Authenticate the user
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error("Unauthorized - Not logged in");
-    }
-
-    // 2. Verify the user matches the request
-    if (identity.subject !== args.userId) {
-      throw new Error("Unauthorized - User ID mismatch");
-    }
-
-    // 3. Save to database
     try {
-      const analysisId = await ctx.db.insert("bodyAnalyses", {
+      // Проверяем авторизацию
+      const identity = await requireAuth(ctx);
+      const userId = identity.subject;
+      
+      // Добавляем временные метки
+      const now = Date.now();
+      
+      // Сохраняем в базу данных
+      const analysisData = {
+        userId,
         ...args,
-        // Explicitly structure currentVisualData to match schema
-        currentVisualData: {
-          imageUrl: args.currentVisualData.imageUrl,
-          analyzedImageUrl: args.currentVisualData.analyzedImageUrl,
-        },
+        createdAt: now,
+        updatedAt: now,
+      };
+      
+      console.log("Saving analysis for user:", userId);
+      
+      const analysisId = await ctx.db.insert("bodyAnalyses", analysisData);
+      
+      // Запускаем проверку достижений
+      await ctx.scheduler.runAfter(0, internal.bodyAnalysis.checkAndAwardAchievements, {
+        userId,
+        achievementType: "first_analysis",
       });
-      return analysisId;
+      
+      return { 
+        success: true, 
+        analysisId,
+        message: "Analysis saved successfully"
+      };
+      
     } catch (error) {
-      throw new Error(`Failed to save: ${error}`);
+      console.error("Error in saveBodyAnalysis:", error);
+      throw error;
+    }
+  },
+});
+
+// Альтернативная версия с явной передачей userId (для случаев, когда нужен другой подход)
+export const saveBodyAnalysisWithUserId = mutation({
+  args: {
+    userId: v.string(),
+    // ... все остальные аргументы как в оригинале
+    bodyType: v.union(
+      v.literal("ectomorph"),
+      v.literal("mesomorph"),
+      v.literal("endomorph"),
+      v.literal("mixed")
+    ),
+    estimatedBodyFat: v.number(),
+    estimatedMuscleMass: v.number(),
+    posture: v.union(v.literal("good"), v.literal("fair"), v.literal("poor")),
+    fitnessScore: v.number(),
+    progressPotential: v.number(),
+    problemAreas: v.array(
+      v.object({
+        area: v.union(
+          v.literal("живот"),
+          v.literal("бедра"),
+          v.literal("руки"),
+          v.literal("спина"),
+          v.literal("грудь")
+        ),
+        severity: v.union(v.literal("low"), v.literal("medium"), v.literal("high")),
+        recommendation: v.string(),
+      })
+    ),
+    recommendations: v.object({
+      primaryGoal: v.string(),
+      secondaryGoals: v.array(v.string()),
+      estimatedTimeToGoal: v.number(),
+      weeklyTrainingHours: v.number(),
+    }),
+    currentVisualData: v.object({
+      imageUrl: v.string(),
+      analyzedImageUrl: v.string(),
+      bodyOutlineData: v.optional(v.any())
+    }),
+    futureProjections: v.object({
+      weeks4: v.object({
+        estimatedWeight: v.number(),
+        estimatedBodyFat: v.number(),
+        estimatedMuscleMass: v.number(),
+        confidenceLevel: v.number(),
+      }),
+      weeks8: v.object({
+        estimatedWeight: v.number(),
+        estimatedBodyFat: v.number(),
+        estimatedMuscleMass: v.number(),
+        confidenceLevel: v.number(),
+      }),
+      weeks12: v.object({
+        estimatedWeight: v.number(),
+        estimatedBodyFat: v.number(),
+        estimatedMuscleMass: v.number(),
+        confidenceLevel: v.number(),
+      }),
+    }),
+  },
+  handler: async (ctx, args) => {
+    try {
+      // Опциональная проверка авторизации
+      const identity = await ctx.auth.getUserIdentity();
+      
+      // Если есть авторизация, проверяем соответствие userId
+      if (identity && identity.subject !== args.userId) {
+        throw new Error("Unauthorized - User ID mismatch");
+      }
+      
+      // Добавляем временные метки
+      const now = Date.now();
+      
+      // Сохраняем в базу данных
+      const analysisData = {
+        ...args,
+        createdAt: now,
+        updatedAt: now,
+      };
+      
+      console.log("Saving analysis for userId:", args.userId);
+      
+      const analysisId = await ctx.db.insert("bodyAnalyses", analysisData);
+      
+      return { 
+        success: true, 
+        analysisId,
+        message: "Analysis saved successfully"
+      };
+      
+    } catch (error) {
+      console.error("Error in saveBodyAnalysisWithUserId:", error);
+      throw error;
     }
   },
 });
@@ -99,34 +219,35 @@ export const saveBodyAnalysis = mutation({
 export const getCurrentAnalysis = query({
   args: {},
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error("Unauthorized");
+    try {
+      const identity = await requireAuth(ctx);
+      const userId = identity.subject;
+
+      const analysis = await ctx.db
+        .query("bodyAnalyses")
+        .withIndex("by_user", (q) => q.eq("userId", userId))
+        .order("desc")
+        .first();
+
+      if (!analysis) {
+        return null;
+      }
+
+      // Получаем связанные чекпоинты
+      const checkpoints = await ctx.db
+        .query("progressCheckpoints")
+        .withIndex("by_analysis", (q) => q.eq("analysisId", analysis._id))
+        .order("asc")
+        .collect();
+
+      return {
+        ...analysis,
+        checkpoints,
+      };
+    } catch (error) {
+      console.error("Error in getCurrentAnalysis:", error);
+      throw error;
     }
-
-    const userId = identity.subject;
-
-    const analysis = await ctx.db
-      .query("bodyAnalyses")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .order("desc")
-      .first();
-
-    if (!analysis) {
-      return null;
-    }
-
-    // Получаем связанные чекпоинты
-    const checkpoints = await ctx.db
-      .query("progressCheckpoints")
-      .withIndex("by_analysis", (q) => q.eq("analysisId", analysis._id))
-      .order("asc")
-      .collect();
-
-    return {
-      ...analysis,
-      checkpoints,
-    };
   },
 });
 
@@ -134,33 +255,34 @@ export const getCurrentAnalysis = query({
 export const getProgressCheckpoints = query({
   args: {},
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error("Unauthorized");
+    try {
+      const identity = await requireAuth(ctx);
+      const userId = identity.subject;
+
+      const checkpoints = await ctx.db
+        .query("progressCheckpoints")
+        .withIndex("by_user", (q) => q.eq("userId", userId))
+        .order("asc")
+        .collect();
+
+      // Вычисляем streak
+      const streak = calculateStreak(checkpoints);
+
+      // Вычисляем следующую дату чекпоинта
+      const lastCheckpoint = checkpoints[checkpoints.length - 1];
+      const nextCheckpointDate = lastCheckpoint
+        ? new Date(lastCheckpoint.createdAt + 7 * 24 * 60 * 60 * 1000)
+        : new Date();
+
+      return {
+        checkpoints,
+        streak,
+        nextCheckpointDate,
+      };
+    } catch (error) {
+      console.error("Error in getProgressCheckpoints:", error);
+      throw error;
     }
-
-    const userId = identity.subject;
-
-    const checkpoints = await ctx.db
-      .query("progressCheckpoints")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .order("asc")
-      .collect();
-
-    // Вычисляем streak
-    const streak = calculateStreak(checkpoints);
-
-    // Вычисляем следующую дату чекпоинта
-    const lastCheckpoint = checkpoints[checkpoints.length - 1];
-    const nextCheckpointDate = lastCheckpoint
-      ? new Date(lastCheckpoint.createdAt + 7 * 24 * 60 * 60 * 1000)
-      : new Date();
-
-    return {
-      checkpoints,
-      streak,
-      nextCheckpointDate,
-    };
   },
 });
 
@@ -229,61 +351,67 @@ export const updateProgress = mutation({
     weight: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error("Unauthorized");
+    try {
+      const identity = await requireAuth(ctx);
+      const userId = identity.subject;
+
+      // Получаем оригинальный анализ
+      const originalAnalysis = await ctx.db.get(args.originalAnalysisId);
+      if (!originalAnalysis) {
+        throw new Error("Original analysis not found");
+      }
+      
+      // Проверяем, что анализ принадлежит текущему пользователю
+      if (originalAnalysis.userId !== userId) {
+        throw new Error("Unauthorized - Analysis belongs to another user");
+      }
+
+      // Сравниваем анализы
+      const comparison = compareAnalyses(originalAnalysis, args.newAnalysisData);
+
+      // Создаем новый чекпоинт
+      const checkpointId = await ctx.db.insert("progressCheckpoints", {
+        userId,
+        analysisId: args.originalAnalysisId,
+        weight: args.weight || comparison.currentWeight,
+        bodyFat: args.newAnalysisData.estimatedBodyFat,
+        muscleMass: args.newAnalysisData.estimatedMuscleMass,
+        photoUrl: args.photoUrl,
+        aiScore: calculateProgressScore(comparison),
+        achievements: comparison.achievements,
+        comparisonWithProjection: {
+          onTrack: comparison.onTrack,
+          deviationPercent: comparison.progressPercentage,
+        },
+        createdAt: Date.now(),
+      });
+
+      // Проверяем достижения
+      await ctx.scheduler.runAfter(0, internal.bodyAnalysis.checkProgressAchievements, {
+        userId,
+        comparison,
+      });
+
+      // Обновляем лидерборд
+      await ctx.scheduler.runAfter(0, internal.bodyAnalysis.updateLeaderboard, {
+        userId,
+        comparison,
+        analysisId: args.originalAnalysisId,
+      });
+
+      // Генерируем мотивационное сообщение
+      const motivationalMessage = generateMotivationalMessage(comparison);
+
+      return {
+        checkpointId,
+        comparison,
+        motivationalMessage,
+        newAnalysis: args.newAnalysisData,
+      };
+    } catch (error) {
+      console.error("Error in updateProgress:", error);
+      throw error;
     }
-
-    const userId = identity.subject;
-
-    // Получаем оригинальный анализ
-    const originalAnalysis = await ctx.db.get(args.originalAnalysisId);
-    if (!originalAnalysis) {
-      throw new Error("Original analysis not found");
-    }
-
-    // Сравниваем анализы
-    const comparison = compareAnalyses(originalAnalysis, args.newAnalysisData);
-
-    // Создаем новый чекпоинт
-    const checkpointId = await ctx.db.insert("progressCheckpoints", {
-      userId,
-      analysisId: args.originalAnalysisId,
-      weight: args.weight || comparison.currentWeight,
-      bodyFat: args.newAnalysisData.estimatedBodyFat,
-      muscleMass: args.newAnalysisData.estimatedMuscleMass,
-      photoUrl: args.photoUrl,
-      aiScore: calculateProgressScore(comparison),
-      achievements: comparison.achievements,
-      comparisonWithProjection: {
-        onTrack: comparison.onTrack,
-        deviationPercent: comparison.progressPercentage,
-      },
-      createdAt: Date.now(),
-    });
-
-    // Проверяем достижения
-    await ctx.scheduler.runAfter(0, internal.bodyAnalysis.checkProgressAchievements, {
-      userId,
-      comparison,
-    });
-
-    // Обновляем лидерборд
-    await ctx.scheduler.runAfter(0, internal.bodyAnalysis.updateLeaderboard, {
-      userId,
-      comparison,
-      analysisId: args.originalAnalysisId,
-    });
-
-    // Генерируем мотивационное сообщение
-    const motivationalMessage = generateMotivationalMessage(comparison);
-
-    return {
-      checkpointId,
-      comparison,
-      motivationalMessage,
-      newAnalysis: args.newAnalysisData,
-    };
   },
 });
 
@@ -291,51 +419,52 @@ export const updateProgress = mutation({
 export const getTransformationLeaderboard = query({
   args: {},
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error("Unauthorized");
-    }
+    try {
+      const identity = await requireAuth(ctx);
+      const userId = identity.subject;
 
-    const userId = identity.subject;
-
-    // Получаем топ трансформаций
-    const leaderboard = await ctx.db
-      .query("transformationLeaderboard")
-      .withIndex("score_active", (q) => q.eq("isActive", true))
-      .order("desc")
-      .take(100);
-
-    // Находим позицию текущего пользователя
-    const userEntry = await ctx.db
-      .query("transformationLeaderboard")
-      .withIndex("user_active", (q) => q.eq("userId", userId).eq("isActive", true))
-      .first();
-
-    let userRank = 0;
-    if (userEntry) {
-      const betterEntries = await ctx.db
+      // Получаем топ трансформаций
+      const leaderboard = await ctx.db
         .query("transformationLeaderboard")
         .withIndex("score_active", (q) => q.eq("isActive", true))
-        .filter((q) => q.gt(q.field("score"), userEntry.score))
-        .collect();
-      userRank = betterEntries.length + 1;
+        .order("desc")
+        .take(100);
+
+      // Находим позицию текущего пользователя
+      const userEntry = await ctx.db
+        .query("transformationLeaderboard")
+        .withIndex("user_active", (q) => q.eq("userId", userId).eq("isActive", true))
+        .first();
+
+      let userRank = 0;
+      if (userEntry) {
+        const betterEntries = await ctx.db
+          .query("transformationLeaderboard")
+          .withIndex("score_active", (q) => q.eq("isActive", true))
+          .filter((q) => q.gt(q.field("score"), userEntry.score))
+          .collect();
+        userRank = betterEntries.length + 1;
+      }
+
+      // Форматируем данные
+      const formattedLeaderboard = leaderboard.map((entry, index) => ({
+        id: entry._id,
+        name: entry.userName || "Анонимный пользователь",
+        imageUrl: entry.userImageUrl,
+        result: `${entry.weightLost}кг за ${entry.weeks} недель`,
+        duration: `${entry.weeks} недель`,
+        score: entry.score,
+        isCurrentUser: entry.userId === userId,
+      }));
+
+      return {
+        leaderboard: formattedLeaderboard,
+        userRank,
+      };
+    } catch (error) {
+      console.error("Error in getTransformationLeaderboard:", error);
+      throw error;
     }
-
-    // Форматируем данные
-    const formattedLeaderboard = leaderboard.map((entry, index) => ({
-      id: entry._id,
-      name: entry.userName || "Анонимный пользователь",
-      imageUrl: entry.userImageUrl,
-      result: `${entry.weightLost}кг за ${entry.weeks} недель`,
-      duration: `${entry.weeks} недель`,
-      score: entry.score,
-      isCurrentUser: entry.userId === userId,
-    }));
-
-    return {
-      leaderboard: formattedLeaderboard,
-      userRank,
-    };
   },
 });
 
@@ -394,24 +523,35 @@ export const savePersonalizedPlan = mutation({
     }),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error("Unauthorized");
+    try {
+      const identity = await requireAuth(ctx);
+      const userId = identity.subject;
+      const now = Date.now();
+
+      // Проверяем, что анализ принадлежит текущему пользователю
+      const analysis = await ctx.db.get(args.analysisId);
+      if (!analysis) {
+        throw new Error("Analysis not found");
+      }
+      
+      if (analysis.userId !== userId) {
+        throw new Error("Unauthorized - Analysis belongs to another user");
+      }
+
+      const planId = await ctx.db.insert("personalizedPlans", {
+        userId,
+        ...args,
+        createdAt: now,
+      });
+
+      return {
+        success: true,
+        planId,
+      };
+    } catch (error) {
+      console.error("Error in savePersonalizedPlan:", error);
+      throw error;
     }
-
-    const userId = identity.subject;
-    const now = Date.now();
-
-    const planId = await ctx.db.insert("personalizedPlans", {
-      userId,
-      ...args,
-      createdAt: now,
-    });
-
-    return {
-      success: true,
-      planId,
-    };
   },
 });
 
@@ -421,21 +561,34 @@ export const getPersonalizedPlan = query({
     analysisId: v.id("bodyAnalyses"),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error("Unauthorized");
+    try {
+      const identity = await requireAuth(ctx);
+      const userId = identity.subject;
+
+      // Проверяем, что анализ принадлежит текущему пользователю
+      const analysis = await ctx.db.get(args.analysisId);
+      if (!analysis) {
+        throw new Error("Analysis not found");
+      }
+      
+      if (analysis.userId !== userId) {
+        throw new Error("Unauthorized - Analysis belongs to another user");
+      }
+
+      const plan = await ctx.db
+        .query("personalizedPlans")
+        .withIndex("by_analysis", (q) => q.eq("analysisId", args.analysisId))
+        .first();
+
+      return plan;
+    } catch (error) {
+      console.error("Error in getPersonalizedPlan:", error);
+      throw error;
     }
-
-    const plan = await ctx.db
-      .query("personalizedPlans")
-      .withIndex("by_analysis", (q) => q.eq("analysisId", args.analysisId))
-      .first();
-
-    return plan;
   },
 });
 
-// Внутренние функции (internal)
+// Внутренние функции (internal) - остаются без изменений
 export const checkAndAwardAchievements = internalMutation({
   args: {
     userId: v.string(),
@@ -511,7 +664,6 @@ export const updateLeaderboard = internalMutation({
     const now = Date.now();
 
     // Получаем информацию о пользователе из другой таблицы
-    // Предполагаем, что у вас есть таблица users
     const userEntry = await ctx.db
       .query("users")
       .filter((q) => q.eq(q.field("email"), args.userId))
@@ -564,7 +716,7 @@ export const updateLeaderboard = internalMutation({
   },
 });
 
-// Вспомогательные функции
+// Вспомогательные функции - остаются без изменений
 function calculateStreak(checkpoints: any[]): number {
   if (checkpoints.length === 0) return 0;
 
