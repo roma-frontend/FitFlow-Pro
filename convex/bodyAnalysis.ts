@@ -329,10 +329,10 @@ export const getTransformationLeaderboard = query({
       let userEntry: any = null;
 
       // Если передан userId, находим позицию пользователя
-      if (args.userId) {
+      if (args.userId) { // Проверяем, что userId существует
         userEntry = await ctx.db
           .query("transformationLeaderboard")
-          .withIndex("user_active", (q) => q.eq("userId", args.userId).eq("isActive", true))
+          .withIndex("user_active", (q) => q.eq("userId", args.userId).eq("isActive", true)) // TypeScript теперь знает, что args.userId не undefined
           .first();
 
         if (userEntry) {
