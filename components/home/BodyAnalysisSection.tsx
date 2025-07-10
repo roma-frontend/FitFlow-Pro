@@ -2,7 +2,6 @@
 "use client";
 
 import React from 'react';
-import { motion } from 'framer-motion';
 import { 
   Camera, TrendingUp, Users, Award, 
   Star, ArrowRight, Sparkles, Zap 
@@ -214,7 +213,7 @@ export default function BodyAnalysisSection() {
                   
                   <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl">
                     <div>
-                      <p className="text-2xl font-bold text-blue-900">{item.result}</p>
+                      <p className="text-lg font-bold text-blue-900">{item.result}</p>
                       <p className="text-sm text-blue-700">
                         {item.bodyFat || item.muscleMass}
                       </p>

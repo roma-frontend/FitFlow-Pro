@@ -182,7 +182,7 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
             {/* Header */}
             <div className="sticky top-0 bg-white z-10 p-6 border-b">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap justify-center items-center gap-3">
                   <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-2xl flex items-center justify-center">
                     <Sparkles className="h-6 w-6 text-white" />
                   </div>
@@ -195,7 +195,7 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
                   variant="ghost"
                   size="icon"
                   onClick={handleClose}
-                  className="rounded-full"
+                  className="rounded-full absolute right-2 top-2"
                 >
                   <X className="h-5 w-5" />
                 </Button>

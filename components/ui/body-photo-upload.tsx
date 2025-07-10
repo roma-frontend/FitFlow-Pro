@@ -279,7 +279,7 @@ export function BodyPhotoUpload({
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
             className={`
-              relative w-full h-80 border-2 border-dashed rounded-2xl transition-all cursor-pointer
+              relative w-full h-[25rem] sm:h-[20rem] border-2 border-dashed rounded-2xl transition-all cursor-pointer
               ${dragOver 
                 ? 'border-blue-500 bg-blue-50' 
                 : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
