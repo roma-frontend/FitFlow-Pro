@@ -6,21 +6,22 @@ const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     console.log("🔄 API POST: Начало использования бонуса");
     
+    const resolvedParams = await params;
     const body = await request.json();
     console.log("📦 API POST: Получены данные:", body);
-    console.log("🎯 API POST: ID бонуса:", params.id);
+    console.log("🎯 API POST: ID бонуса:", resolvedParams.id);
     
     // Валидация данных
     if (!body.userId) {
       throw new Error("Отсутствует обязательное поле: userId");
     }
     
-    if (!params.id) {
+    if (!resolvedParams.id) {
       throw new Error("Отсутствует ID бонуса");
     }
     
@@ -28,7 +29,7 @@ export async function POST(
     
     const result = await convex.mutation("bonuses:useBonus", {
       userId: body.userId,
-      bonusId: params.id,
+      bonusId: resolvedParams.id,
       context: body.context || {},
       metadata: body.metadata || {}
     });
@@ -55,11 +56,12 @@ export async function POST(
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     console.log("🔄 API GET: Начало получения информации о бонусе");
     
+    const resolvedParams = await params;
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
     
@@ -67,15 +69,15 @@ export async function GET(
       throw new Error("Отсутствует обязательный параметр: userId");
     }
     
-    if (!params.id) {
+    if (!resolvedParams.id) {
       throw new Error("Отсутствует ID бонуса");
     }
     
-    console.log("📞 API GET: Получаем информацию о бонусе:", params.id);
+    console.log("📞 API GET: Получаем информацию о бонусе:", resolvedParams.id);
     
     const bonus = await convex.query("bonuses:getBonusDetails", {
       userId,
-      bonusId: params.id
+      bonusId: resolvedParams.id
     });
 
     console.log("✅ API GET: Получена информация о бонусе:", bonus ? 'да' : 'нет');
@@ -101,11 +103,12 @@ export async function GET(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     console.log("🔄 API DELETE: Начало отмены использования бонуса");
     
+    const resolvedParams = await params;
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
     
@@ -113,7 +116,7 @@ export async function DELETE(
       throw new Error("Отсутствует обязательный параметр: userId");
     }
     
-    if (!params.id) {
+    if (!resolvedParams.id) {
       throw new Error("Отсутствует ID бонуса");
     }
     
@@ -121,7 +124,7 @@ export async function DELETE(
     
     const result = await convex.mutation("bonuses:cancelBonusUsage", {
       userId,
-      bonusId: params.id
+      bonusId: resolvedParams.id
     });
 
     console.log("✅ API DELETE: Использование бонуса отменено:", result);
