@@ -311,7 +311,7 @@ export const updateProgress = mutation({
   },
 });
 
-// Получение лидерборда трансформаций
+
 export const getTransformationLeaderboard = query({
   args: {
     userId: v.optional(v.string()), // userId опциональный для лидерборда
@@ -329,10 +329,11 @@ export const getTransformationLeaderboard = query({
       let userEntry: any = null;
 
       // Если передан userId, находим позицию пользователя
-      if (args.userId) { // Проверяем, что userId существует
+      if (args.userId) {
+        const currentUserId = args.userId; // Присваиваем в переменную для type narrowing
         userEntry = await ctx.db
           .query("transformationLeaderboard")
-          .withIndex("user_active", (q) => q.eq("userId", args.userId).eq("isActive", true)) // TypeScript теперь знает, что args.userId не undefined
+          .withIndex("user_active", (q) => q.eq("userId", currentUserId).eq("isActive", true))
           .first();
 
         if (userEntry) {
