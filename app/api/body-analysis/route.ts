@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
 
     // Сохраняем в Convex
     try {
-      const result = await convex.mutation(api.bodyAnalysis.saveBodyAnalysis, {
+      const result = await convex.mutation("bodyAnalysis:saveBodyAnalysis", {
         userId,
         ...body
       });
@@ -93,7 +93,7 @@ export async function GET(request: NextRequest) {
     const userId = sessionData.user.id;
 
     // Получаем данные из Convex
-    const analysis = await convex.query(api.bodyAnalysis.getCurrentAnalysis, { userId });
+    const analysis = await convex.query("bodyAnalysis:getCurrentAnalysis", { userId });
 
     return NextResponse.json({
       success: true,
@@ -109,7 +109,3 @@ export async function GET(request: NextRequest) {
     }, { status: 500 });
   }
 }
-
-
-
-
