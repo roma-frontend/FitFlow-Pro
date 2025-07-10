@@ -1,12 +1,11 @@
 // components/ai-body-analysis/BodyAnalysisModal.tsx
 "use client";
 
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Camera, Upload, Sparkles, X, ArrowRight, 
-  Loader2, Check, AlertCircle, Share2, Zap,
-  TrendingUp, Clock, Target, Award
+  Sparkles, X, ArrowRight, Loader2, Check, 
+  Share2, Zap, TrendingUp, Award
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -16,9 +15,9 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useBodyAnalysisConvex } from '@/hooks/useBodyAnalysisConvex';
-import { validateImage, createImagePreview, optimizeImage } from '@/utils/imageUpload';
-import type { BodyAnalysisResult, PersonalizedPlan } from '@/types/bodyAnalysis';
+import { BodyPhotoUpload } from '@/components/ui/body-photo-upload';
 import { generatePersonalizedPlan } from '@/utils/generatePersonalizedPlan';
+import type { BodyAnalysisResult, PersonalizedPlan } from '@/types/bodyAnalysis';
 
 interface BodyAnalysisModalProps {
   isOpen: boolean;
@@ -30,7 +29,6 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
   const { user } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
-  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const {
     analyzeAndSaveBody,
@@ -40,48 +38,44 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
     error
   } = useBodyAnalysisConvex();
   
-  const [step, setStep] = useState<'upload' | 'analyzing' | 'results' | 'plan'>('upload');
-  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [step, setStep] = useState<'upload' | 'ready' | 'analyzing' | 'results' | 'plan'>('upload');
+  const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [analysisResult, setAnalysisResult] = useState<BodyAnalysisResult | null>(null);
   const [personalizedPlan, setPersonalizedPlan] = useState<PersonalizedPlan | null>(null);
   const [progress, setProgress] = useState(0);
   const [isSharing, setIsSharing] = useState(false);
 
-  // Обработка загрузки изображения
-  const handleImageUpload = useCallback(async (file: File) => {
-    // Валидация изображения
-    const validation = validateImage(file);
-    if (!validation.valid) {
+  // Обработка успешной загрузки фото
+  const handlePhotoUpload = useCallback((url: string, file: File) => {
+    setUploadedImageUrl(url);
+    setUploadedFile(file);
+    setStep('ready');
+    
+    toast({
+      title: "Фото загружено!",
+      description: "Теперь можно запустить анализ"
+    });
+  }, [toast]);
+
+  // Удаление фото
+  const handlePhotoRemove = useCallback(() => {
+    setUploadedImageUrl(null);
+    setUploadedFile(null);
+    setStep('upload');
+  }, []);
+
+  // Запуск анализа
+  const startAnalysis = async () => {
+    if (!uploadedFile) {
       toast({
         title: "Ошибка",
-        description: validation.error,
+        description: "Сначала загрузите фото",
         variant: "destructive"
       });
       return;
     }
 
-    try {
-      // Создаем превью
-      const preview = await createImagePreview(file);
-      setUploadedImage(preview);
-
-      // Оптимизируем изображение перед анализом
-      const optimizedFile = await optimizeImage(file);
-      
-      // Запускаем анализ
-      await startAnalysis(optimizedFile);
-    } catch (err) {
-      console.error("Error handling image:", err);
-      toast({
-        title: "Ошибка",
-        description: "Не удалось обработать изображение",
-        variant: "destructive"
-      });
-    }
-  }, [toast]);
-
-  // Запуск анализа
-  const startAnalysis = async (file: File) => {
     setStep('analyzing');
     setProgress(0);
 
@@ -92,7 +86,7 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
       }, 500);
 
       // Анализируем и сохраняем в Convex
-      const result = await analyzeAndSaveBody(file, user?.id || 'guest');
+      const result = await analyzeAndSaveBody(uploadedFile, user?.id || 'guest');
       
       clearInterval(progressInterval);
       setProgress(100);
@@ -119,7 +113,7 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
         description: error instanceof Error ? error.message : "Не удалось проанализировать изображение",
         variant: "destructive"
       });
-      setStep('upload');
+      setStep('ready');
     }
   };
 
@@ -161,7 +155,8 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
   // Сброс состояния при закрытии
   const handleClose = () => {
     setStep('upload');
-    setUploadedImage(null);
+    setUploadedImageUrl(null);
+    setUploadedFile(null);
     setAnalysisResult(null);
     setPersonalizedPlan(null);
     setProgress(0);
@@ -214,72 +209,83 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="text-center py-12"
+                  className="text-center py-8"
                 >
                   <div className="mb-8">
-                    <div className="w-32 h-32 bg-gradient-to-r from-blue-100 to-indigo-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                      <Camera className="h-16 w-16 text-blue-600" />
-                    </div>
                     <h3 className="text-2xl font-bold mb-3">Загрузите фото в полный рост</h3>
                     <p className="text-gray-600 max-w-md mx-auto mb-6">
                       AI проанализирует ваше телосложение и создаст персональный план трансформации
                     </p>
                   </div>
 
-                  <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) handleImageUpload(file);
-                      }}
+                  <BodyPhotoUpload
+                    onUploadComplete={handlePhotoUpload}
+                    disabled={false}
+                    className="max-w-lg mx-auto"
+                  />
+
+                  {error && (
+                    <div className="mt-6 p-4 bg-red-50 rounded-2xl max-w-md mx-auto">
+                      <div className="flex items-center gap-3 text-red-700">
+                        <X className="h-5 w-5" />
+                        <p className="text-sm">{error}</p>
+                      </div>
+                    </div>
+                  )}
+                </motion.div>
+              )}
+
+              {/* Ready Step */}
+              {step === 'ready' && uploadedImageUrl && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="text-center py-8"
+                >
+                  <div className="mb-8">
+                    <h3 className="text-2xl font-bold mb-3">Фото загружено!</h3>
+                    <p className="text-gray-600 mb-6">
+                      Теперь можно запустить AI анализ вашего тела
+                    </p>
+                  </div>
+
+                  <div className="max-w-md mx-auto mb-8">
+                    <BodyPhotoUpload
+                      currentUrl={uploadedImageUrl}
+                      onUploadComplete={handlePhotoUpload}
+                      onRemove={handlePhotoRemove}
+                      disabled={false}
                     />
-                    
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row gap-4 justify-center">
                     <Button
                       size="lg"
-                      onClick={() => fileInputRef.current?.click()}
+                      onClick={startAnalysis}
+                      disabled={isProcessing}
                       className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600"
                     >
-                      <Upload className="h-5 w-5 mr-2" />
-                      Выбрать фото
+                      {isProcessing ? (
+                        <>
+                          <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                          Анализируем...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="h-5 w-5 mr-2" />
+                          Начать анализ
+                          <ArrowRight className="h-5 w-5 ml-2" />
+                        </>
+                      )}
                     </Button>
                     
                     <Button
                       size="lg"
                       variant="outline"
-                      onClick={() => {
-                        // Открыть камеру на мобильных
-                        if (fileInputRef.current) {
-                          fileInputRef.current.capture = 'environment';
-                          fileInputRef.current.click();
-                        }
-                      }}
+                      onClick={() => setStep('upload')}
                     >
-                      <Camera className="h-5 w-5 mr-2" />
-                      Сделать фото
+                      Выбрать другое фото
                     </Button>
-                  </div>
-
-                  {error && (
-                    <div className="mt-6 p-4 bg-red-50 rounded-2xl max-w-md mx-auto">
-                      <div className="flex items-center gap-3 text-red-700">
-                        <AlertCircle className="h-5 w-5" />
-                        <p className="text-sm">{error}</p>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="mt-8 p-4 bg-blue-50 rounded-2xl max-w-md mx-auto">
-                    <h4 className="font-medium text-blue-900 mb-2">Рекомендации для лучшего результата:</h4>
-                    <ul className="text-sm text-blue-700 space-y-1 text-left">
-                      <li>• Фото в полный рост на светлом фоне</li>
-                      <li>• Облегающая одежда или спортивная форма</li>
-                      <li>• Хорошее освещение</li>
-                      <li>• Прямая поза, руки вдоль тела</li>
-                    </ul>
                   </div>
                 </motion.div>
               )}
@@ -292,10 +298,10 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
                   className="py-12 text-center"
                 >
                   <div className="max-w-md mx-auto">
-                    {uploadedImage && (
+                    {uploadedImageUrl && (
                       <div className="mb-8 relative">
                         <img
-                          src={uploadedImage}
+                          src={uploadedImageUrl}
                           alt="Анализируемое фото"
                           className="w-48 h-64 object-cover rounded-2xl mx-auto shadow-lg"
                         />
@@ -355,7 +361,6 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                 >
-                  {/* Результаты анализа - код остается тем же */}
                   <div className="grid md:grid-cols-2 gap-8 mb-8">
                     {/* Текущее состояние */}
                     <div>
@@ -519,7 +524,6 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                 >
-                  {/* План трансформации - код остается тем же */}
                   <div className="text-center mb-8">
                     <Badge className="mb-3 bg-gradient-to-r from-blue-500 to-indigo-500">
                       Персональный план готов!
