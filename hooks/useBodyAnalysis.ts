@@ -176,7 +176,7 @@ export function useBodyAnalysis() {
         }
     };
 
-    const fetchPersonalizedPlan = async (analysisId: Id<'bodyAnalyses'>) => {
+    const fetchPersonalizedPlan = async (analysisId: Id<'bodyAnalysis'>) => {
         if (!analysisId) return;
         setState(prev => ({ ...prev, loading: { ...prev.loading, plan: true }, error: null }));
         try {
@@ -304,14 +304,14 @@ export function useUserAchievements(userId: string) {
 }
 
 // Хук для работы с персонализированным планом
-export function usePersonalizedPlan(analysisId?: Id<'bodyAnalyses'>) {
+export function usePersonalizedPlan(analysisId?: Id<'bodyAnalysis'>) {
     const [state, setState] = useState({
         plan: null as PersonalizedPlan | null,
         loading: false,
         error: null as string | null
     });
 
-    const fetchPlan = async (id?: Id<'bodyAnalyses'>) => {
+    const fetchPlan = async (id?: Id<'bodyAnalysis'>) => {
         if (!id) return;
         setState(prev => ({ ...prev, loading: true, error: null }));
         try {
