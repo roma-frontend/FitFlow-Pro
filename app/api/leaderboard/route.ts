@@ -1,38 +1,42 @@
 // app/api/leaderboard/route.ts - Лидерборд
-
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/simple-auth';
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "@/convex/_generated/api";
 
-const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+// Ensure environment variable is available
+if (!process.env.NEXT_PUBLIC_CONVEX_URL) {
+  throw new Error('NEXT_PUBLIC_CONVEX_URL environment variable is not set');
+}
+
+const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL);
 
 export async function GET(request: NextRequest) {
-    try {
-      const sessionToken = request.cookies.get('session_id')?.value;
-      let userId: string | undefined;
-  
-      if (sessionToken) {
-        const sessionData = await getSession(sessionToken);
-        userId = sessionData?.user.id;
-      }
-  
-      // Получаем лидерборд из Convex (userId опциональный)
-      const leaderboard = await convex.query(api.bodyAnalysis.getTransformationLeaderboard, { 
-        userId 
-      });
-  
-      return NextResponse.json({
-        success: true,
-        data: leaderboard
-      });
-  
-    } catch (error) {
-      console.error('❌ Ошибка получения лидерборда:', error);
-      return NextResponse.json({
-        success: false,
-        error: 'Ошибка получения данных',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      }, { status: 500 });
+  try {
+    const sessionToken = request.cookies.get('session_id')?.value;
+    let userId: string | undefined;
+    
+    if (sessionToken) {
+      const sessionData = await getSession(sessionToken);
+      userId = sessionData?.user.id;
     }
+    
+    // Получаем лидерборд из Convex (userId опциональный)
+    const leaderboard = await convex.query(api.bodyAnalysis.getTransformationLeaderboard, {
+      userId
+    });
+    
+    return NextResponse.json({
+      success: true,
+      data: leaderboard
+    });
+    
+  } catch (error) {
+    console.error('❌ Ошибка получения лидерборда:', error);
+    return NextResponse.json({
+      success: false,
+      error: 'Ошибка получения данных',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
   }
+}
