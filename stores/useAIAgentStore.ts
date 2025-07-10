@@ -22,7 +22,7 @@ interface UserPreferences {
 }
 
 interface AnalysisResult {
-  id: string;
+  _id: string;
   progressPotential: number;
   bodyType: string;
   estimatedBodyFat: number;

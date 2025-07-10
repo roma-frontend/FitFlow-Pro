@@ -4,7 +4,6 @@ import { useAIAgent } from '@/stores/useAIAgentStore';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { useCartStore } from '@/stores/cartStore';
-import { productToAddCartData } from '@/utils/cartUtils';
 import type { BodyAnalysisResult, PersonalizedPlan } from '@/types/bodyAnalysis';
 
 export const useBodyAnalysisAI = () => {
@@ -84,7 +83,8 @@ export const useBodyAnalysisAI = () => {
     analysis: BodyAnalysisResult,
     platform: 'instagram' | 'facebook' | 'twitter' | 'link'
   ) => {
-    const shareUrl = `${window.location.origin}/transformation/${analysis.id}`;
+    // ✅ ИСПРАВЛЕНО: используем _id вместо id
+    const shareUrl = `${window.location.origin}/transformation/${analysis._id}`;
     const shareText = `Начинаю трансформацию с FitFlow Pro! AI предсказывает потенциал изменений ${analysis.progressPotential}%! 💪`;
     
     const shareData = {
@@ -116,8 +116,8 @@ export const useBodyAnalysisAI = () => {
         window.open(shareUrls[platform], '_blank');
       }
 
-      // Трекаем событие
-      await trackShareEvent(analysis.id, platform);
+      // ✅ ИСПРАВЛЕНО: используем _id вместо id
+      await trackShareEvent(analysis._id, platform);
       
       // Даем бонус за шаринг
       toast({
@@ -135,7 +135,8 @@ export const useBodyAnalysisAI = () => {
     analysis: BodyAnalysisResult
   ) => {
     openWithAction('compare_progress', {
-      analysisId: analysis.id,
+      // ✅ ИСПРАВЛЕНО: используем _id вместо id
+      analysisId: analysis._id,
       bodyType: analysis.bodyType,
       currentMetrics: {
         bodyFat: analysis.estimatedBodyFat,
@@ -223,14 +224,18 @@ async function activateMembership(type: string): Promise<boolean> {
   }
 }
 
-async function trackShareEvent(analysisId: string, platform: string): Promise<void> {
+// ✅ ИСПРАВЛЕНО: параметр принимает string | Id, конвертируем в string
+async function trackShareEvent(analysisId: string | any, platform: string): Promise<void> {
   try {
     await fetch('/api/analytics/track', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         event: 'body_analysis_shared',
-        properties: { analysisId, platform }
+        properties: { 
+          analysisId: String(analysisId), // Конвертируем в string на всякий случай
+          platform 
+        }
       })
     });
   } catch {
