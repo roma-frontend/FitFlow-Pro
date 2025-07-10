@@ -2,10 +2,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/simple-auth';
-import { ConvexHttpClient } from "convex/browser";
+import { fetchQuery, fetchMutation } from "convex/nextjs";
 import { api } from "@/convex/_generated/api";
-
-const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
 export async function POST(request: NextRequest) {
   try {
@@ -29,7 +27,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
 
     // Сохраняем план в Convex
-    const result = await convex.mutation(api.bodyAnalysis.savePersonalizedPlan, {
+    const result = await fetchMutation(api.bodyAnalysis.savePersonalizedPlan, {
       userId,
       ...body
     });
@@ -79,7 +77,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Получаем план из Convex
-    const plan = await convex.query(api.bodyAnalysis.getPersonalizedPlan, {
+    const plan = await fetchQuery(api.bodyAnalysis.getPersonalizedPlan, {
       userId,
       analysisId: analysisId as any
     });
