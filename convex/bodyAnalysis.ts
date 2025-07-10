@@ -574,7 +574,7 @@ export const updateLeaderboard = internalMutation({
     const now = Date.now();
 
     // Получаем информацию о пользователе из другой таблицы
-    const userEntry = await ctx.db
+    const userEntry: { name?: string; photoUrl?: string } | null = await ctx.db
       .query("users")
       .filter((q) => q.eq(q.field("email"), args.userId))
       .first();
