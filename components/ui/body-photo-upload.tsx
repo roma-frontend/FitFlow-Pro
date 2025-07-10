@@ -3,7 +3,7 @@
 
 import React, { useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Camera, Upload, X, Loader2, Image, AlertCircle } from 'lucide-react';
+import { Camera, Upload, X, Loader2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 
@@ -116,7 +116,7 @@ export function BodyPhotoUpload({
       });
     } catch (error) {
       console.error('Ошибка загрузки:', error);
-      
+
       // Очищаем превью при ошибке
       if (previewUrl && previewUrl.startsWith('blob:')) {
         URL.revokeObjectURL(previewUrl);
@@ -181,7 +181,7 @@ export function BodyPhotoUpload({
       }
 
       setPreviewUrl(null);
-      
+
       if (onRemove) {
         onRemove();
       }
@@ -232,7 +232,7 @@ export function BodyPhotoUpload({
                 alt="Загруженное фото"
                 className="w-full h-full object-cover"
               />
-              
+
               {/* Оверлей с кнопками */}
               <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
                 <Button
@@ -245,7 +245,7 @@ export function BodyPhotoUpload({
                   <Upload className="h-4 w-4 mr-2" />
                   Заменить
                 </Button>
-                
+
                 {onRemove && (
                   <Button
                     size="sm"
@@ -279,10 +279,7 @@ export function BodyPhotoUpload({
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
             className={`
-              relative w-full h-[25rem] sm:h-[20rem] border-2 border-dashed rounded-2xl transition-all cursor-pointer
-              ${dragOver 
-                ? 'border-blue-500 bg-blue-50' 
-                : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
+              relative w-full h-[25rem] sm:h-[20rem] border-2 border-dashed rounded-2xl transition-all cursor-pointer ${dragOver ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50'
               }
               ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
             `}
@@ -322,7 +319,7 @@ export function BodyPhotoUpload({
                   <Upload className="h-4 w-4 mr-2" />
                   Выбрать фото
                 </Button>
-                
+
                 <Button
                   type="button"
                   variant="outline"
@@ -351,7 +348,7 @@ export function BodyPhotoUpload({
 
       {/* Рекомендации */}
       <div className="mt-4 p-4 bg-blue-50 rounded-xl">
-        <div className="flex items-start gap-3">
+        <div className="flex items-start justify-center gap-3">
           <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5" />
           <div>
             <h4 className="font-medium text-blue-900 mb-1">

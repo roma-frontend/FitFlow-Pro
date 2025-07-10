@@ -11,7 +11,8 @@ import {
   Users,
   Settings,
   Receipt,
-  ShoppingBag
+  ShoppingBag,
+  BicepsFlexed
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -37,14 +38,24 @@ interface QuickActionsProps {
   customActions?: QuickAction[];
 }
 
-export default function QuickActions({ 
+export default function QuickActions({
   stats = { upcoming: 0, completed: 0, totalHours: 0, daysLeft: 15 },
   customActions = []
 }: QuickActionsProps) {
 
   const router = useRouter()
-  
+
   const defaultActions: QuickAction[] = [
+    {
+      id: 'body-analyze',
+      title: 'Анализ тела',
+      description: 'Замеры тела и прогресс',
+      icon: BicepsFlexed,
+      href: '/body-analyze',
+      color: 'text-fuchsia-700',
+      bgColor: 'bg-fuchsia-100',
+      priority: 1
+    },
     {
       id: 'book-trainer',
       title: 'Записаться к тренеру',
@@ -136,7 +147,7 @@ export default function QuickActions({
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
       {allActions.map((action) => {
         const IconComponent = action.icon;
-        
+
         return (
           <Card
             key={action.id}
@@ -147,25 +158,24 @@ export default function QuickActions({
               <div className={`w-12 h-12 ${action.bgColor} rounded-full flex items-center justify-center mx-auto mb-3 transition-all duration-300 group-hover:scale-110`}>
                 <IconComponent className={`h-6 w-6 ${action.color}`} />
               </div>
-              
+
               <div className="relative">
                 <h3 className="text-sm font-semibold mb-1 text-gray-900 group-hover:text-blue-600 transition-colors duration-300">
                   {action.title}
                 </h3>
-                
+
                 {action.badge && (
-                  <Badge 
-                    className={`absolute -top-6 -right-2 text-xs ${
-                      action.badge === 'Скоро истекает' 
-                        ? 'bg-red-500 text-white animate-pulse' 
-                        : 'bg-blue-500 text-white'
-                    }`}
+                  <Badge
+                    className={`absolute -top-6 -right-2 text-xs ${action.badge === 'Скоро истекает'
+                      ? 'bg-red-500 text-white animate-pulse'
+                      : 'bg-blue-500 text-white'
+                      }`}
                   >
                     {action.badge}
                   </Badge>
                 )}
               </div>
-              
+
               <p className="text-xs text-gray-600 leading-tight">
                 {action.description}
               </p>

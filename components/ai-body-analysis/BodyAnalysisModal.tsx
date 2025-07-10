@@ -1,7 +1,7 @@
 // components/ai-body-analysis/BodyAnalysisModal.tsx
 "use client";
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Sparkles, X, ArrowRight, Loader2, Check,
@@ -45,6 +45,36 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
   const [personalizedPlan, setPersonalizedPlan] = useState<PersonalizedPlan | null>(null);
   const [progress, setProgress] = useState(0);
   const [isSharing, setIsSharing] = useState(false);
+
+  const disableScroll = () => {
+    if (typeof window !== 'undefined') {
+      document.body.style.overflow = 'hidden';
+      // Опционально: предотвращаем скролл на мобильных устройствах
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+    }
+  };
+
+  const enableScroll = () => {
+    if (typeof window !== 'undefined') {
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+    }
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+      disableScroll();
+    } else {
+      enableScroll();
+    }
+
+    // Cleanup при размонтировании компонента
+    return () => {
+      enableScroll();
+    };
+  }, [isOpen]);
 
   // Обработка успешной загрузки фото
   const handlePhotoUpload = useCallback((url: string, file: File) => {
@@ -181,8 +211,8 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
           >
             {/* Header */}
             <div className="sticky top-0 bg-white z-10 p-6 border-b">
-              <div className="flex items-center justify-between">
-                <div className="flex flex-wrap justify-center items-center gap-3">
+              <div className="flex items-center justify-center">
+                <div className="flex flex-col lg:flex-row justify-center items-center text-center lg:text-left gap-3">
                   <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-2xl flex items-center justify-center">
                     <Sparkles className="h-6 w-6 text-white" />
                   </div>
@@ -195,7 +225,7 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
                   variant="ghost"
                   size="icon"
                   onClick={handleClose}
-                  className="rounded-full absolute right-2 top-2"
+                  className="rounded-full absolute right-4 top-4"
                 >
                   <X className="h-5 w-5" />
                 </Button>

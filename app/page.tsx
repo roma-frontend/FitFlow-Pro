@@ -113,10 +113,6 @@ export default function HomePage() {
               />
             </section>
 
-            {/* Остальные секции остаются без изменений */}
-            <section className="py-6 sm:py-8 lg:py-12 w-full">
-              <BodyAnalysisSection />
-            </section>
             <section className="py-6 sm:py-8 lg:py-12 w-full">
               <FeaturesSection />
             </section>

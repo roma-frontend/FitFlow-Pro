@@ -7,57 +7,24 @@ export async function POST(request: NextRequest) {
     console.log('🚀 POST /api/upload - начало загрузки файла');
     console.log('📋 Headers:', Object.fromEntries(request.headers.entries()));
 
-    // ✅ ИСПРАВЛЕНИЕ: Более детальная проверка токена
-    let sessionToken = null;
-    
-    // 1. Проверяем заголовок Authorization
-    const authHeader = request.headers.get('authorization');
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      sessionToken = authHeader.substring(7);
-      console.log('🔑 Токен найден в Authorization header');
-    }
-    
-    // 2. Проверяем X-Auth-Token заголовок
-    if (!sessionToken) {
-      sessionToken = request.headers.get('x-auth-token');
-      if (sessionToken) {
-        console.log('🔑 Токен найден в X-Auth-Token header');
-      }
-    }
-    
-    // 3. Проверяем cookies
-    if (!sessionToken) {
-      sessionToken = request.cookies.get('session_id')?.value;
-      if (sessionToken) {
-        console.log('🔑 Токен найден в session_id cookie');
-      }
-    }
-    
-    // 4. Проверяем альтернативные cookies
-    if (!sessionToken) {
-      sessionToken = request.cookies.get('auth_token')?.value;
-      if (sessionToken) {
-        console.log('🔑 Токен найден в auth_token cookie');
-      }
-    }
+    const sessionId = request.cookies.get('session_id')?.value;
+    const authToken = request.cookies.get('auth_token')?.value;
+    const sessionIdDebug = request.cookies.get('session_id_debug')?.value;
 
-    console.log('🔍 Итоговый токен:', sessionToken ? 'НАЙДЕН' : 'НЕ НАЙДЕН');
+    const jwtToken = sessionId || authToken || sessionIdDebug;
 
-    if (!sessionToken) {
-      console.log('❌ Upload: JWT токен отсутствует во всех источниках');
-      return NextResponse.json({ 
-        error: 'Не авторизован - токен отсутствует',
-        details: 'Токен не найден в headers и cookies'
-      }, { status: 401 });
+    if (!jwtToken) {
+      console.log('❌ JWT токен не найден в куки');
+      return null;
     }
 
     // ✅ ИСПРАВЛЕНИЕ: Детальная проверка сессии
     console.log('🔍 Проверяем сессию...');
-    const sessionData = await getSession(sessionToken);
-    
+    const sessionData = await getSession(jwtToken);
+
     if (!sessionData) {
       console.log('❌ Upload: JWT токен недействителен');
-      return NextResponse.json({ 
+      return NextResponse.json({
         error: 'Сессия недействительна',
         details: 'Токен не прошел проверку'
       }, { status: 401 });
@@ -81,7 +48,7 @@ export async function POST(request: NextRequest) {
       fileSize: file?.size,
       fileType: file?.type
     });
-    
+
     // Для body-analysis разрешаем всем авторизованным пользователям
     if (type === 'body-analysis') {
       console.log('✅ Upload: загрузка для анализа тела - разрешено для всех авторизованных');
@@ -91,7 +58,7 @@ export async function POST(request: NextRequest) {
         // Обычные пользователи могут загружать только свои аватары
         if (type !== 'profile' && type !== 'avatar') {
           console.log('❌ Upload: недостаточно прав для типа:', type);
-          return NextResponse.json({ 
+          return NextResponse.json({
             error: 'Недостаточно прав для данного типа загрузки',
             details: `Роль ${sessionData.user.role} не может загружать тип ${type}`
           }, { status: 403 });
@@ -101,7 +68,7 @@ export async function POST(request: NextRequest) {
 
     if (!file) {
       console.log('❌ Upload: файл не найден в FormData');
-      return NextResponse.json({ 
+      return NextResponse.json({
         error: 'Файл не найден',
         details: 'Файл отсутствует в FormData'
       }, { status: 400 });
@@ -156,7 +123,7 @@ export async function POST(request: NextRequest) {
     cloudinaryFormData.append('folder', folder);
 
     const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
-    
+
     console.log('📤 Отправляем в Cloudinary:', cloudinaryUrl);
 
     try {
@@ -183,7 +150,7 @@ export async function POST(request: NextRequest) {
       }
 
       const cloudinaryData = JSON.parse(responseText);
-      
+
       console.log('✅ Файл успешно загружен в Cloudinary:', {
         url: cloudinaryData.secure_url,
         publicId: cloudinaryData.public_id,

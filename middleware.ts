@@ -203,9 +203,9 @@ const SECURITY_CHECK = (request: NextRequest): NextResponse | null => {
     if (isDev) {
       console.log('🔄 БЛОКИРОВКА PREFETCH запроса:', request.nextUrl.pathname);
     }
-    
+
     // ИСПРАВЛЕНО: Используем пустой NextResponse для статуса 204
-    return new NextResponse(null, { 
+    return new NextResponse(null, {
       status: 204,
       headers: {
         'X-Prefetch-Blocked': 'true'
@@ -467,7 +467,7 @@ const getRouteType = (pathname: string, userRole?: string): { type: string; need
       '/create-test-user', '/admin-login', '/clear-cookies', '/make-admin',
       '/create-real-admin', '/debug-dashboard', '/debug-password',
       '/fix-password', '/demo-smart-login', '/test-qr-codes',
-      '/password-reset-success', '/mobile-scanner', '/auth/face-auth',
+      '/password-reset-success', '/mobile-scanner', '/auth/face-auth', '/body-analyze',
     ]);
 
     if (publicRoutes.has(pathname)) {
@@ -566,7 +566,7 @@ const log = (message: string, data?: any) => {
 };
 
 export async function middleware(request: NextRequest) {
-  
+
   const { pathname } = request.nextUrl;
 
   // 🚨 ПРОВЕРКА БЕЗОПАСНОСТИ (всегда первая)
