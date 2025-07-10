@@ -1,15 +1,8 @@
 // app/api/leaderboard/route.ts - Лидерборд
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/simple-auth';
-import { ConvexHttpClient } from "convex/browser";
+import { fetchQuery } from "convex/nextjs";
 import { api } from "@/convex/_generated/api";
-
-// Ensure environment variable is available
-if (!process.env.NEXT_PUBLIC_CONVEX_URL) {
-  throw new Error('NEXT_PUBLIC_CONVEX_URL environment variable is not set');
-}
-
-const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL);
 
 export async function GET(request: NextRequest) {
   try {
@@ -22,7 +15,7 @@ export async function GET(request: NextRequest) {
     }
     
     // Получаем лидерборд из Convex (userId опциональный)
-    const leaderboard = await convex.query(api.bodyAnalysis.getTransformationLeaderboard, {
+    const leaderboard = await fetchQuery(api.bodyAnalysis.getTransformationLeaderboard, {
       userId
     });
     
