@@ -1,23 +1,66 @@
-// app/api/upload/route.ts - ИСПРАВЛЕННАЯ ВЕРСИЯ ДЛЯ JWT
+// app/api/upload/route.ts - УЛУЧШЕННАЯ ВЕРСИЯ С ДЕТАЛЬНЫМ ЛОГИРОВАНИЕМ
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/simple-auth';
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('📁 POST /api/upload - начало загрузки файла');
+    console.log('🚀 POST /api/upload - начало загрузки файла');
+    console.log('📋 Headers:', Object.fromEntries(request.headers.entries()));
 
-    // ✅ ИСПРАВЛЕНИЕ: Получаем JWT токен из cookies
-    const sessionToken = request.cookies.get('session_id')?.value;
+    // ✅ ИСПРАВЛЕНИЕ: Более детальная проверка токена
+    let sessionToken = null;
+    
+    // 1. Проверяем заголовок Authorization
+    const authHeader = request.headers.get('authorization');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      sessionToken = authHeader.substring(7);
+      console.log('🔑 Токен найден в Authorization header');
+    }
+    
+    // 2. Проверяем X-Auth-Token заголовок
     if (!sessionToken) {
-      console.log('❌ Upload: JWT токен отсутствует');
-      return NextResponse.json({ error: 'Не авторизован - токен отсутствует' }, { status: 401 });
+      sessionToken = request.headers.get('x-auth-token');
+      if (sessionToken) {
+        console.log('🔑 Токен найден в X-Auth-Token header');
+      }
+    }
+    
+    // 3. Проверяем cookies
+    if (!sessionToken) {
+      sessionToken = request.cookies.get('session_id')?.value;
+      if (sessionToken) {
+        console.log('🔑 Токен найден в session_id cookie');
+      }
+    }
+    
+    // 4. Проверяем альтернативные cookies
+    if (!sessionToken) {
+      sessionToken = request.cookies.get('auth_token')?.value;
+      if (sessionToken) {
+        console.log('🔑 Токен найден в auth_token cookie');
+      }
     }
 
-    // ✅ ИСПРАВЛЕНИЕ: Используем await для getSession (теперь это async функция)
+    console.log('🔍 Итоговый токен:', sessionToken ? 'НАЙДЕН' : 'НЕ НАЙДЕН');
+
+    if (!sessionToken) {
+      console.log('❌ Upload: JWT токен отсутствует во всех источниках');
+      return NextResponse.json({ 
+        error: 'Не авторизован - токен отсутствует',
+        details: 'Токен не найден в headers и cookies'
+      }, { status: 401 });
+    }
+
+    // ✅ ИСПРАВЛЕНИЕ: Детальная проверка сессии
+    console.log('🔍 Проверяем сессию...');
     const sessionData = await getSession(sessionToken);
+    
     if (!sessionData) {
       console.log('❌ Upload: JWT токен недействителен');
-      return NextResponse.json({ error: 'Сессия недействительна' }, { status: 401 });
+      return NextResponse.json({ 
+        error: 'Сессия недействительна',
+        details: 'Токен не прошел проверку'
+      }, { status: 401 });
     }
 
     console.log('✅ Upload: JWT авторизация пройдена:', {
@@ -26,56 +69,95 @@ export async function POST(request: NextRequest) {
       email: sessionData.user.email
     });
 
-    if (!['super-admin', 'admin', 'manager'].includes(sessionData.user.role)) {
-      console.log('❌ Upload: недостаточно прав, роль:', sessionData.user.role);
-      return NextResponse.json({ error: 'Недостаточно прав' }, { status: 403 });
+    // ✅ ИСПРАВЛЕНИЕ: Детальная проверка FormData
+    console.log('📋 Парсим FormData...');
+    const formData = await request.formData();
+    const type = formData.get('type') as string || 'profile';
+    const file = formData.get('file') as File;
+
+    console.log('📁 Данные формы:', {
+      type,
+      fileName: file?.name,
+      fileSize: file?.size,
+      fileType: file?.type
+    });
+    
+    // Для body-analysis разрешаем всем авторизованным пользователям
+    if (type === 'body-analysis') {
+      console.log('✅ Upload: загрузка для анализа тела - разрешено для всех авторизованных');
+    } else {
+      // Для других типов проверяем права
+      if (!['super-admin', 'admin', 'manager', 'trainer'].includes(sessionData.user.role)) {
+        // Обычные пользователи могут загружать только свои аватары
+        if (type !== 'profile' && type !== 'avatar') {
+          console.log('❌ Upload: недостаточно прав для типа:', type);
+          return NextResponse.json({ 
+            error: 'Недостаточно прав для данного типа загрузки',
+            details: `Роль ${sessionData.user.role} не может загружать тип ${type}`
+          }, { status: 403 });
+        }
+      }
     }
 
-    // Получаем данные формы
-    const formData = await request.formData();
-    const file = formData.get('file') as File;
-    const type = formData.get('type') as string || 'profile';
-
     if (!file) {
-      return NextResponse.json({ error: 'Файл не найден' }, { status: 400 });
+      console.log('❌ Upload: файл не найден в FormData');
+      return NextResponse.json({ 
+        error: 'Файл не найден',
+        details: 'Файл отсутствует в FormData'
+      }, { status: 400 });
     }
 
     // Проверяем тип файла
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
     if (!allowedTypes.includes(file.type)) {
+      console.log('❌ Upload: неподдерживаемый тип файла:', file.type);
       return NextResponse.json({
-        error: 'Неподдерживаемый тип файла. Разрешены: JPEG, PNG, WebP, GIF'
+        error: 'Неподдерживаемый тип файла. Разрешены: JPEG, PNG, WebP, GIF',
+        details: `Получен тип: ${file.type}`
       }, { status: 400 });
     }
 
     // Проверяем размер файла (максимум 10MB)
     const maxSize = 10 * 1024 * 1024;
     if (file.size > maxSize) {
+      console.log('❌ Upload: файл слишком большой:', file.size);
       return NextResponse.json({
-        error: 'Файл слишком большой. Максимальный размер: 10MB'
+        error: 'Файл слишком большой. Максимальный размер: 10MB',
+        details: `Размер файла: ${file.size} байт`
       }, { status: 400 });
     }
 
     console.log('☁️ Загружаем в Cloudinary...');
 
+    // ✅ ИСПРАВЛЕНИЕ: Проверяем переменные окружения
     const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'dgbtipi5o';
-    
-    let uploadPreset = 'ml_default';
+    if (!cloudName) {
+      console.log('❌ Upload: CLOUDINARY_CLOUD_NAME не настроен');
+      return NextResponse.json({
+        error: 'Ошибка конфигурации сервера',
+        details: 'Cloudinary не настроен'
+      }, { status: 500 });
+    }
 
-    console.log('🔍 Попробуем найти рабочий preset...');
+    const uploadPreset = 'ml_default';
+    const folder = type === 'body-analysis' ? 'body-analysis' : 'user-avatars';
+
+    console.log('🔍 Параметры Cloudinary:', {
+      cloudName,
+      uploadPreset,
+      folder,
+      fileName: file.name,
+      fileSize: file.size
+    });
 
     const cloudinaryFormData = new FormData();
     cloudinaryFormData.append('file', file);
     cloudinaryFormData.append('upload_preset', uploadPreset);
-    cloudinaryFormData.append('folder', 'user-avatars');
+    cloudinaryFormData.append('folder', folder);
 
     const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
     
-    console.log('📤 Отправляем в Cloudinary:', {
-      url: cloudinaryUrl,
-      preset: uploadPreset,
-      folder: 'user-avatars'
-    });
+    console.log('📤 Отправляем в Cloudinary:', cloudinaryUrl);
 
     try {
       const cloudinaryResponse = await fetch(cloudinaryUrl, {
@@ -87,29 +169,16 @@ export async function POST(request: NextRequest) {
       console.log('📡 Ответ от Cloudinary:', {
         status: cloudinaryResponse.status,
         ok: cloudinaryResponse.ok,
-        response: responseText.substring(0, 500)
+        statusText: cloudinaryResponse.statusText,
+        responseLength: responseText.length
       });
 
       if (!cloudinaryResponse.ok) {
-        console.log('⚠️ ml_default не работает, пробуем без preset...');
-        
-        const fallbackFormData = new FormData();
-        fallbackFormData.append('file', file);
-        fallbackFormData.append('folder', 'user-avatars');
-        
-        const apiKey = process.env.NEXT_PUBLIC_CLOUDINARY_API_KEY;
-        const timestamp = Math.round(Date.now() / 1000);
-        
-        if (apiKey) {
-          fallbackFormData.append('api_key', apiKey);
-          fallbackFormData.append('timestamp', timestamp.toString());
-        }
-
+        console.error('❌ Ошибка Cloudinary:', responseText);
         return NextResponse.json({
-          error: 'Upload preset не найден',
-          details: `Preset "${uploadPreset}" не существует в аккаунте ${cloudName}`,
-          suggestion: 'Создайте unsigned upload preset в Cloudinary Dashboard',
-          cloudinaryResponse: responseText,
+          error: 'Ошибка загрузки в Cloudinary',
+          details: responseText,
+          cloudinaryStatus: cloudinaryResponse.status
         }, { status: 500 });
       }
 
@@ -117,12 +186,14 @@ export async function POST(request: NextRequest) {
       
       console.log('✅ Файл успешно загружен в Cloudinary:', {
         url: cloudinaryData.secure_url,
-        publicId: cloudinaryData.public_id
+        publicId: cloudinaryData.public_id,
+        width: cloudinaryData.width,
+        height: cloudinaryData.height
       });
 
-      return NextResponse.json({
+      const responseData = {
         success: true,
-        message: 'Файл успешно загружен в Cloudinary',
+        message: 'Файл успешно загружен',
         url: cloudinaryData.secure_url,
         data: {
           fileName: cloudinaryData.public_id,
@@ -132,6 +203,8 @@ export async function POST(request: NextRequest) {
           url: cloudinaryData.secure_url,
           uploadedAt: new Date().toISOString(),
           uploadedBy: sessionData.user.name,
+          userId: sessionData.user.id,
+          uploadType: type,
           cloudinaryData: {
             publicId: cloudinaryData.public_id,
             width: cloudinaryData.width,
@@ -140,7 +213,10 @@ export async function POST(request: NextRequest) {
             bytes: cloudinaryData.bytes
           }
         }
-      });
+      };
+
+      console.log('🎉 Успешный ответ клиенту');
+      return NextResponse.json(responseData);
 
     } catch (cloudinaryError) {
       console.error('❌ Исключение при запросе к Cloudinary:', cloudinaryError);

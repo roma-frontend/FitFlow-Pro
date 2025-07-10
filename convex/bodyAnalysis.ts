@@ -7,18 +7,18 @@ import { internal } from "./_generated/api";
 // Сохранение анализа тела с явной передачей userId
 export const saveBodyAnalysis = mutation({
   args: {
-    userId: v.string(), // Передаем userId явно
+    userId: v.string(),
     bodyType: v.union(
       v.literal("ectomorph"),
       v.literal("mesomorph"),
       v.literal("endomorph"),
       v.literal("mixed")
     ),
-    estimatedBodyFat: v.number(),
-    estimatedMuscleMass: v.number(),
+    estimatedBodyFat: v.float64(),
+    estimatedMuscleMass: v.float64(),
     posture: v.union(v.literal("good"), v.literal("fair"), v.literal("poor")),
-    fitnessScore: v.number(),
-    progressPotential: v.number(),
+    fitnessScore: v.float64(),
+    progressPotential: v.float64(),
     problemAreas: v.array(
       v.object({
         area: v.union(
@@ -35,72 +35,47 @@ export const saveBodyAnalysis = mutation({
     recommendations: v.object({
       primaryGoal: v.string(),
       secondaryGoals: v.array(v.string()),
-      estimatedTimeToGoal: v.number(),
-      weeklyTrainingHours: v.number(),
+      estimatedTimeToGoal: v.float64(),
+      weeklyTrainingHours: v.float64(),
     }),
     currentVisualData: v.object({
-      imageUrl: v.string(),
       analyzedImageUrl: v.string(),
-      bodyOutlineData: v.optional(v.any())
+      bodyOutlineData: v.optional(v.any()),
+      imageUrl: v.string()
     }),
     futureProjections: v.object({
       weeks4: v.object({
-        estimatedWeight: v.number(),
-        estimatedBodyFat: v.number(),
-        estimatedMuscleMass: v.number(),
-        confidenceLevel: v.number(),
+        confidenceLevel: v.float64(),
+        estimatedBodyFat: v.float64(),
+        estimatedMuscleMass: v.float64(),
+        estimatedWeight: v.float64()
       }),
       weeks8: v.object({
-        estimatedWeight: v.number(),
-        estimatedBodyFat: v.number(),
-        estimatedMuscleMass: v.number(),
-        confidenceLevel: v.number(),
+        confidenceLevel: v.float64(),
+        estimatedBodyFat: v.float64(),
+        estimatedMuscleMass: v.float64(),
+        estimatedWeight: v.float64()
       }),
       weeks12: v.object({
-        estimatedWeight: v.number(),
-        estimatedBodyFat: v.number(),
-        estimatedMuscleMass: v.number(),
-        confidenceLevel: v.number(),
-      }),
+        confidenceLevel: v.float64(),
+        estimatedBodyFat: v.float64(),
+        estimatedMuscleMass: v.float64(),
+        estimatedWeight: v.float64()
+      })
     }),
+    // Опциональные временные метки
+    createdAt: v.optional(v.float64()),
+    updatedAt: v.optional(v.float64())
   },
   handler: async (ctx, args) => {
-    try {
-      // Для кастомной аутентификации просто проверяем, что userId передан
-      if (!args.userId) {
-        throw new Error("Unauthorized - userId is required");
-      }
+    // Удаляем временные метки, если они есть
+    const { createdAt, updatedAt, ...dataToSave } = args;
 
-      const now = Date.now();
+    // Сохраняем данные
+    const analysisId = await ctx.db.insert("bodyAnalysis", dataToSave);
 
-      // Сохраняем в базу данных
-      const analysisData = {
-        ...args,
-        createdAt: now,
-        updatedAt: now,
-      };
-
-      console.log("Saving body analysis for user:", args.userId);
-
-      const analysisId = await ctx.db.insert("bodyAnalyses", analysisData);
-
-      // Запускаем проверку достижений
-      await ctx.scheduler.runAfter(0, internal.bodyAnalysis.checkAndAwardAchievements, {
-        userId: args.userId,
-        achievementType: "first_analysis",
-      });
-
-      return {
-        success: true,
-        analysisId,
-        message: "Analysis saved successfully"
-      };
-
-    } catch (error) {
-      console.error("Error in saveBodyAnalysis:", error);
-      throw error;
-    }
-  },
+    return analysisId;
+  }
 });
 
 // Получение текущего анализа - с передачей userId
@@ -115,7 +90,7 @@ export const getCurrentAnalysis = query({
       }
 
       const analysis = await ctx.db
-        .query("bodyAnalyses")
+        .query("bodyAnalysis")
         .withIndex("by_user", (q) => q.eq("userId", args.userId))
         .order("desc")
         .first();
@@ -145,7 +120,7 @@ export const getCurrentAnalysis = query({
 // Получение чекпоинтов прогресса
 export const getProgressCheckpoints = query({
   args: {
-    userId: v.string(), // Передаем userId явно
+    userId: v.string(),
   },
   handler: async (ctx, args) => {
     try {
@@ -165,7 +140,7 @@ export const getProgressCheckpoints = query({
       // Вычисляем следующую дату чекпоинта
       const lastCheckpoint = checkpoints[checkpoints.length - 1];
       const nextCheckpointDate = lastCheckpoint
-        ? new Date(lastCheckpoint.createdAt + 7 * 24 * 60 * 60 * 1000)
+        ? new Date(lastCheckpoint._creationTime + 7 * 24 * 60 * 60 * 1000) // Используем _creationTime
         : new Date();
 
       return {
@@ -183,9 +158,9 @@ export const getProgressCheckpoints = query({
 // Обновление прогресса
 export const updateProgress = mutation({
   args: {
-    userId: v.string(), // Передаем userId явно
+    userId: v.string(),
     photoUrl: v.string(),
-    originalAnalysisId: v.id("bodyAnalyses"),
+    originalAnalysisId: v.id("bodyAnalysis"),
     newAnalysisData: v.object({
       bodyType: v.union(
         v.literal("ectomorph"),
@@ -193,11 +168,11 @@ export const updateProgress = mutation({
         v.literal("endomorph"),
         v.literal("mixed")
       ),
-      estimatedBodyFat: v.number(),
-      estimatedMuscleMass: v.number(),
+      estimatedBodyFat: v.float64(), // Изменено на float64
+      estimatedMuscleMass: v.float64(), // Изменено на float64
       posture: v.union(v.literal("good"), v.literal("fair"), v.literal("poor")),
-      fitnessScore: v.number(),
-      progressPotential: v.number(),
+      fitnessScore: v.float64(), // Изменено на float64
+      progressPotential: v.float64(), // Изменено на float64
       problemAreas: v.array(
         v.object({
           area: v.union(
@@ -214,36 +189,36 @@ export const updateProgress = mutation({
       recommendations: v.object({
         primaryGoal: v.string(),
         secondaryGoals: v.array(v.string()),
-        estimatedTimeToGoal: v.number(),
-        weeklyTrainingHours: v.number(),
+        estimatedTimeToGoal: v.float64(), // Изменено на float64
+        weeklyTrainingHours: v.float64(), // Изменено на float64
       }),
       currentVisualData: v.object({
         imageUrl: v.string(),
-        analyzedImageUrl: v.optional(v.string()),
+        analyzedImageUrl: v.string(), // Сделано обязательным
         bodyOutlineData: v.optional(v.any()),
       }),
       futureProjections: v.object({
         weeks4: v.object({
-          estimatedWeight: v.number(),
-          estimatedBodyFat: v.number(),
-          estimatedMuscleMass: v.number(),
-          confidenceLevel: v.number(),
+          estimatedWeight: v.float64(), // Изменено на float64
+          estimatedBodyFat: v.float64(),
+          estimatedMuscleMass: v.float64(),
+          confidenceLevel: v.float64(),
         }),
         weeks8: v.object({
-          estimatedWeight: v.number(),
-          estimatedBodyFat: v.number(),
-          estimatedMuscleMass: v.number(),
-          confidenceLevel: v.number(),
+          estimatedWeight: v.float64(),
+          estimatedBodyFat: v.float64(),
+          estimatedMuscleMass: v.float64(),
+          confidenceLevel: v.float64(),
         }),
         weeks12: v.object({
-          estimatedWeight: v.number(),
-          estimatedBodyFat: v.number(),
-          estimatedMuscleMass: v.number(),
-          confidenceLevel: v.number(),
+          estimatedWeight: v.float64(),
+          estimatedBodyFat: v.float64(),
+          estimatedMuscleMass: v.float64(),
+          confidenceLevel: v.float64(),
         }),
       }),
     }),
-    weight: v.optional(v.number()),
+    weight: v.optional(v.float64()), // Изменено на float64
   },
   handler: async (ctx, args) => {
     try {
@@ -265,7 +240,7 @@ export const updateProgress = mutation({
       // Сравниваем анализы
       const comparison = compareAnalyses(originalAnalysis, args.newAnalysisData);
 
-      // Создаем новый чекпоинт
+      // Создаем новый чекпоинт БЕЗ поля createdAt
       const checkpointId = await ctx.db.insert("progressCheckpoints", {
         userId: args.userId,
         analysisId: args.originalAnalysisId,
@@ -279,7 +254,7 @@ export const updateProgress = mutation({
           onTrack: comparison.onTrack,
           deviationPercent: comparison.progressPercentage,
         },
-        createdAt: Date.now(),
+        // Убрали createdAt - Convex автоматически добавит _creationTime
       });
 
       // Проверяем достижения
@@ -372,7 +347,7 @@ export const getTransformationLeaderboard = query({
 export const savePersonalizedPlan = mutation({
   args: {
     userId: v.string(), // Передаем userId явно
-    analysisId: v.id("bodyAnalyses"),
+    analysisId: v.id("bodyAnalysis"),
     recommendedTrainer: v.object({
       id: v.string(),
       name: v.string(),
@@ -468,7 +443,7 @@ export const savePersonalizedPlan = mutation({
 export const getPersonalizedPlan = query({
   args: {
     userId: v.string(), // Передаем userId явно
-    analysisId: v.id("bodyAnalyses"),
+    analysisId: v.id("bodyAnalysis"),
   },
   handler: async (ctx, args) => {
     try {
@@ -568,7 +543,7 @@ export const updateLeaderboard = internalMutation({
   args: {
     userId: v.string(),
     comparison: v.any(),
-    analysisId: v.id("bodyAnalyses"),
+    analysisId: v.id("bodyAnalysis"),
   },
   handler: async (ctx, args) => {
     const { comparison } = args;

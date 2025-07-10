@@ -8,7 +8,7 @@ export interface BodyMetrics {
 }
 
 export interface BodyAnalysisResult {
-  _id: Id<"bodyAnalyses">;
+  _id: Id<"bodyAnalysis">;
   userId: string;
   date: Date;
   bodyType: 'ectomorph' | 'mesomorph' | 'endomorph' | 'mixed';
@@ -85,7 +85,7 @@ export interface BodyAnalysisInput {
 export interface ProgressCheckpoint {
   _id: Id<"progressCheckpoints">;
   userId: string;
-  analysisId: Id<"bodyAnalyses">;
+  analysisId: Id<"bodyAnalysis">;
   weight: number;
   bodyFat: number;
   muscleMass: number;
@@ -101,7 +101,7 @@ export interface ProgressCheckpoint {
 
 export interface ProgressUpdateInput {
   photoUrl: string;
-  originalAnalysisId: Id<"bodyAnalyses">;
+  originalAnalysisId: Id<"bodyAnalysis">;
   newAnalysisData: BodyAnalysisInput;
   weight?: number;
 }
@@ -118,7 +118,7 @@ export interface TransformationLeaderboardEntry {
   userId: string;
   userName: string;
   userImageUrl?: string;
-  analysisId: Id<"bodyAnalyses">;
+  analysisId: Id<"bodyAnalysis">;
   startWeight: number;
   currentWeight: number;
   weightLost: number;
@@ -139,7 +139,7 @@ export interface LeaderboardData {
 
 export interface PersonalizedPlan {
   _id: Id<"personalizedPlans">;
-  analysisId: Id<"bodyAnalyses">;
+  analysisId: Id<"bodyAnalysis">;
   recommendedTrainer: {
     id: string;
     name: string;
@@ -179,7 +179,7 @@ export interface PersonalizedPlan {
 }
 
 export interface PersonalizedPlanInput {
-  analysisId: Id<"bodyAnalyses">;
+  analysisId: Id<"bodyAnalysis">;
   recommendedTrainer: {
     id: string;
     name: string;

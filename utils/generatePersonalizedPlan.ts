@@ -6,27 +6,53 @@ import type { BodyAnalysisResult, PersonalizedPlan } from '@/types/bodyAnalysis'
 export async function generatePersonalizedPlan(
     analysis: BodyAnalysisResult
 ): Promise<PersonalizedPlan> {
+    // Добавляем валидацию входных данных
+    if (!analysis) {
+        throw new Error('Analysis data is required');
+    }
+
+    // Проверяем структуру данных и добавляем значения по умолчанию
+    const validatedAnalysis = {
+        ...analysis,
+        recommendations: {
+            ...(analysis.recommendations || {}), // Сначала существующие значения
+            // Затем значения по умолчанию только для отсутствующих полей
+            primaryGoal: analysis.recommendations?.primaryGoal || 'Общее улучшение формы',
+            secondaryGoals: analysis.recommendations?.secondaryGoals || [],
+            estimatedTimeToGoal: analysis.recommendations?.estimatedTimeToGoal || 12,
+            weeklyTrainingHours: analysis.recommendations?.weeklyTrainingHours || 4,
+        },
+        bodyType: analysis.bodyType || 'mixed',
+        estimatedBodyFat: analysis.estimatedBodyFat || 25,
+        estimatedMuscleMass: analysis.estimatedMuscleMass || 30,
+        fitnessScore: analysis.fitnessScore || 50,
+        progressPotential: analysis.progressPotential || 70,
+        futureProjections: analysis.futureProjections || {
+            weeks4: { estimatedWeight: -2, estimatedBodyFat: 23, estimatedMuscleMass: 31, confidenceLevel: 80 },
+            weeks8: { estimatedWeight: -4, estimatedBodyFat: 21, estimatedMuscleMass: 32, confidenceLevel: 75 },
+            weeks12: { estimatedWeight: -6, estimatedBodyFat: 19, estimatedMuscleMass: 33, confidenceLevel: 70 }
+        }
+    };
+
     const planId = `plan-${Date.now()}` as Id<'personalizedPlans'>;
-    // В реальном приложении здесь был бы вызов API для получения данных о тренерах,
-    // программах и продуктах. Сейчас используем mock данные.
 
     // Подбираем тренера на основе типа телосложения и целей
-    const trainer = selectTrainer(analysis);
+    const trainer = selectTrainer(validatedAnalysis);
 
     // Подбираем программу тренировок
-    const trainingProgram = selectTrainingProgram(analysis);
+    const trainingProgram = selectTrainingProgram(validatedAnalysis);
 
     // Создаем план питания
-    const nutritionPlan = createNutritionPlan(analysis);
+    const nutritionPlan = createNutritionPlan(validatedAnalysis);
 
     // Подбираем спортивное питание
-    const recommendedProducts = selectSupplements(analysis);
+    const recommendedProducts = selectSupplements(validatedAnalysis);
 
     // Рекомендуем абонемент
-    const membershipRecommendation = selectMembership(analysis);
+    const membershipRecommendation = selectMembership(validatedAnalysis);
 
     // Формируем прогноз результатов
-    const projectedResults = createProjectedResults(analysis);
+    const projectedResults = createProjectedResults(validatedAnalysis);
 
     return {
         _id: planId,
@@ -41,6 +67,19 @@ export async function generatePersonalizedPlan(
 }
 
 function selectTrainer(analysis: BodyAnalysisResult) {
+    // Проверяем наличие необходимых данных
+    if (!analysis || !analysis.recommendations || !analysis.recommendations.primaryGoal) {
+        console.error('Missing recommendations data in analysis:', analysis);
+        // Возвращаем дефолтного тренера
+        return {
+            id: 'trainer-default',
+            name: 'Анна Петрова',
+            specialty: 'Универсальный тренинг',
+            matchScore: 70,
+            reason: 'Опытный тренер для достижения любых целей',
+        };
+    }
+
     // База тренеров с их специализациями
     const trainers = [
         {
@@ -77,12 +116,12 @@ function selectTrainer(analysis: BodyAnalysisResult) {
         let score = 0;
 
         // Соответствие типу телосложения
-        if (trainer.bodyTypes.includes(analysis.bodyType)) {
+        if (analysis.bodyType && trainer.bodyTypes.includes(analysis.bodyType)) {
             score += 40;
         }
 
-        // Соответствие целям
-        const primaryGoal = analysis.recommendations.primaryGoal.toLowerCase();
+        // Соответствие целям - здесь была ошибка
+        const primaryGoal = (analysis.recommendations.primaryGoal || '').toLowerCase();
         trainer.focus.forEach(focus => {
             if (primaryGoal.includes(focus) ||
                 (focus === 'weight_loss' && primaryGoal.includes('жир')) ||
@@ -109,8 +148,8 @@ function selectTrainer(analysis: BodyAnalysisResult) {
         specialty: bestTrainer.specialty,
         matchScore: Math.min(95, Math.round(maxScore)),
         reason: `Специализируется на клиентах с типом телосложения ${analysis.bodyType === 'ectomorph' ? 'эктоморф' :
-                analysis.bodyType === 'mesomorph' ? 'мезоморф' :
-                    analysis.bodyType === 'endomorph' ? 'эндоморф' : 'смешанный'
+            analysis.bodyType === 'mesomorph' ? 'мезоморф' :
+                analysis.bodyType === 'endomorph' ? 'эндоморф' : 'смешанный'
             } и имеет ${bestTrainer.experience} лет опыта в достижении подобных целей`,
     };
 }

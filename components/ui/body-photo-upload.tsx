@@ -28,8 +28,176 @@ export function BodyPhotoUpload({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  // Функция загрузки файла через API
+  // ✅ ИСПРАВЛЕНИЕ: Централизованная функция получения токена
+  const getStorageToken = (): string | null => {
+    try {
+      // Проверяем различные источники токенов
+      const tokenSources = [
+        'auth_token',
+        'session_token', 
+        'jwt_token',
+        'token',
+        'access_token',
+        'session_id'
+      ];
+
+      for (const key of tokenSources) {
+        // Сначала проверяем localStorage
+        const localToken = localStorage.getItem(key);
+        if (localToken?.trim()) {
+          console.log(`🔑 Найден токен в localStorage[${key}]:`, localToken.substring(0, 20) + '...');
+          return localToken;
+        }
+
+        // Затем проверяем sessionStorage
+        const sessionToken = sessionStorage.getItem(key);
+        if (sessionToken?.trim()) {
+          console.log(`🔑 Найден токен в sessionStorage[${key}]:`, sessionToken.substring(0, 20) + '...');
+          return sessionToken;
+        }
+      }
+
+      // Проверяем cookies через document.cookie
+      const cookieString = document.cookie;
+      if (cookieString) {
+        const cookies = cookieString.split(';').reduce((acc, cookie) => {
+          const [key, value] = cookie.trim().split('=');
+          if (key && value) {
+            acc[key] = decodeURIComponent(value);
+          }
+          return acc;
+        }, {} as Record<string, string>);
+
+        for (const key of tokenSources) {
+          if (cookies[key]?.trim()) {
+            console.log(`🔑 Найден токен в cookies[${key}]:`, cookies[key].substring(0, 20) + '...');
+            return cookies[key];
+          }
+        }
+      }
+
+      console.log('❌ Токен не найден ни в одном источнике');
+      return null;
+    } catch (error) {
+      console.error('❌ Ошибка при получении токена:', error);
+      return null;
+    }
+  };
+
+  // ✅ ИСПРАВЛЕНИЕ: Проверка валидности токена
+  const validateToken = async (token: string): Promise<boolean> => {
+    try {
+      console.log('🔍 Проверяем валидность токена...');
+      
+      const response = await fetch('/api/auth/validate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        credentials: 'include',
+      });
+
+      const isValid = response.ok;
+      console.log(`${isValid ? '✅' : '❌'} Токен ${isValid ? 'валиден' : 'недействителен'}`);
+      return isValid;
+    } catch (error) {
+      console.error('❌ Ошибка при валидации токена:', error);
+      return false;
+    }
+  };
+
+  // ✅ ИСПРАВЛЕНИЕ: Получение нового токена
+  const getRefreshToken = async (): Promise<string | null> => {
+    try {
+      console.log('🔄 Попытка обновления токена...');
+      
+      const response = await fetch('/api/auth/refresh', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.token || data.access_token) {
+          const newToken = data.token || data.access_token;
+          // Сохраняем новый токен
+          localStorage.setItem('auth_token', newToken);
+          console.log('✅ Токен успешно обновлен');
+          return newToken;
+        }
+      }
+
+      console.log('❌ Не удалось обновить токен, статус:', response.status);
+      return null;
+    } catch (error) {
+      console.error('❌ Ошибка при обновлении токена:', error);
+      return null;
+    }
+  };
+
+  // ✅ ИСПРАВЛЕНИЕ: Получение валидного токена с обновлением
+  const getValidToken = async (): Promise<string | null> => {
+    console.log('🔑 Получаем валидный токен...');
+    
+    let token = getStorageToken();
+    
+    if (!token) {
+      console.log('❌ Токен отсутствует в хранилище');
+      return null;
+    }
+
+    // Проверяем валидность токена
+    const isValid = await validateToken(token);
+    
+    if (isValid) {
+      console.log('✅ Токен действителен');
+      return token;
+    }
+
+    console.log('⚠️ Токен недействителен, попытка обновления...');
+    
+    // Пытаемся обновить токен
+    const newToken = await getRefreshToken();
+    
+    if (newToken) {
+      console.log('✅ Получен новый токен');
+      return newToken;
+    }
+
+    // Если не удалось обновить, очищаем все токены
+    console.log('❌ Очищаем все токены из хранилища');
+    const keysToRemove = ['auth_token', 'session_token', 'jwt_token', 'token', 'access_token', 'session_id'];
+    keysToRemove.forEach(key => {
+      localStorage.removeItem(key);
+      sessionStorage.removeItem(key);
+    });
+
+    return null;
+  };
+
+  // ✅ ИСПРАВЛЕНИЕ: Улучшенная функция загрузки
   const uploadFile = async (file: File): Promise<string> => {
+    console.log('📤 Начинаем загрузку файла:', {
+      name: file.name,
+      size: file.size,
+      type: file.type
+    });
+
+    // Получаем валидный токен
+    const token = await getValidToken();
+    
+    if (!token) {
+      const error = new Error('Авторизация не найдена. Пожалуйста, войдите в систему.');
+      console.error('❌ Ошибка авторизации:', error.message);
+      throw error;
+    }
+
+    console.log('🔑 Используем токен для загрузки');
+
     const formData = new FormData();
     formData.append('file', file);
     formData.append('type', 'body-analysis');
@@ -38,36 +206,69 @@ export function BodyPhotoUpload({
       const response = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
-        credentials: 'include'
+        credentials: 'include',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'X-Auth-Token': token,
+        }
+      });
+
+      console.log('📡 Ответ от сервера:', {
+        status: response.status,
+        ok: response.ok,
+        statusText: response.statusText,
+        headers: Object.fromEntries(response.headers.entries())
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to upload file');
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch {
+          errorData = { error: `HTTP ${response.status}: ${response.statusText}` };
+        }
+        
+        console.error('❌ Ошибка от сервера:', errorData);
+        
+        if (response.status === 401) {
+          // Очищаем все токены при ошибке авторизации
+          const keysToRemove = ['auth_token', 'session_token', 'jwt_token', 'token', 'access_token', 'session_id'];
+          keysToRemove.forEach(key => {
+            localStorage.removeItem(key);
+            sessionStorage.removeItem(key);
+          });
+          
+          throw new Error('Сессия истекла. Пожалуйста, войдите в систему заново.');
+        }
+        
+        throw new Error(errorData.error || `Ошибка загрузки: ${response.status}`);
       }
 
       const result = await response.json();
+      
+      if (!result.success || !result.url) {
+        throw new Error('Сервер вернул некорректный ответ');
+      }
+
+      console.log('✅ Файл успешно загружен:', result.url);
       return result.url;
     } catch (error) {
-      console.error('Upload error:', error);
-      throw new Error(error instanceof Error ? error.message : 'Failed to upload file');
+      console.error('❌ Ошибка при загрузке:', error);
+      throw error;
     }
   };
 
   // Валидация файла
   const validateFile = (file: File): { valid: boolean; error?: string } => {
-    // Проверяем тип файла
     if (!file.type.startsWith('image/')) {
       return { valid: false, error: 'Файл должен быть изображением' };
     }
 
-    // Проверяем размер файла (макс 10MB)
-    const maxSize = 10 * 1024 * 1024;
+    const maxSize = 10 * 1024 * 1024; // 1MB
     if (file.size > maxSize) {
       return { valid: false, error: 'Файл слишком большой (максимум 10MB)' };
     }
 
-    // Поддерживаемые форматы
     const supportedFormats = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
     if (!supportedFormats.includes(file.type)) {
       return { valid: false, error: 'Поддерживаются только JPEG, PNG и WebP' };
@@ -76,9 +277,11 @@ export function BodyPhotoUpload({
     return { valid: true };
   };
 
-  // Обработка выбора файла
+  // ✅ ИСПРАВЛЕНИЕ: Обработка выбора файла с улучшенной проверкой
   const handleFileSelect = useCallback(async (file: File) => {
     if (disabled) return;
+
+    console.log('📁 Обрабатываем выбор файла:', file.name);
 
     // Валидируем файл
     const validation = validateFile(file);
@@ -115,7 +318,7 @@ export function BodyPhotoUpload({
         description: "Фото загружено"
       });
     } catch (error) {
-      console.error('Ошибка загрузки:', error);
+      console.error('❌ Ошибка загрузки:', error);
       
       // Очищаем превью при ошибке
       if (previewUrl && previewUrl.startsWith('blob:')) {
@@ -123,17 +326,28 @@ export function BodyPhotoUpload({
       }
       setPreviewUrl(currentUrl || null);
 
+      const errorMessage = error instanceof Error ? error.message : "Не удалось загрузить файл";
+      
       toast({
         title: "Ошибка загрузки",
-        description: error instanceof Error ? error.message : "Не удалось загрузить файл",
+        description: errorMessage,
         variant: "destructive"
       });
+
+      // Если ошибка авторизации, показываем дополнительную информацию
+      if (errorMessage.includes('Сессия истекла') || errorMessage.includes('авторизация')) {
+        toast({
+          title: "Требуется авторизация",
+          description: "Пожалуйста, обновите страницу и войдите в систему заново",
+          variant: "destructive"
+        });
+      }
     } finally {
       setIsUploading(false);
     }
   }, [disabled, currentUrl, onUploadComplete, toast, previewUrl]);
 
-  // Обработка drop
+  // Обработка drag & drop
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setDragOver(false);
@@ -144,7 +358,6 @@ export function BodyPhotoUpload({
     }
   }, [handleFileSelect]);
 
-  // Обработка drag over
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setDragOver(true);
@@ -162,17 +375,37 @@ export function BodyPhotoUpload({
     }
   };
 
-  // Удаление фото
+  // ✅ ИСПРАВЛЕНИЕ: Удаление фото с улучшенной проверкой
   const handleRemove = async () => {
     if (disabled) return;
+
+    console.log('🗑️ Удаляем фото...');
+
+    const token = await getValidToken();
+    if (!token) {
+      toast({
+        title: "Ошибка авторизации",
+        description: "Необходимо войти в систему",
+        variant: "destructive"
+      });
+      return;
+    }
 
     try {
       // Удаляем файл через API если есть URL
       if (previewUrl && !previewUrl.startsWith('blob:')) {
-        await fetch(`/api/upload/delete?url=${encodeURIComponent(previewUrl)}`, {
+        const response = await fetch(`/api/upload/delete?url=${encodeURIComponent(previewUrl)}`, {
           method: 'DELETE',
-          credentials: 'include'
+          credentials: 'include',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'X-Auth-Token': token,
+          }
         });
+
+        if (!response.ok) {
+          console.warn('⚠️ Не удалось удалить файл с сервера, но продолжаем');
+        }
       }
 
       // Очищаем превью
@@ -191,7 +424,7 @@ export function BodyPhotoUpload({
         description: "Фото успешно удалено"
       });
     } catch (error) {
-      console.error('Ошибка удаления:', error);
+      console.error('❌ Ошибка удаления:', error);
       toast({
         title: "Ошибка",
         description: "Не удалось удалить фото",
@@ -329,7 +562,6 @@ export function BodyPhotoUpload({
                   disabled={disabled || isUploading}
                   onClick={(e) => {
                     e.stopPropagation();
-                    // Для мобильных устройств - открыть камеру
                     if (fileInputRef.current) {
                       fileInputRef.current.setAttribute('capture', 'environment');
                       fileInputRef.current.click();

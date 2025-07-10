@@ -128,7 +128,7 @@ export default defineSchema({
     .index("archived_status", ["isArchived", "status"])
     .index("priority_status", ["priority", "status"]),
 
-    bodyAnalyses: defineTable({
+    bodyAnalysis: defineTable({
     userId: v.string(),
     bodyType: v.union(
       v.literal("ectomorph"),
@@ -136,11 +136,11 @@ export default defineSchema({
       v.literal("endomorph"),
       v.literal("mixed")
     ),
-    estimatedBodyFat: v.number(),
-    estimatedMuscleMass: v.number(),
+    estimatedBodyFat: v.float64(),  // Изменено на float64 для соответствия мутации
+    estimatedMuscleMass: v.float64(),  // Изменено на float64
     posture: v.union(v.literal("good"), v.literal("fair"), v.literal("poor")),
-    fitnessScore: v.number(),
-    progressPotential: v.number(),
+    fitnessScore: v.float64(),  // Изменено на float64
+    progressPotential: v.float64(),  // Изменено на float64
     problemAreas: v.array(
       v.object({
         area: v.union(
@@ -157,53 +157,51 @@ export default defineSchema({
     recommendations: v.object({
       primaryGoal: v.string(),
       secondaryGoals: v.array(v.string()),
-      estimatedTimeToGoal: v.number(),
-      weeklyTrainingHours: v.number(),
+      estimatedTimeToGoal: v.float64(),  // Изменено на float64
+      weeklyTrainingHours: v.float64(),  // Изменено на float64
     }),
     currentVisualData: v.object({
       imageUrl: v.string(),
-      analyzedImageUrl: v.optional(v.string()),
+      analyzedImageUrl: v.string(),  // Сделано обязательным как в мутации
       bodyOutlineData: v.optional(v.any()),
     }),
     futureProjections: v.object({
       weeks4: v.object({
-        estimatedWeight: v.number(),
-        estimatedBodyFat: v.number(),
-        estimatedMuscleMass: v.number(),
-        confidenceLevel: v.number(),
+        estimatedWeight: v.float64(),  // Изменено на float64
+        estimatedBodyFat: v.float64(),
+        estimatedMuscleMass: v.float64(),
+        confidenceLevel: v.float64(),
       }),
       weeks8: v.object({
-        estimatedWeight: v.number(),
-        estimatedBodyFat: v.number(),
-        estimatedMuscleMass: v.number(),
-        confidenceLevel: v.number(),
+        estimatedWeight: v.float64(),
+        estimatedBodyFat: v.float64(),
+        estimatedMuscleMass: v.float64(),
+        confidenceLevel: v.float64(),
       }),
       weeks12: v.object({
-        estimatedWeight: v.number(),
-        estimatedBodyFat: v.number(),
-        estimatedMuscleMass: v.number(),
-        confidenceLevel: v.number(),
+        estimatedWeight: v.float64(),
+        estimatedBodyFat: v.float64(),
+        estimatedMuscleMass: v.float64(),
+        confidenceLevel: v.float64(),
       }),
     }),
-    createdAt: v.number(),
-    updatedAt: v.number(),
   }).index("by_user", ["userId"]),
 
   // Чекпоинты прогресса
   progressCheckpoints: defineTable({
     userId: v.string(),
-    analysisId: v.id("bodyAnalyses"),
-    weight: v.number(),
-    bodyFat: v.number(),
-    muscleMass: v.number(),
+    analysisId: v.id("bodyAnalysis"),
+    weight: v.float64(),
+    bodyFat: v.float64(),
+    muscleMass: v.float64(),
     photoUrl: v.string(),
-    aiScore: v.number(),
+    aiScore: v.float64(),
     achievements: v.optional(v.array(v.string())),
     comparisonWithProjection: v.optional(v.object({
       onTrack: v.boolean(),
-      deviationPercent: v.number(),
+      deviationPercent: v.float64(),
     })),
-    createdAt: v.number(),
+    // Убираем createdAt, используем _creationTime
   })
     .index("by_user", ["userId"])
     .index("by_analysis", ["analysisId"]),
@@ -213,7 +211,7 @@ export default defineSchema({
     userId: v.string(),
     userName: v.string(),
     userImageUrl: v.optional(v.string()),
-    analysisId: v.id("bodyAnalyses"),
+    analysisId: v.id("bodyAnalysis"),
     startWeight: v.number(),
     currentWeight: v.number(),
     weightLost: v.number(),
@@ -232,7 +230,7 @@ export default defineSchema({
   // Персонализированные планы
   personalizedPlans: defineTable({
     userId: v.string(),
-    analysisId: v.id("bodyAnalyses"),
+    analysisId: v.id("bodyAnalysis"),
     recommendedTrainer: v.object({
       id: v.string(),
       name: v.string(),

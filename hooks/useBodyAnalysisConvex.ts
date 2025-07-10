@@ -1,4 +1,4 @@
-// hooks/useBodyAnalysisAPI.ts
+// hooks/useBodyAnalysisConvex.ts
 import { useState } from "react";
 import { Id } from "@/convex/_generated/dataModel";
 import { analyzeBodyImage } from "@/utils/bodyAnalysisAI";
@@ -58,10 +58,17 @@ export function useBodyAnalysisConvex() {
         formData.append('type', 'body-analysis');
 
         try {
+            // ✅ ИСПРАВЛЕНИЕ: Получаем токен из localStorage
+            const token = localStorage.getItem('auth_token');
+
             const response = await fetch('/api/upload', {
                 method: 'POST',
                 body: formData,
-                credentials: 'include' // Include cookies for JWT auth
+                credentials: 'include',
+                // ✅ ИСПРАВЛЕНИЕ: Добавляем заголовок Authorization
+                headers: {
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                }
             });
 
             if (!response.ok) {
@@ -91,21 +98,53 @@ export function useBodyAnalysisConvex() {
             // 3. Update image URL in result
             analysisResult.currentVisualData.imageUrl = imageUrl;
 
-            // 4. Save analysis via API with JWT auth
+            // 4. Validate and ensure all required fields
+            const validatedAnalysis = {
+                ...analysisResult,
+                problemAreas: analysisResult.problemAreas || [],
+                futureProjections: analysisResult.futureProjections || {
+                    weeks4: {
+                        estimatedWeight: 0,
+                        estimatedBodyFat: 0,
+                        estimatedMuscleMass: 0,
+                        confidenceLevel: 0
+                    },
+                    weeks8: {
+                        estimatedWeight: 0,
+                        estimatedBodyFat: 0,
+                        estimatedMuscleMass: 0,
+                        confidenceLevel: 0
+                    },
+                    weeks12: {
+                        estimatedWeight: 0,
+                        estimatedBodyFat: 0,
+                        estimatedMuscleMass: 0,
+                        confidenceLevel: 0
+                    }
+                },
+                recommendations: analysisResult.recommendations || {
+                    primaryGoal: 'Общее улучшение формы',
+                    secondaryGoals: [],
+                    estimatedTimeToGoal: 12,
+                    weeklyTrainingHours: 4
+                }
+            };
+
+            // 5. Save analysis via API with JWT auth
             const { data } = await fetchApi<BodyAnalysisResult>('body-analysis/save', {
                 method: 'POST',
                 body: JSON.stringify({
                     userId, // Обязательное поле
-                    bodyType: analysisResult.bodyType,
-                    estimatedBodyFat: analysisResult.estimatedBodyFat,
-                    estimatedMuscleMass: analysisResult.estimatedMuscleMass,
-                    posture: analysisResult.posture,
-                    fitnessScore: analysisResult.fitnessScore,
-                    progressPotential: analysisResult.progressPotential,
-                    problemAreas: analysisResult.problemAreas,
-                    recommendations: analysisResult.recommendations,
-                    currentVisualData: analysisResult.currentVisualData,
-                    futureProjections: analysisResult.futureProjections
+                    bodyType: validatedAnalysis.bodyType,
+                    estimatedBodyFat: validatedAnalysis.estimatedBodyFat,
+                    estimatedMuscleMass: validatedAnalysis.estimatedMuscleMass,
+                    posture: validatedAnalysis.posture,
+                    fitnessScore: validatedAnalysis.fitnessScore,
+                    progressPotential: validatedAnalysis.progressPotential,
+                    problemAreas: validatedAnalysis.problemAreas,
+                    recommendations: validatedAnalysis.recommendations,
+                    currentVisualData: validatedAnalysis.currentVisualData,
+                    futureProjections: validatedAnalysis.futureProjections
                 })
             });
 
@@ -120,9 +159,9 @@ export function useBodyAnalysisConvex() {
         }
     };
 
-    // Progress update function
+    // Progress update function - ИСПРАВЛЕНО bodyAnalyses -> bodyAnalysis
     const updateProgress = async (
-        originalAnalysisId: Id<"bodyAnalyses">,
+        originalAnalysisId: Id<"bodyAnalysis">, // Исправлено!
         newPhotoFile: File,
         weight?: number
     ) => {
@@ -148,10 +187,19 @@ export function useBodyAnalysisConvex() {
                         posture: newAnalysisData.posture,
                         fitnessScore: newAnalysisData.fitnessScore,
                         progressPotential: newAnalysisData.progressPotential,
-                        problemAreas: newAnalysisData.problemAreas,
-                        recommendations: newAnalysisData.recommendations,
+                        problemAreas: newAnalysisData.problemAreas || [],
+                        recommendations: newAnalysisData.recommendations || {
+                            primaryGoal: 'Общее улучшение формы',
+                            secondaryGoals: [],
+                            estimatedTimeToGoal: 12,
+                            weeklyTrainingHours: 4
+                        },
                         currentVisualData: newAnalysisData.currentVisualData,
-                        futureProjections: newAnalysisData.futureProjections,
+                        futureProjections: newAnalysisData.futureProjections || {
+                            weeks4: { estimatedWeight: 0, estimatedBodyFat: 0, estimatedMuscleMass: 0, confidenceLevel: 0 },
+                            weeks8: { estimatedWeight: 0, estimatedBodyFat: 0, estimatedMuscleMass: 0, confidenceLevel: 0 },
+                            weeks12: { estimatedWeight: 0, estimatedBodyFat: 0, estimatedMuscleMass: 0, confidenceLevel: 0 }
+                        },
                     },
                     weight,
                 })
@@ -168,9 +216,9 @@ export function useBodyAnalysisConvex() {
         }
     };
 
-    // Сохранение персонализированного плана
+    // Сохранение персонализированного плана - ИСПРАВЛЕНО
     const savePersonalizedPlan = async (
-        analysisId: Id<"bodyAnalyses">,
+        analysisId: Id<"bodyAnalysis">, // Исправлено!
         plan: PersonalizedPlan
     ) => {
         setState(prev => ({ ...prev, loading: { ...prev.loading, plan: true }, error: null }));
@@ -183,7 +231,7 @@ export function useBodyAnalysisConvex() {
                     recommendedTrainer: plan.recommendedTrainer,
                     trainingProgram: plan.trainingProgram,
                     nutritionPlan: plan.nutritionPlan,
-                    recommendedProducts: plan.recommendedProducts,
+                    recommendedProducts: plan.recommendedProducts || [],
                     membershipRecommendation: plan.membershipRecommendation,
                     projectedResults: plan.projectedResults,
                 })
@@ -240,7 +288,8 @@ export function useBodyAnalysisConvex() {
         }
     };
 
-    const fetchPersonalizedPlan = async (analysisId: Id<"bodyAnalyses">) => {
+    // ИСПРАВЛЕНО
+    const fetchPersonalizedPlan = async (analysisId: Id<"bodyAnalysis">) => { // Исправлено!
         if (!analysisId) return;
         setState(prev => ({ ...prev, loading: { ...prev.loading, plan: true }, error: null }));
         try {

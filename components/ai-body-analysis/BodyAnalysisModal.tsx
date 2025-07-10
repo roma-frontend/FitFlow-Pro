@@ -3,8 +3,8 @@
 
 import React, { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Sparkles, X, ArrowRight, Loader2, Check, 
+import {
+  Sparkles, X, ArrowRight, Loader2, Check,
   Share2, Zap, TrendingUp, Award
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -29,7 +29,7 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
   const { user } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
-  
+
   const {
     analyzeAndSaveBody,
     savePersonalizedPlan,
@@ -37,7 +37,7 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
     isProcessing,
     error
   } = useBodyAnalysisConvex();
-  
+
   const [step, setStep] = useState<'upload' | 'ready' | 'analyzing' | 'results' | 'plan'>('upload');
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
@@ -51,7 +51,7 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
     setUploadedImageUrl(url);
     setUploadedFile(file);
     setStep('ready');
-    
+
     toast({
       title: "Фото загружено!",
       description: "Теперь можно запустить анализ"
@@ -87,25 +87,25 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
 
       // Анализируем и сохраняем в Convex
       const result = await analyzeAndSaveBody(uploadedFile, user?.id || 'guest');
-      
+
       clearInterval(progressInterval);
       setProgress(100);
-      
+
       setAnalysisResult(result);
-      
+
       // Генерируем персонализированный план
       const plan = await generatePersonalizedPlan(result);
       setPersonalizedPlan(plan);
-      
+
       // Сохраняем план в Convex
       if (result._id) {
         await savePersonalizedPlan(result._id as any, plan);
       }
-      
+
       setTimeout(() => {
         setStep('results');
       }, 500);
-      
+
     } catch (error) {
       console.error('Ошибка анализа:', error);
       toast({
@@ -120,12 +120,12 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
   // Поделиться результатами
   const handleShare = async () => {
     if (!analysisResult) return;
-    
+
     setIsSharing(true);
-    
+
     try {
       await shareResults(analysisResult, 'instagram');
-      
+
       toast({
         title: "Успешно!",
         description: "Результаты готовы к публикации"
@@ -147,7 +147,7 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
     if (onAnalysisComplete && analysisResult && personalizedPlan) {
       onAnalysisComplete(analysisResult, personalizedPlan);
     }
-    
+
     // Переходим к оформлению подписки
     router.push(`/transformation/checkout?analysisId=${analysisResult?._id}`);
   };
@@ -278,7 +278,7 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
                         </>
                       )}
                     </Button>
-                    
+
                     <Button
                       size="lg"
                       variant="outline"
@@ -308,14 +308,14 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
                         <div className="absolute inset-0 bg-gradient-to-t from-blue-600/50 to-transparent rounded-2xl" />
                       </div>
                     )}
-                    
+
                     <div className="mb-8">
                       <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto mb-4" />
                       <h3 className="text-xl font-bold mb-2">Анализируем ваше фото...</h3>
                       <p className="text-gray-600 mb-6">AI определяет тип телосложения и создает план</p>
-                      
+
                       <Progress value={progress} className="h-2 mb-4" />
-                      
+
                       <div className="space-y-2 text-sm">
                         <motion.div
                           initial={{ opacity: 0, x: -20 }}
@@ -370,11 +370,11 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
                           <CardContent className="p-6">
                             <div className="flex items-center justify-between mb-4">
                               <span className="text-gray-600">Тип телосложения</span>
-                              <Badge variant="outline" className="capitalize">
+                              <Badge variant="custom" className="capitalize">
                                 {analysisResult.bodyType}
                               </Badge>
                             </div>
-                            
+
                             <div className="space-y-3">
                               <div>
                                 <div className="flex justify-between text-sm mb-1">
@@ -383,7 +383,7 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
                                 </div>
                                 <Progress value={analysisResult.estimatedMuscleMass} className="h-2" />
                               </div>
-                              
+
                               <div>
                                 <div className="flex justify-between text-sm mb-1">
                                   <span>Процент жира</span>
@@ -391,7 +391,7 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
                                 </div>
                                 <Progress value={analysisResult.estimatedBodyFat} className="h-2" />
                               </div>
-                              
+
                               <div>
                                 <div className="flex justify-between text-sm mb-1">
                                   <span>Фитнес-уровень</span>
@@ -408,22 +408,26 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
                           <CardContent className="p-6">
                             <h4 className="font-medium mb-3">Зоны для работы</h4>
                             <div className="space-y-2">
-                              {analysisResult.problemAreas.map((area, index) => (
-                                <div key={index} className="flex items-center justify-between">
-                                  <span className="text-sm">{area.area}</span>
-                                  <Badge
-                                    variant={
-                                      area.severity === 'high' ? 'destructive' :
-                                      area.severity === 'medium' ? 'secondary' :
-                                      'outline'
-                                    }
-                                  >
-                                    {area.severity === 'high' ? 'Высокий приоритет' :
-                                     area.severity === 'medium' ? 'Средний приоритет' :
-                                     'Низкий приоритет'}
-                                  </Badge>
-                                </div>
-                              ))}
+                              {analysisResult.problemAreas && analysisResult.problemAreas.length > 0 ? (
+                                analysisResult.problemAreas.map((area, index) => (
+                                  <div key={index} className="flex items-center justify-between">
+                                    <span className="text-sm">{area.area}</span>
+                                    <Badge
+                                      variant={
+                                        area.severity === 'high' ? 'destructive' :
+                                          area.severity === 'medium' ? 'secondary' :
+                                            'outline'
+                                      }
+                                    >
+                                      {area.severity === 'high' ? 'Высокий приоритет' :
+                                        area.severity === 'medium' ? 'Средний приоритет' :
+                                          'Низкий приоритет'}
+                                    </Badge>
+                                  </div>
+                                ))
+                              ) : (
+                                <p className="text-sm text-gray-500">Проблемные зоны не обнаружены</p>
+                              )}
                             </div>
                           </CardContent>
                         </Card>
@@ -445,47 +449,53 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
                             </div>
                           </div>
                         </div>
-                        
+
                         <CardContent className="p-6">
                           <div className="space-y-4">
-                            <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-xl">
-                              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                                <span className="text-lg font-bold text-blue-600">4</span>
+                            {analysisResult.futureProjections?.weeks4 && (
+                              <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-xl">
+                                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                                  <span className="text-lg font-bold text-blue-600">4</span>
+                                </div>
+                                <div>
+                                  <p className="font-medium">Через 4 недели</p>
+                                  <p className="text-sm text-gray-600">
+                                    -{Math.abs(analysisResult.futureProjections.weeks4.estimatedWeight || 0)} кг,
+                                    улучшение формы
+                                  </p>
+                                </div>
                               </div>
-                              <div>
-                                <p className="font-medium">Через 4 недели</p>
-                                <p className="text-sm text-gray-600">
-                                  -{Math.abs(analysisResult.futureProjections.weeks4.estimatedWeight)} кг, 
-                                  улучшение формы
-                                </p>
+                            )}
+
+                            {analysisResult.futureProjections?.weeks8 && (
+                              <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-xl">
+                                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                                  <span className="text-lg font-bold text-blue-600">8</span>
+                                </div>
+                                <div>
+                                  <p className="font-medium">Через 8 недель</p>
+                                  <p className="text-sm text-gray-600">
+                                    -{Math.abs(analysisResult.futureProjections.weeks8.estimatedWeight || 0)} кг,
+                                    видимые изменения
+                                  </p>
+                                </div>
                               </div>
-                            </div>
-                            
-                            <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-xl">
-                              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                                <span className="text-lg font-bold text-blue-600">8</span>
+                            )}
+
+                            {analysisResult.futureProjections?.weeks12 && (
+                              <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border-2 border-blue-200">
+                                <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center">
+                                  <span className="text-lg font-bold text-white">12</span>
+                                </div>
+                                <div>
+                                  <p className="font-medium">Через 12 недель</p>
+                                  <p className="text-sm text-gray-600">
+                                    -{Math.abs(analysisResult.futureProjections.weeks12.estimatedWeight || 0)} кг,
+                                    полная трансформация!
+                                  </p>
+                                </div>
                               </div>
-                              <div>
-                                <p className="font-medium">Через 8 недель</p>
-                                <p className="text-sm text-gray-600">
-                                  -{Math.abs(analysisResult.futureProjections.weeks8.estimatedWeight)} кг, 
-                                  видимые изменения
-                                </p>
-                              </div>
-                            </div>
-                            
-                            <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border-2 border-blue-200">
-                              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center">
-                                <span className="text-lg font-bold text-white">12</span>
-                              </div>
-                              <div>
-                                <p className="font-medium">Через 12 недель</p>
-                                <p className="text-sm text-gray-600">
-                                  -{Math.abs(analysisResult.futureProjections.weeks12.estimatedWeight)} кг, 
-                                  полная трансформация!
-                                </p>
-                              </div>
-                            </div>
+                            )}
                           </div>
                         </CardContent>
                       </Card>
@@ -501,7 +511,7 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
                       Смотреть персональный план
                       <ArrowRight className="h-5 w-5 ml-2" />
                     </Button>
-                    
+
                     <Button
                       size="lg"
                       variant="outline"
@@ -568,7 +578,7 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
                     <p className="text-gray-600 mb-6">
                       Вероятность успеха: {personalizedPlan.projectedResults.successProbability}%
                     </p>
-                    
+
                     <div className="flex flex-col sm:flex-row gap-4 justify-center">
                       <Button
                         size="lg"
@@ -578,7 +588,7 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
                         <Zap className="h-5 w-5 mr-2" />
                         Начать трансформацию
                       </Button>
-                      
+
                       <Button
                         size="lg"
                         variant="outline"
