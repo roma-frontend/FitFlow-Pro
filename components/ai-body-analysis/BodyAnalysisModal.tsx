@@ -118,6 +118,25 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
       // Анализируем и сохраняем в Convex
       const result = await analyzeAndSaveBody(uploadedFile, user?.id || 'guest');
 
+      if (!result || !result.bodyType) {
+        console.error('❌ Получен пустой или некорректный результат:', result);
+        toast({
+          title: "Ошибка",
+          description: "Не удалось получить результаты анализа",
+          variant: "destructive"
+        });
+        setStep('ready');
+        return;
+      }
+
+      const requiredFields = ['bodyType', 'estimatedBodyFat', 'estimatedMuscleMass', 'recommendations', 'futureProjections'];
+      const missingFields = requiredFields.filter(field => !result[field]);
+
+      if (missingFields.length > 0) {
+        console.error('❌ Отсутствуют обязательные поля:', missingFields);
+        console.error('📊 Полученные данные:', result);
+      }
+
       clearInterval(progressInterval);
       setProgress(100);
 

@@ -88,7 +88,7 @@ export function DateTimePicker({ value, onChange, disabled }: DateTimePickerProp
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex gap-2">
+      <div className="flex flex-col sm:flex-row gap-2">
         <Popover>
           <PopoverTrigger asChild>
             <Button
@@ -103,7 +103,7 @@ export function DateTimePicker({ value, onChange, disabled }: DateTimePickerProp
               {selectedDate ? format(selectedDate, "PPP") : "Выберите дату"}
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-auto p-0">
+          <PopoverContent className="w-auto p-0" align="start">
             <Calendar
               mode="single"
               selected={selectedDate}
@@ -113,13 +113,13 @@ export function DateTimePicker({ value, onChange, disabled }: DateTimePickerProp
           </PopoverContent>
         </Popover>
         
-        <div className="relative">
+        <div className="relative flex-shrink-0">
           <Input
             type="time"
             value={timeValue}
             onChange={handleTimeChange}
-            className="w-[120px]"
             disabled={disabled}
+            className="w-full sm:w-32"
           />
           {(selectedDate || timeValue) && (
             <Button
