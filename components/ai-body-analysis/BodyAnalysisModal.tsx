@@ -78,6 +78,23 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
 
   // Обработка успешной загрузки фото
   const handlePhotoUpload = useCallback((url: string, file: File) => {
+    console.log('📸 handlePhotoUpload вызван:', {
+      url: url,
+      fileName: file.name,
+      fileSize: file.size,
+      fileType: file.type
+    });
+
+    if (!file || !url) {
+      console.error('❌ Некорректные данные загрузки:', { url, file });
+      toast({
+        title: "Ошибка",
+        description: "Не удалось загрузить фото",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setUploadedImageUrl(url);
     setUploadedFile(file);
     setStep('ready');
@@ -86,6 +103,8 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
       title: "Фото загружено!",
       description: "Теперь можно запустить анализ"
     });
+
+    console.log('✅ Фото успешно установлено в state');
   }, [toast]);
 
   // Удаление фото
@@ -129,13 +148,39 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
         return;
       }
 
-      const requiredFields = ['bodyType', 'estimatedBodyFat', 'estimatedMuscleMass', 'recommendations', 'futureProjections'];
-      const missingFields = requiredFields.filter(field => !result[field]);
+      const requiredFields: (keyof BodyAnalysisResult)[] = [
+        'bodyType',
+        'estimatedBodyFat',
+        'estimatedMuscleMass',
+        'recommendations',
+        'futureProjections'
+      ];
+
+      const missingFields = requiredFields.filter(field => {
+        const value = result[field];
+        return value === undefined || value === null;
+      });
 
       if (missingFields.length > 0) {
         console.error('❌ Отсутствуют обязательные поля:', missingFields);
         console.error('📊 Полученные данные:', result);
       }
+
+      // Дополнительная проверка для отладки
+      console.log('🔍 DEBUG: Результат анализа после сохранения:', {
+        hasResult: !!result,
+        resultId: result._id,
+        bodyType: result.bodyType,
+        metrics: {
+          bodyFat: result.estimatedBodyFat,
+          muscleMass: result.estimatedMuscleMass,
+          fitnessScore: result.fitnessScore,
+          progressPotential: result.progressPotential
+        },
+        hasRecommendations: !!result.recommendations,
+        hasFutureProjections: !!result.futureProjections,
+        problemAreas: result.problemAreas
+      });
 
       clearInterval(progressInterval);
       setProgress(100);
@@ -143,7 +188,40 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
       setAnalysisResult(result);
 
       // Генерируем персонализированный план
+      console.log('📋 Генерируем персональный план...');
       const plan = await generatePersonalizedPlan(result);
+
+      console.log('🔍 DEBUG: Сгенерированный план:', {
+        hasPlan: !!plan,
+        planId: plan?._id,
+        trainer: plan?.recommendedTrainer,
+        program: plan?.trainingProgram,
+        hasNutrition: !!plan?.nutritionPlan,
+        productsCount: plan?.recommendedProducts?.length
+      });
+
+      setPersonalizedPlan(plan);
+
+      // Сохраняем план в Convex
+      if (result._id && plan) {
+        try {
+          await savePersonalizedPlan(result._id as any, plan);
+          console.log('✅ План сохранен в Convex');
+        } catch (saveError) {
+          console.error('❌ Ошибка сохранения плана:', saveError);
+        }
+      }
+
+      setTimeout(() => {
+        setStep('results');
+      }, 500);
+
+      clearInterval(progressInterval);
+      setProgress(100);
+
+      setAnalysisResult(result);
+
+      // Генерируем персонализированный план
       setPersonalizedPlan(plan);
 
       // Сохраняем план в Convex
@@ -410,6 +488,20 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                 >
+
+                  {/* Временная отладочная информация - покажите на экране */}
+                  <div className="mb-4 p-4 bg-yellow-50 rounded-lg text-sm">
+                    <h4 className="font-bold mb-2">Отладочная информация:</h4>
+                    <pre className="overflow-auto">
+                      {JSON.stringify({
+                        bodyType: analysisResult.bodyType || 'НЕТ ДАННЫХ',
+                        bodyFat: analysisResult.estimatedBodyFat || 'НЕТ ДАННЫХ',
+                        muscleMass: analysisResult.estimatedMuscleMass || 'НЕТ ДАННЫХ',
+                        fitnessScore: analysisResult.fitnessScore || 'НЕТ ДАННЫХ',
+                        progressPotential: analysisResult.progressPotential || 'НЕТ ДАННЫХ'
+                      }, null, 2)}
+                    </pre>
+                  </div>
                   <div className="grid md:grid-cols-2 gap-8 mb-8">
                     {/* Текущее состояние */}
                     <div>
