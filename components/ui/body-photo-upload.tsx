@@ -221,9 +221,6 @@ export function BodyPhotoUpload({
           // Превью загруженного фото
           <motion.div
             key="preview"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
             className="relative group"
           >
             <div className="relative w-full h-80 bg-gray-100 rounded-2xl overflow-hidden">
@@ -275,9 +272,6 @@ export function BodyPhotoUpload({
           // Зона загрузки
           <motion.div
             key="upload-zone"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
             className={`
               relative w-full h-[25rem] sm:h-[20rem] border-2 border-dashed rounded-2xl transition-all cursor-pointer ${dragOver ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50'
               }

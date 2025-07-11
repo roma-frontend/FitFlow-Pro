@@ -12,7 +12,6 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { generateProductImageAlt } from '@/utils/altTextUtils';
 
 export default function BodyAnalysisTeaser() {
     const router = useRouter();
@@ -101,22 +100,19 @@ export default function BodyAnalysisTeaser() {
                                     {/* Превью фото */}
 
                                     <div className="relative group">
-                                        <div
-                                            className="absolute -inset-2 rounded-3xl blur-xl opacity-60 group-hover:opacity-90 transition duration-500 pointer-events-none"
-                                            style={{
-                                                background: "linear-gradient(135deg, #60a5fa 0%, #a78bfa 50%, #818cf8 100%)"
-                                            }}
-                                        />
-                                        <div className="p-[3px] h-[240px] rounded-2xl bg-gradient-to-tr from-blue-400 via-indigo-400 to-violet-400">
-                                            <Image
-                                                src="https://res.cloudinary.com/dgbtipi5o/image/upload/v1752169759/Hero/ysvhsf3uyfawzqlbq4d9.webp"
-                                                alt="FitFlow Pro"
-                                                className="w-full h-full rounded-2xl shadow-xl object-cover filter brightness-115 contrast-140 saturate-160 hue-rotate-30 transition-all duration-500"
-                                                width={394}
-                                                height={240}
-                                                priority
-                                            />
+                                        <div className="absolute -inset-4 rounded-3xl bg-gradient-to-r from-blue-400 via-indigo-500 to-blue-500 blur-2xl opacity-30 group-hover:opacity-60 transition-all duration-700"></div>
+                                        <div className="relative backdrop-blur-sm bg-white/20 rounded-2xl p-1 border border-white/30 shadow-2xl">
+                                            <div className="h-64 rounded-xl overflow-hidden relative">
+                                                <img
+                                                    src="https://res.cloudinary.com/dgbtipi5o/image/upload/v1752169759/Hero/ysvhsf3uyfawzqlbq4d9.webp"
+                                                    alt="Floating Glass"
+                                                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                                />
+                                                <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent"></div>
+                                            </div>
                                         </div>
+                                        <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full blur-sm opacity-70"></div>
+                                        <div className="absolute -top-2 -left-2 w-6 h-6 bg-gradient-to-br from-pink-400 to-orange-400 rounded-full blur-sm opacity-70"></div>
                                     </div>
 
                                     {/* Результаты */}

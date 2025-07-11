@@ -1,5 +1,25 @@
 import { Id } from "@/convex/_generated/dataModel";
 
+type Exercise = {
+  id: string;
+  name: string;
+  category: string;
+  intensity: string;
+  sets: number;
+  reps: string;
+  restTime: string;
+  targetMuscles: string[];
+};
+
+type TrainingProgram = {
+  id: string;
+  name: string;
+  duration: number;
+  sessionsPerWeek: number;
+  focusAreas: string[];
+  exercises: Exercise[]; // Добавлено поле exercises
+};
+
 export interface BodyMetrics {
   shoulderWidth: number;
   waistWidth: number;
@@ -147,13 +167,7 @@ export interface PersonalizedPlan {
     matchScore: number;
     reason: string;
   };
-  trainingProgram: {
-    id: string;
-    name: string;
-    duration: number;
-    sessionsPerWeek: number;
-    focusAreas: string[];
-  };
+  trainingProgram: TrainingProgram;
   nutritionPlan: {
     dailyCalories: number;
     macros: {
