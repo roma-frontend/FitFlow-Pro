@@ -187,7 +187,7 @@ export function GeneralSettings({ config, businessConfig, onUpdate, onBusinessUp
                         type="time"
                         value={businessConfig.workingHours[day.key]?.start || '09:00'}
                         onChange={(e) => updateWorkingHours(day.key, 'start', e.target.value)}
-                        className="w-24"
+                        className="w-full"
                       />
                     </div>
                     
@@ -197,7 +197,7 @@ export function GeneralSettings({ config, businessConfig, onUpdate, onBusinessUp
                         type="time"
                         value={businessConfig.workingHours[day.key]?.end || '18:00'}
                         onChange={(e) => updateWorkingHours(day.key, 'end', e.target.value)}
-                        className="w-24"
+                        className="w-full"
                       />
                     </div>
                   </>
