@@ -488,20 +488,6 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                 >
-
-                  {/* Временная отладочная информация - покажите на экране */}
-                  <div className="mb-4 p-4 bg-yellow-50 rounded-lg text-sm">
-                    <h4 className="font-bold mb-2">Отладочная информация:</h4>
-                    <pre className="overflow-auto">
-                      {JSON.stringify({
-                        bodyType: analysisResult.bodyType || 'НЕТ ДАННЫХ',
-                        bodyFat: analysisResult.estimatedBodyFat || 'НЕТ ДАННЫХ',
-                        muscleMass: analysisResult.estimatedMuscleMass || 'НЕТ ДАННЫХ',
-                        fitnessScore: analysisResult.fitnessScore || 'НЕТ ДАННЫХ',
-                        progressPotential: analysisResult.progressPotential || 'НЕТ ДАННЫХ'
-                      }, null, 2)}
-                    </pre>
-                  </div>
                   <div className="grid md:grid-cols-2 gap-8 mb-8">
                     {/* Текущее состояние */}
                     <div>
@@ -557,7 +543,7 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
                                       variant={
                                         area.severity === 'high' ? 'destructive' :
                                           area.severity === 'medium' ? 'secondary' :
-                                            'outline'
+                                            'custom'
                                       }
                                     >
                                       {area.severity === 'high' ? 'Высокий приоритет' :
