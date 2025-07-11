@@ -116,133 +116,130 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
 
   // Запуск анализа
   const startAnalysis = async () => {
-    if (!uploadedFile) {
+  if (!uploadedFile) {
+    toast({
+      title: "Ошибка",
+      description: "Сначала загрузите фото",
+      variant: "destructive"
+    });
+    return;
+  }
+
+  setStep('analyzing');
+  setProgress(0);
+
+  let progressInterval: NodeJS.Timeout | null = null;
+
+  try {
+    // Симуляция прогресса
+    progressInterval = setInterval(() => {
+      setProgress(prev => Math.min(prev + 10, 90));
+    }, 500);
+
+    // Анализируем и сохраняем в Convex
+    const result = await analyzeAndSaveBody(uploadedFile, user?.id || 'guest');
+
+    if (!result || !result.bodyType) {
+      console.error('❌ Получен пустой или некорректный результат:', result);
       toast({
         title: "Ошибка",
-        description: "Сначала загрузите фото",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setStep('analyzing');
-    setProgress(0);
-
-    try {
-      // Симуляция прогресса
-      const progressInterval = setInterval(() => {
-        setProgress(prev => Math.min(prev + 10, 90));
-      }, 500);
-
-      // Анализируем и сохраняем в Convex
-      const result = await analyzeAndSaveBody(uploadedFile, user?.id || 'guest');
-
-      if (!result || !result.bodyType) {
-        console.error('❌ Получен пустой или некорректный результат:', result);
-        toast({
-          title: "Ошибка",
-          description: "Не удалось получить результаты анализа",
-          variant: "destructive"
-        });
-        setStep('ready');
-        return;
-      }
-
-      const requiredFields: (keyof BodyAnalysisResult)[] = [
-        'bodyType',
-        'estimatedBodyFat',
-        'estimatedMuscleMass',
-        'recommendations',
-        'futureProjections'
-      ];
-
-      const missingFields = requiredFields.filter(field => {
-        const value = result[field];
-        return value === undefined || value === null;
-      });
-
-      if (missingFields.length > 0) {
-        console.error('❌ Отсутствуют обязательные поля:', missingFields);
-        console.error('📊 Полученные данные:', result);
-      }
-
-      // Дополнительная проверка для отладки
-      console.log('🔍 DEBUG: Результат анализа после сохранения:', {
-        hasResult: !!result,
-        resultId: result._id,
-        bodyType: result.bodyType,
-        metrics: {
-          bodyFat: result.estimatedBodyFat,
-          muscleMass: result.estimatedMuscleMass,
-          fitnessScore: result.fitnessScore,
-          progressPotential: result.progressPotential
-        },
-        hasRecommendations: !!result.recommendations,
-        hasFutureProjections: !!result.futureProjections,
-        problemAreas: result.problemAreas
-      });
-
-      clearInterval(progressInterval);
-      setProgress(100);
-
-      setAnalysisResult(result);
-
-      // Генерируем персонализированный план
-      console.log('📋 Генерируем персональный план...');
-      const plan = await generatePersonalizedPlan(result);
-
-      console.log('🔍 DEBUG: Сгенерированный план:', {
-        hasPlan: !!plan,
-        planId: plan?._id,
-        trainer: plan?.recommendedTrainer,
-        program: plan?.trainingProgram,
-        hasNutrition: !!plan?.nutritionPlan,
-        productsCount: plan?.recommendedProducts?.length
-      });
-
-      setPersonalizedPlan(plan);
-
-      // Сохраняем план в Convex
-      if (result._id && plan) {
-        try {
-          await savePersonalizedPlan(result._id as any, plan);
-          console.log('✅ План сохранен в Convex');
-        } catch (saveError) {
-          console.error('❌ Ошибка сохранения плана:', saveError);
-        }
-      }
-
-      setTimeout(() => {
-        setStep('results');
-      }, 500);
-
-      clearInterval(progressInterval);
-      setProgress(100);
-
-      setAnalysisResult(result);
-
-      // Генерируем персонализированный план
-      setPersonalizedPlan(plan);
-
-      // Сохраняем план в Convex
-      if (result._id) {
-        await savePersonalizedPlan(result._id as any, plan);
-      }
-
-      setTimeout(() => {
-        setStep('results');
-      }, 500);
-
-    } catch (error) {
-      console.error('Ошибка анализа:', error);
-      toast({
-        title: "Ошибка анализа",
-        description: error instanceof Error ? error.message : "Не удалось проанализировать изображение",
+        description: "Не удалось получить результаты анализа",
         variant: "destructive"
       });
       setStep('ready');
+      return;
     }
-  };
+
+    const requiredFields: (keyof BodyAnalysisResult)[] = [
+      'bodyType',
+      'estimatedBodyFat',
+      'estimatedMuscleMass',
+      'recommendations',
+      'futureProjections'
+    ];
+
+    const missingFields = requiredFields.filter(field => {
+      const value = result[field];
+      return value === undefined || value === null;
+    });
+
+    if (missingFields.length > 0) {
+      console.error('❌ Отсутствуют обязательные поля:', missingFields);
+      console.error('📊 Полученные данные:', result);
+    }
+
+    // Дополнительная проверка для отладки
+    console.log('🔍 DEBUG: Результат анализа после сохранения:', {
+      hasResult: !!result,
+      resultId: result._id,
+      bodyType: result.bodyType,
+      metrics: {
+        bodyFat: result.estimatedBodyFat,
+        muscleMass: result.estimatedMuscleMass,
+        fitnessScore: result.fitnessScore,
+        progressPotential: result.progressPotential
+      },
+      hasRecommendations: !!result.recommendations,
+      hasFutureProjections: !!result.futureProjections,
+      problemAreas: result.problemAreas
+    });
+
+    // Генерируем персонализированный план
+    console.log('📋 Генерируем персональный план...');
+    const plan = await generatePersonalizedPlan(result);
+
+    console.log('🔍 DEBUG: Сгенерированный план:', {
+      hasPlan: !!plan,
+      planId: plan?._id,
+      trainer: plan?.recommendedTrainer,
+      program: plan?.trainingProgram,
+      hasNutrition: !!plan?.nutritionPlan,
+      productsCount: plan?.recommendedProducts?.length
+    });
+
+    // Сохраняем план в Convex (только один раз!)
+    if (result._id && plan) {
+      try {
+        await savePersonalizedPlan(result._id as any, plan);
+        console.log('✅ План сохранен в Convex');
+      } catch (saveError) {
+        console.error('❌ Ошибка сохранения плана:', saveError);
+        // Не прерываем выполнение, показываем результаты даже если план не сохранился
+      }
+    }
+
+    // Устанавливаем состояния
+    setAnalysisResult(result);
+    setPersonalizedPlan(plan);
+
+    // Завершаем прогресс
+    if (progressInterval) {
+      clearInterval(progressInterval);
+      progressInterval = null;
+    }
+    setProgress(100);
+
+    // Переходим к результатам
+    setTimeout(() => {
+      setStep('results');
+    }, 500);
+
+  } catch (error) {
+    console.error('❌ Ошибка анализа:', error);
+    
+    // Очищаем интервал при ошибке
+    if (progressInterval) {
+      clearInterval(progressInterval);
+    }
+    
+    toast({
+      title: "Ошибка анализа",
+      description: error instanceof Error ? error.message : "Не удалось проанализировать изображение",
+      variant: "destructive"
+    });
+    setStep('ready');
+  }
+};
 
   // Поделиться результатами
   const handleShare = async () => {

@@ -1,5 +1,4 @@
-// app/api/personalized-plan/route.ts - Персонализированный план
-
+// app/api/personalized-plan/route.ts - Исправленный API route
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/simple-auth';
 import { fetchQuery, fetchMutation } from "convex/nextjs";
@@ -26,11 +25,20 @@ export async function POST(request: NextRequest) {
     const userId = sessionData.user.id;
     const body = await request.json();
 
+    console.log('💾 Сохраняем план в Convex:', {
+      userId,
+      analysisId: body.analysisId,
+      hasTrainer: !!body.recommendedTrainer,
+      hasProgram: !!body.trainingProgram
+    });
+
     // Сохраняем план в Convex
     const result = await fetchMutation(api.bodyAnalysis.savePersonalizedPlan, {
       userId,
       ...body
     });
+
+    console.log('✅ План успешно сохранен:', result);
 
     return NextResponse.json({
       success: true,

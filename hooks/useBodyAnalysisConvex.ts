@@ -25,9 +25,9 @@ export function useBodyAnalysisConvex() {
     const fetchApi = async <T>(endpoint: string, options?: RequestInit): Promise<T> => {
         try {
             // Получаем токен из localStorage или cookies
-            const token = localStorage.getItem('auth_token') || 
-                         document.cookie.split('; ').find(row => row.startsWith('session_id='))?.split('=')[1];
-            
+            const token = localStorage.getItem('auth_token') ||
+                document.cookie.split('; ').find(row => row.startsWith('session_id='))?.split('=')[1];
+
             const response = await fetch(`/api/${endpoint}`, {
                 ...options,
                 headers: {
@@ -43,15 +43,15 @@ export function useBodyAnalysisConvex() {
             }
 
             const result = await response.json();
-            
+
             // Логируем полученные данные для отладки
             console.log(`📥 API Response from ${endpoint}:`, result);
-            
+
             // Если ответ содержит поле data, возвращаем его содержимое
             if (result.data !== undefined) {
                 return result.data as T;
             }
-            
+
             // Иначе возвращаем весь результат
             return result as T;
         } catch (error) {
@@ -68,7 +68,7 @@ export function useBodyAnalysisConvex() {
 
         try {
             console.log('📤 Начало загрузки файла...');
-            
+
             const response = await fetch('/api/upload', {
                 method: 'POST',
                 body: formData,
@@ -97,7 +97,7 @@ export function useBodyAnalysisConvex() {
 
         try {
             console.log('🔄 Начало анализа для пользователя:', userId);
-            
+
             // 1. Upload image
             let imageUrl = '';
             try {
@@ -112,7 +112,7 @@ export function useBodyAnalysisConvex() {
             let analysisResult;
             try {
                 analysisResult = await analyzeBodyImage(imageFile, userId);
-                
+
                 // Проверяем что получили валидные данные
                 if (!analysisResult || !analysisResult.bodyType) {
                     throw new Error('AI анализ вернул некорректные данные');
@@ -155,7 +155,7 @@ export function useBodyAnalysisConvex() {
                     }
                 };
             }
-            
+
             // Логируем результат анализа для отладки
             logAnalysisData(analysisResult, 'После AI анализа');
 
@@ -194,18 +194,18 @@ export function useBodyAnalysisConvex() {
             });
 
             console.log('✅ Анализ успешно сохранен:', savedAnalysis);
-            
+
             // Проверяем, что получили все данные
             if (!savedAnalysis || !savedAnalysis.bodyType || !savedAnalysis.estimatedBodyFat) {
                 console.error('⚠️ Получены неполные данные:', savedAnalysis);
                 throw new Error('Получены неполные данные анализа');
             }
-            
+
             setState(prev => ({ ...prev, currentAnalysis: savedAnalysis }));
-            
+
             // Логируем финальные данные
             logAnalysisData(savedAnalysis, 'Сохраненные данные');
-            
+
             return savedAnalysis;
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : "Analysis failed";
@@ -227,13 +227,13 @@ export function useBodyAnalysisConvex() {
 
         try {
             console.log('📸 Обновление прогресса...');
-            
+
             // 1. Upload new photo
             const photoUrl = await uploadFile(newPhotoFile);
 
             // 2. Analyze new photo
             const newAnalysisData = await analyzeBodyImage(newPhotoFile, "update");
-            
+
             // Логируем новый анализ
             logAnalysisData(newAnalysisData, 'Новый анализ для прогресса');
 
@@ -292,44 +292,64 @@ export function useBodyAnalysisConvex() {
         analysisId: Id<"bodyAnalysis">,
         plan: PersonalizedPlan
     ) => {
-        setState(prev => ({ ...prev, loading: { ...prev.loading, plan: true }, error: null }));
+        setState(prev => ({
+            ...prev,
+            loading: { ...prev.loading, plan: true },
+            error: null
+        }));
 
         try {
             console.log('💾 Сохранение персонализированного плана...');
-            
+
+            // Валидация данных перед отправкой
+            if (!analysisId) {
+                throw new Error('analysisId не указан');
+            }
+
+            if (!plan.recommendedTrainer) {
+                throw new Error('Отсутствует рекомендуемый тренер');
+            }
+
             const preparedPlan = {
                 analysisId,
                 recommendedTrainer: {
                     ...plan.recommendedTrainer,
-                    matchScore: Number(plan.recommendedTrainer.matchScore)
+                    matchScore: Number(plan.recommendedTrainer.matchScore) || 0
                 },
                 trainingProgram: {
                     ...plan.trainingProgram,
-                    duration: Number(plan.trainingProgram.duration),
-                    sessionsPerWeek: Number(plan.trainingProgram.sessionsPerWeek)
+                    duration: Number(plan.trainingProgram.duration) || 0,
+                    sessionsPerWeek: Number(plan.trainingProgram.sessionsPerWeek) || 0
                 },
                 nutritionPlan: {
-                    dailyCalories: Number(plan.nutritionPlan.dailyCalories),
+                    dailyCalories: Number(plan.nutritionPlan.dailyCalories) || 0,
                     macros: {
-                        protein: Number(plan.nutritionPlan.macros.protein),
-                        carbs: Number(plan.nutritionPlan.macros.carbs),
-                        fats: Number(plan.nutritionPlan.macros.fats)
+                        protein: Number(plan.nutritionPlan.macros.protein) || 0,
+                        carbs: Number(plan.nutritionPlan.macros.carbs) || 0,
+                        fats: Number(plan.nutritionPlan.macros.fats) || 0
                     }
                 },
                 recommendedProducts: plan.recommendedProducts?.map(product => ({
                     ...product,
-                    monthlyBudget: Number(product.monthlyBudget)
+                    monthlyBudget: Number(product.monthlyBudget) || 0
                 })) || [],
                 membershipRecommendation: {
                     ...plan.membershipRecommendation,
-                    price: Number(plan.membershipRecommendation.price),
-                    savings: Number(plan.membershipRecommendation.savings)
+                    price: Number(plan.membershipRecommendation.price) || 0,
+                    savings: Number(plan.membershipRecommendation.savings) || 0
                 },
                 projectedResults: {
                     ...plan.projectedResults,
-                    successProbability: Number(plan.projectedResults.successProbability)
+                    successProbability: Number(plan.projectedResults.successProbability) || 0
                 },
             };
+
+            console.log('📦 Подготовленные данные для сохранения:', {
+                analysisId: preparedPlan.analysisId,
+                hasTrainer: !!preparedPlan.recommendedTrainer,
+                hasProgram: !!preparedPlan.trainingProgram,
+                hasNutrition: !!preparedPlan.nutritionPlan
+            });
 
             const savedPlan = await fetchApi<PersonalizedPlan>('personalized-plan', {
                 method: 'POST',
@@ -339,6 +359,7 @@ export function useBodyAnalysisConvex() {
             console.log('✅ План сохранен:', savedPlan);
             setState(prev => ({ ...prev, personalizedPlan: savedPlan }));
             return savedPlan;
+
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : "Failed to save plan";
             console.error('❌ Ошибка сохранения плана:', errorMessage);
