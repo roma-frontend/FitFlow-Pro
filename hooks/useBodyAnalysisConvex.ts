@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { Id } from "@/convex/_generated/dataModel";
 import { analyzeBodyImage } from "@/utils/bodyAnalysisAI";
+import { logAnalysisData, validateAnalysisData, prepareDataForConvex } from "@/utils/bodyAnalysisDebug";
 import type { BodyAnalysisResult, PersonalizedPlan } from "@/types/bodyAnalysis";
 
 type ApiResponse<T> = {
@@ -29,14 +30,17 @@ export function useBodyAnalysisConvex() {
     // Unified API fetch function with JWT auth
     const fetchApi = async <T>(endpoint: string, options?: RequestInit): Promise<ApiResponse<T>> => {
         try {
-            const token = localStorage.getItem('auth_token');
+            // Получаем токен из localStorage или cookies
+            const token = localStorage.getItem('auth_token') || 
+                         document.cookie.split('; ').find(row => row.startsWith('session_id='))?.split('=')[1];
+            
             const response = await fetch(`/api/${endpoint}`, {
                 ...options,
                 headers: {
                     ...options?.headers,
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}` // Add auth token
-                }
+                },
+                credentials: 'include', // Включаем cookies
             });
 
             if (!response.ok) {
@@ -51,32 +55,30 @@ export function useBodyAnalysisConvex() {
         }
     };
 
-    // File upload function matching the working pattern
+    // File upload function - исправлено для работы с JWT и cookies
     const uploadFile = async (file: File): Promise<string> => {
         const formData = new FormData();
         formData.append('file', file);
         formData.append('type', 'body-analysis');
 
         try {
-            // ✅ ИСПРАВЛЕНИЕ: Получаем токен из localStorage
-            const token = localStorage.getItem('auth_token');
-
+            console.log('📤 Начало загрузки файла...');
+            
             const response = await fetch('/api/upload', {
                 method: 'POST',
                 body: formData,
-                credentials: 'include',
-                // ✅ ИСПРАВЛЕНИЕ: Добавляем заголовок Authorization
-                headers: {
-                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-                }
+                credentials: 'include', // Важно для передачи cookies
+                // Не устанавливаем Content-Type, браузер сделает это автоматически для FormData
             });
 
             if (!response.ok) {
                 const errorData = await response.json();
+                console.error('❌ Ошибка загрузки:', errorData);
                 throw new Error(errorData.error || 'Failed to upload file');
             }
 
             const result = await response.json();
+            console.log('✅ Файл загружен:', result.url);
             return result.url;
         } catch (error) {
             console.error('Upload error:', error);
@@ -84,74 +86,73 @@ export function useBodyAnalysisConvex() {
         }
     };
 
-    // Main analysis function
+    // Main analysis function - с улучшенной обработкой и отладкой
     const analyzeAndSaveBody = async (imageFile: File, userId: string) => {
         setState(prev => ({ ...prev, isProcessing: true, error: null }));
 
         try {
-            // 1. Upload image with JWT auth
-            const imageUrl = await uploadFile(imageFile);
+            console.log('🔄 Начало анализа для пользователя:', userId);
+            
+            // 1. Upload image
+            let imageUrl = '';
+            try {
+                imageUrl = await uploadFile(imageFile);
+            } catch (uploadError) {
+                console.error('❌ Ошибка загрузки изображения:', uploadError);
+                throw new Error('Не удалось загрузить изображение. Проверьте подключение.');
+            }
 
             // 2. Analyze image with AI
+            console.log('🤖 Анализ изображения с помощью AI...');
             const analysisResult = await analyzeBodyImage(imageFile, userId);
+            
+            // Логируем результат анализа для отладки
+            logAnalysisData(analysisResult, 'После AI анализа');
 
             // 3. Update image URL in result
             analysisResult.currentVisualData.imageUrl = imageUrl;
 
-            // 4. Validate and ensure all required fields
-            const validatedAnalysis = {
-                ...analysisResult,
-                problemAreas: analysisResult.problemAreas || [],
-                futureProjections: analysisResult.futureProjections || {
-                    weeks4: {
-                        estimatedWeight: 0,
-                        estimatedBodyFat: 0,
-                        estimatedMuscleMass: 0,
-                        confidenceLevel: 0
-                    },
-                    weeks8: {
-                        estimatedWeight: 0,
-                        estimatedBodyFat: 0,
-                        estimatedMuscleMass: 0,
-                        confidenceLevel: 0
-                    },
-                    weeks12: {
-                        estimatedWeight: 0,
-                        estimatedBodyFat: 0,
-                        estimatedMuscleMass: 0,
-                        confidenceLevel: 0
-                    }
-                },
-                recommendations: analysisResult.recommendations || {
-                    primaryGoal: 'Общее улучшение формы',
-                    secondaryGoals: [],
-                    estimatedTimeToGoal: 12,
-                    weeklyTrainingHours: 4
-                }
-            };
+            // 4. Validate analysis data
+            const validation = validateAnalysisData(analysisResult);
+            if (!validation.isValid) {
+                console.error('❌ Ошибки валидации:', validation.errors);
+                throw new Error(`Ошибка валидации данных: ${validation.errors.join(', ')}`);
+            }
 
-            // 5. Save analysis via API with JWT auth
-            const { data } = await fetchApi<BodyAnalysisResult>('body-analysis/save', {
-                method: 'POST',
-                body: JSON.stringify({
-                    userId, // Обязательное поле
-                    bodyType: validatedAnalysis.bodyType,
-                    estimatedBodyFat: validatedAnalysis.estimatedBodyFat,
-                    estimatedMuscleMass: validatedAnalysis.estimatedMuscleMass,
-                    posture: validatedAnalysis.posture,
-                    fitnessScore: validatedAnalysis.fitnessScore,
-                    progressPotential: validatedAnalysis.progressPotential,
-                    problemAreas: validatedAnalysis.problemAreas,
-                    recommendations: validatedAnalysis.recommendations,
-                    currentVisualData: validatedAnalysis.currentVisualData,
-                    futureProjections: validatedAnalysis.futureProjections
-                })
+            // 5. Prepare data for Convex (ensure all numbers are properly typed)
+            const preparedData = prepareDataForConvex({
+                userId,
+                bodyType: analysisResult.bodyType,
+                estimatedBodyFat: analysisResult.estimatedBodyFat,
+                estimatedMuscleMass: analysisResult.estimatedMuscleMass,
+                posture: analysisResult.posture,
+                fitnessScore: analysisResult.fitnessScore,
+                progressPotential: analysisResult.progressPotential,
+                problemAreas: analysisResult.problemAreas,
+                recommendations: analysisResult.recommendations,
+                currentVisualData: analysisResult.currentVisualData,
+                futureProjections: analysisResult.futureProjections
             });
 
+            // Логируем подготовленные данные
+            console.log('📦 Данные подготовлены для сохранения:', preparedData);
+
+            // 6. Save analysis via API
+            const { data } = await fetchApi<BodyAnalysisResult>('body-analysis/save', {
+                method: 'POST',
+                body: JSON.stringify(preparedData)
+            });
+
+            console.log('✅ Анализ успешно сохранен:', data);
             setState(prev => ({ ...prev, currentAnalysis: data }));
+            
+            // Логируем финальные данные
+            logAnalysisData(data, 'Сохраненные данные');
+            
             return data;
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : "Analysis failed";
+            console.error('❌ Ошибка анализа:', errorMessage);
             setState(prev => ({ ...prev, error: errorMessage }));
             throw err;
         } finally {
@@ -159,56 +160,69 @@ export function useBodyAnalysisConvex() {
         }
     };
 
-    // Progress update function - ИСПРАВЛЕНО bodyAnalyses -> bodyAnalysis
+    // Progress update function
     const updateProgress = async (
-        originalAnalysisId: Id<"bodyAnalysis">, // Исправлено!
+        originalAnalysisId: Id<"bodyAnalysis">,
         newPhotoFile: File,
         weight?: number
     ) => {
         setState(prev => ({ ...prev, isProcessing: true, error: null }));
 
         try {
-            // 1. Upload new photo with JWT auth
+            console.log('📸 Обновление прогресса...');
+            
+            // 1. Upload new photo
             const photoUrl = await uploadFile(newPhotoFile);
 
             // 2. Analyze new photo
             const newAnalysisData = await analyzeBodyImage(newPhotoFile, "update");
+            
+            // Логируем новый анализ
+            logAnalysisData(newAnalysisData, 'Новый анализ для прогресса');
 
-            // 3. Save progress via API with JWT auth
-            const { data } = await fetchApi<any[]>('progress', {
+            // 3. Prepare and validate data
+            const preparedAnalysisData = prepareDataForConvex({
+                bodyType: newAnalysisData.bodyType,
+                estimatedBodyFat: newAnalysisData.estimatedBodyFat,
+                estimatedMuscleMass: newAnalysisData.estimatedMuscleMass,
+                posture: newAnalysisData.posture,
+                fitnessScore: newAnalysisData.fitnessScore,
+                progressPotential: newAnalysisData.progressPotential,
+                problemAreas: newAnalysisData.problemAreas || [],
+                recommendations: newAnalysisData.recommendations || {
+                    primaryGoal: 'Общее улучшение формы',
+                    secondaryGoals: [],
+                    estimatedTimeToGoal: 12,
+                    weeklyTrainingHours: 4
+                },
+                currentVisualData: {
+                    ...newAnalysisData.currentVisualData,
+                    imageUrl: photoUrl
+                },
+                futureProjections: newAnalysisData.futureProjections || {
+                    weeks4: { estimatedWeight: 0, estimatedBodyFat: 0, estimatedMuscleMass: 0, confidenceLevel: 0 },
+                    weeks8: { estimatedWeight: 0, estimatedBodyFat: 0, estimatedMuscleMass: 0, confidenceLevel: 0 },
+                    weeks12: { estimatedWeight: 0, estimatedBodyFat: 0, estimatedMuscleMass: 0, confidenceLevel: 0 }
+                },
+            });
+
+            // 4. Save progress via API
+            const { data } = await fetchApi<any>('body-analysis/progress', {
                 method: 'POST',
                 body: JSON.stringify({
                     photoUrl,
                     originalAnalysisId,
-                    newAnalysisData: {
-                        bodyType: newAnalysisData.bodyType,
-                        estimatedBodyFat: newAnalysisData.estimatedBodyFat,
-                        estimatedMuscleMass: newAnalysisData.estimatedMuscleMass,
-                        posture: newAnalysisData.posture,
-                        fitnessScore: newAnalysisData.fitnessScore,
-                        progressPotential: newAnalysisData.progressPotential,
-                        problemAreas: newAnalysisData.problemAreas || [],
-                        recommendations: newAnalysisData.recommendations || {
-                            primaryGoal: 'Общее улучшение формы',
-                            secondaryGoals: [],
-                            estimatedTimeToGoal: 12,
-                            weeklyTrainingHours: 4
-                        },
-                        currentVisualData: newAnalysisData.currentVisualData,
-                        futureProjections: newAnalysisData.futureProjections || {
-                            weeks4: { estimatedWeight: 0, estimatedBodyFat: 0, estimatedMuscleMass: 0, confidenceLevel: 0 },
-                            weeks8: { estimatedWeight: 0, estimatedBodyFat: 0, estimatedMuscleMass: 0, confidenceLevel: 0 },
-                            weeks12: { estimatedWeight: 0, estimatedBodyFat: 0, estimatedMuscleMass: 0, confidenceLevel: 0 }
-                        },
-                    },
-                    weight,
+                    newAnalysisData: preparedAnalysisData,
+                    weight: weight ? Number(weight) : undefined,
                 })
             });
 
+            console.log('✅ Прогресс обновлен:', data);
             setState(prev => ({ ...prev, progressCheckpoints: data }));
             return data;
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : "Progress update failed";
+            console.error('❌ Ошибка обновления прогресса:', errorMessage);
             setState(prev => ({ ...prev, error: errorMessage }));
             throw err;
         } finally {
@@ -216,31 +230,61 @@ export function useBodyAnalysisConvex() {
         }
     };
 
-    // Сохранение персонализированного плана - ИСПРАВЛЕНО
+    // Сохранение персонализированного плана
     const savePersonalizedPlan = async (
-        analysisId: Id<"bodyAnalysis">, // Исправлено!
+        analysisId: Id<"bodyAnalysis">,
         plan: PersonalizedPlan
     ) => {
         setState(prev => ({ ...prev, loading: { ...prev.loading, plan: true }, error: null }));
 
         try {
+            console.log('💾 Сохранение персонализированного плана...');
+            
+            const preparedPlan = {
+                analysisId,
+                recommendedTrainer: {
+                    ...plan.recommendedTrainer,
+                    matchScore: Number(plan.recommendedTrainer.matchScore)
+                },
+                trainingProgram: {
+                    ...plan.trainingProgram,
+                    duration: Number(plan.trainingProgram.duration),
+                    sessionsPerWeek: Number(plan.trainingProgram.sessionsPerWeek)
+                },
+                nutritionPlan: {
+                    dailyCalories: Number(plan.nutritionPlan.dailyCalories),
+                    macros: {
+                        protein: Number(plan.nutritionPlan.macros.protein),
+                        carbs: Number(plan.nutritionPlan.macros.carbs),
+                        fats: Number(plan.nutritionPlan.macros.fats)
+                    }
+                },
+                recommendedProducts: plan.recommendedProducts?.map(product => ({
+                    ...product,
+                    monthlyBudget: Number(product.monthlyBudget)
+                })) || [],
+                membershipRecommendation: {
+                    ...plan.membershipRecommendation,
+                    price: Number(plan.membershipRecommendation.price),
+                    savings: Number(plan.membershipRecommendation.savings)
+                },
+                projectedResults: {
+                    ...plan.projectedResults,
+                    successProbability: Number(plan.projectedResults.successProbability)
+                },
+            };
+
             const { data } = await fetchApi<PersonalizedPlan>('personalized-plan', {
                 method: 'POST',
-                body: JSON.stringify({
-                    analysisId,
-                    recommendedTrainer: plan.recommendedTrainer,
-                    trainingProgram: plan.trainingProgram,
-                    nutritionPlan: plan.nutritionPlan,
-                    recommendedProducts: plan.recommendedProducts || [],
-                    membershipRecommendation: plan.membershipRecommendation,
-                    projectedResults: plan.projectedResults,
-                })
+                body: JSON.stringify(preparedPlan)
             });
 
+            console.log('✅ План сохранен:', data);
             setState(prev => ({ ...prev, personalizedPlan: data }));
             return data;
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : "Failed to save plan";
+            console.error('❌ Ошибка сохранения плана:', errorMessage);
             setState(prev => ({ ...prev, error: errorMessage }));
             throw err;
         } finally {
@@ -254,6 +298,7 @@ export function useBodyAnalysisConvex() {
         try {
             const { data } = await fetchApi<BodyAnalysisResult>('body-analysis');
             setState(prev => ({ ...prev, currentAnalysis: data }));
+            logAnalysisData(data, 'Загруженный анализ');
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : "Ошибка загрузки анализа";
             setState(prev => ({ ...prev, error: errorMessage }));
@@ -265,7 +310,7 @@ export function useBodyAnalysisConvex() {
     const fetchProgressCheckpoints = async () => {
         setState(prev => ({ ...prev, loading: { ...prev.loading, checkpoints: true }, error: null }));
         try {
-            const { data } = await fetchApi<any[]>('progress');
+            const { data } = await fetchApi<any>('body-analysis/progress');
             setState(prev => ({ ...prev, progressCheckpoints: data }));
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : "Ошибка загрузки прогресса";
@@ -278,7 +323,7 @@ export function useBodyAnalysisConvex() {
     const fetchLeaderboard = async () => {
         setState(prev => ({ ...prev, loading: { ...prev.loading, leaderboard: true }, error: null }));
         try {
-            const { data } = await fetchApi<any[]>('leaderboard');
+            const { data } = await fetchApi<any>('leaderboard');
             setState(prev => ({ ...prev, transformationLeaderboard: data }));
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : "Ошибка загрузки лидерборда";
@@ -288,8 +333,7 @@ export function useBodyAnalysisConvex() {
         }
     };
 
-    // ИСПРАВЛЕНО
-    const fetchPersonalizedPlan = async (analysisId: Id<"bodyAnalysis">) => { // Исправлено!
+    const fetchPersonalizedPlan = async (analysisId: Id<"bodyAnalysis">) => {
         if (!analysisId) return;
         setState(prev => ({ ...prev, loading: { ...prev.loading, plan: true }, error: null }));
         try {
