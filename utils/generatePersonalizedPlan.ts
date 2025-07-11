@@ -6,17 +6,9 @@ import type { BodyAnalysisResult, PersonalizedPlan } from '@/types/bodyAnalysis'
 export async function generatePersonalizedPlan(
     analysis: BodyAnalysisResult
 ): Promise<PersonalizedPlan> {
-    // Добавляем валидацию входных данных
-    if (!analysis) {
-        throw new Error('Analysis data is required');
-    }
-
-    // Проверяем структуру данных и добавляем значения по умолчанию
     const validatedAnalysis = {
         ...analysis,
         recommendations: {
-            ...(analysis.recommendations || {}), // Сначала существующие значения
-            // Затем значения по умолчанию только для отсутствующих полей
             primaryGoal: analysis.recommendations?.primaryGoal || 'Общее улучшение формы',
             secondaryGoals: analysis.recommendations?.secondaryGoals || [],
             estimatedTimeToGoal: analysis.recommendations?.estimatedTimeToGoal || 12,
@@ -28,43 +20,42 @@ export async function generatePersonalizedPlan(
         fitnessScore: analysis.fitnessScore || 50,
         progressPotential: analysis.progressPotential || 70,
         futureProjections: analysis.futureProjections || {
-            weeks4: { estimatedWeight: -2, estimatedBodyFat: 23, estimatedMuscleMass: 31, confidenceLevel: 80 },
-            weeks8: { estimatedWeight: -4, estimatedBodyFat: 21, estimatedMuscleMass: 32, confidenceLevel: 75 },
-            weeks12: { estimatedWeight: -6, estimatedBodyFat: 19, estimatedMuscleMass: 33, confidenceLevel: 70 }
+            weeks4: { 
+                estimatedWeight: -2, 
+                estimatedBodyFat: 23, 
+                estimatedMuscleMass: 31, 
+                confidenceLevel: 80 
+            },
+            weeks8: { 
+                estimatedWeight: -4, 
+                estimatedBodyFat: 21, 
+                estimatedMuscleMass: 32, 
+                confidenceLevel: 75 
+            },
+            weeks12: { 
+                estimatedWeight: -6, 
+                estimatedBodyFat: 19, 
+                estimatedMuscleMass: 33, 
+                confidenceLevel: 70 
+            }
         }
     };
 
     const planId = `plan-${Date.now()}` as Id<'personalizedPlans'>;
 
-    // Подбираем тренера на основе типа телосложения и целей
-    const trainer = selectTrainer(validatedAnalysis);
-
-    // Подбираем программу тренировок
-    const trainingProgram = selectTrainingProgram(validatedAnalysis);
-
-    // Создаем план питания
-    const nutritionPlan = createNutritionPlan(validatedAnalysis);
-
-    // Подбираем спортивное питание
-    const recommendedProducts = selectSupplements(validatedAnalysis);
-
-    // Рекомендуем абонемент
-    const membershipRecommendation = selectMembership(validatedAnalysis);
-
-    // Формируем прогноз результатов
-    const projectedResults = createProjectedResults(validatedAnalysis);
-
+    // Генерация плана
     return {
         _id: planId,
         analysisId: analysis._id,
-        recommendedTrainer: trainer,
-        trainingProgram,
-        nutritionPlan,
-        recommendedProducts,
-        membershipRecommendation,
-        projectedResults,
+        recommendedTrainer: selectTrainer(validatedAnalysis),
+        trainingProgram: selectTrainingProgram(validatedAnalysis),
+        nutritionPlan: createNutritionPlan(validatedAnalysis),
+        recommendedProducts: selectSupplements(validatedAnalysis),
+        membershipRecommendation: selectMembership(validatedAnalysis),
+        projectedResults: createProjectedResults(validatedAnalysis),
     };
 }
+
 
 function selectTrainer(analysis: BodyAnalysisResult) {
     // Проверяем наличие необходимых данных
