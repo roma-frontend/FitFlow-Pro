@@ -11,7 +11,7 @@ export function useBodyAnalysisConvex() {
         error: null as string | null,
         currentAnalysis: null as BodyAnalysisResult | null,
         progressCheckpoints: null as any[] | null,
-        transformationLeaderboard: null as any[] | null,
+        transformationLeaderboard: null as any | null,
         personalizedPlan: null as PersonalizedPlan | null,
         loading: {
             analysis: false,
@@ -287,7 +287,7 @@ export function useBodyAnalysisConvex() {
         }
     };
 
-    // Сохранение персонализированного плана
+    // Сохранение персонализированного плана - ОБНОВЛЕНО
     const savePersonalizedPlan = async (
         analysisId: Id<"bodyAnalysis">,
         plan: PersonalizedPlan
@@ -310,6 +310,7 @@ export function useBodyAnalysisConvex() {
                 throw new Error('Отсутствует рекомендуемый тренер');
             }
 
+            // Подготавливаем данные - отделяем exercises от основных полей trainingProgram
             const preparedPlan = {
                 analysisId,
                 recommendedTrainer: {
@@ -317,9 +318,14 @@ export function useBodyAnalysisConvex() {
                     matchScore: Number(plan.recommendedTrainer.matchScore) || 0
                 },
                 trainingProgram: {
-                    ...plan.trainingProgram,
+                    // Оставляем только те поля, которые есть в Convex валидаторе
                     duration: Number(plan.trainingProgram.duration) || 0,
-                    sessionsPerWeek: Number(plan.trainingProgram.sessionsPerWeek) || 0
+                    sessionsPerWeek: Number(plan.trainingProgram.sessionsPerWeek) || 0,
+                    focusAreas: plan.trainingProgram.focusAreas || [],
+                    id: plan.trainingProgram.id,
+                    name: plan.trainingProgram.name,
+                    // exercises передаем отдельно - НЕ в trainingProgram
+                    exercises: plan.trainingProgram.exercises || []
                 },
                 nutritionPlan: {
                     dailyCalories: Number(plan.nutritionPlan.dailyCalories) || 0,
@@ -348,7 +354,8 @@ export function useBodyAnalysisConvex() {
                 analysisId: preparedPlan.analysisId,
                 hasTrainer: !!preparedPlan.recommendedTrainer,
                 hasProgram: !!preparedPlan.trainingProgram,
-                hasNutrition: !!preparedPlan.nutritionPlan
+                hasNutrition: !!preparedPlan.nutritionPlan,
+                exercisesCount: preparedPlan.trainingProgram.exercises.length
             });
 
             const savedPlan = await fetchApi<PersonalizedPlan>('personalized-plan', {
@@ -388,7 +395,7 @@ export function useBodyAnalysisConvex() {
     const fetchProgressCheckpoints = async () => {
         setState(prev => ({ ...prev, loading: { ...prev.loading, checkpoints: true }, error: null }));
         try {
-            const checkpoints = await fetchApi<any>('body-analysis/progress');
+            const checkpoints = await fetchApi<any>('progress');
             setState(prev => ({ ...prev, progressCheckpoints: checkpoints }));
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : "Ошибка загрузки прогресса";

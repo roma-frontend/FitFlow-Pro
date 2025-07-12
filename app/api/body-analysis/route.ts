@@ -1,8 +1,7 @@
-// app/api/body-analysis/route.ts - Интеграция с Convex
+// app/api/body-analysis/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/simple-auth';
 import { ConvexHttpClient } from "convex/browser";
-import { api } from "@/convex/_generated/api";
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
@@ -44,11 +43,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: true,
         data: {
-          _id: result.analysisId,
+          _id: result,
           userId,
           ...body,
-          createdAt: Date.now(),
-          updatedAt: Date.now()
+          _creationTime: Date.now()
         }
       });
 
