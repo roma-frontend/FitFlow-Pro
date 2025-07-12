@@ -343,10 +343,62 @@ export const getTransformationLeaderboard = query({
   },
 });
 
+const exerciseSchema = v.object({
+  id: v.string(),
+  name: v.string(),
+  category: v.string(),
+  muscleGroups: v.array(v.string()),
+  equipment: v.optional(v.string()),
+  difficulty: v.union(
+    v.literal("beginner"),
+    v.literal("intermediate"),
+    v.literal("advanced")
+  ),
+  sets: v.number(),
+  reps: v.union(v.number(), v.string()),
+  restTime: v.number(),
+  description: v.optional(v.string()),
+  videoUrl: v.optional(v.string()),
+  imageUrl: v.optional(v.string()),
+  instructions: v.optional(v.array(v.string())),
+  tips: v.optional(v.array(v.string())),
+  progression: v.optional(v.object({
+    week1: v.object({
+      sets: v.number(),
+      reps: v.union(v.number(), v.string()),
+      weight: v.optional(v.number()),
+    }),
+    week2: v.object({
+      sets: v.number(),
+      reps: v.union(v.number(), v.string()),
+      weight: v.optional(v.number()),
+    }),
+    week3: v.object({
+      sets: v.number(),
+      reps: v.union(v.number(), v.string()),
+      weight: v.optional(v.number()),
+    }),
+    week4: v.object({
+      sets: v.number(),
+      reps: v.union(v.number(), v.string()),
+      weight: v.optional(v.number()),
+    }),
+  })),
+  alternatives: v.optional(v.array(v.object({
+    id: v.string(),
+    name: v.string(),
+    reason: v.string(),
+  }))),
+  modifications: v.optional(v.object({
+    easier: v.optional(v.string()),
+    harder: v.optional(v.string()),
+  })),
+});
+
 // Сохранение персонализированного плана
 export const savePersonalizedPlan = mutation({
   args: {
-    userId: v.string(), // Передаем userId явно
+    userId: v.string(),
     analysisId: v.id("bodyAnalysis"),
     recommendedTrainer: v.object({
       id: v.string(),
@@ -362,6 +414,7 @@ export const savePersonalizedPlan = mutation({
       sessionsPerWeek: v.number(),
       focusAreas: v.array(v.string()),
     }),
+    exercises: v.optional(v.array(exerciseSchema)), // Новое поле для упражнений
     nutritionPlan: v.object({
       dailyCalories: v.number(),
       macros: v.object({
@@ -416,11 +469,23 @@ export const savePersonalizedPlan = mutation({
         throw new Error("Unauthorized - Analysis belongs to another user");
       }
 
+      // Удаляем старый план, если он существует
+      const existingPlan = await ctx.db
+        .query("personalizedPlans")
+        .withIndex("by_analysis", (q) => q.eq("analysisId", args.analysisId))
+        .first();
+
+      if (existingPlan) {
+        await ctx.db.delete(existingPlan._id);
+      }
+
+      // Создаем новый план с упражнениями
       const planId = await ctx.db.insert("personalizedPlans", {
         userId: args.userId,
         analysisId: args.analysisId,
         recommendedTrainer: args.recommendedTrainer,
         trainingProgram: args.trainingProgram,
+        exercises: args.exercises, // Добавляем упражнения
         nutritionPlan: args.nutritionPlan,
         recommendedProducts: args.recommendedProducts,
         membershipRecommendation: args.membershipRecommendation,
@@ -431,9 +496,450 @@ export const savePersonalizedPlan = mutation({
       return {
         success: true,
         planId,
+        exercisesCount: args.exercises?.length || 0,
       };
     } catch (error) {
       console.error("Error in savePersonalizedPlan:", error);
+      throw error;
+    }
+  },
+});
+
+export const updatePlanExercises = mutation({
+  args: {
+    userId: v.string(),
+    planId: v.id("personalizedPlans"),
+    exercises: v.array(exerciseSchema),
+  },
+  handler: async (ctx, args) => {
+    try {
+      if (!args.userId) {
+        throw new Error("userId is required");
+      }
+
+      // Получаем план и проверяем права доступа
+      const plan = await ctx.db.get(args.planId);
+      if (!plan) {
+        throw new Error("Plan not found");
+      }
+
+      if (plan.userId !== args.userId) {
+        throw new Error("Unauthorized - Plan belongs to another user");
+      }
+
+      // Обновляем упражнения в плане
+      await ctx.db.patch(args.planId, {
+        exercises: args.exercises,
+      });
+
+      return {
+        success: true,
+        exercisesCount: args.exercises.length,
+      };
+    } catch (error) {
+      console.error("Error in updatePlanExercises:", error);
+      throw error;
+    }
+  },
+});
+
+// Получение упражнений из плана
+export const getPlanExercises = query({
+  args: {
+    userId: v.string(),
+    planId: v.id("personalizedPlans"),
+  },
+  handler: async (ctx, args) => {
+    try {
+      if (!args.userId) {
+        throw new Error("userId is required");
+      }
+
+      const plan = await ctx.db.get(args.planId);
+      if (!plan) {
+        throw new Error("Plan not found");
+      }
+
+      if (plan.userId !== args.userId) {
+        throw new Error("Unauthorized - Plan belongs to another user");
+      }
+
+      return {
+        exercises: plan.exercises || [],
+        trainingProgram: plan.trainingProgram,
+      };
+    } catch (error) {
+      console.error("Error in getPlanExercises:", error);
+      throw error;
+    }
+  },
+});
+
+// Сохранение тренировочной сессии
+export const saveWorkoutSession = mutation({
+  args: {
+    userId: v.string(),
+    planId: v.id("personalizedPlans"),
+    sessionDate: v.number(),
+    duration: v.number(),
+    exercises: v.array(
+      v.object({
+        exerciseId: v.string(),
+        sets: v.array(
+          v.object({
+            reps: v.number(),
+            weight: v.optional(v.number()),
+            completed: v.boolean(),
+            notes: v.optional(v.string()),
+          })
+        ),
+        completed: v.boolean(),
+        skipped: v.boolean(),
+        skipReason: v.optional(v.string()),
+      })
+    ),
+    overallRating: v.optional(v.number()),
+    notes: v.optional(v.string()),
+    caloriesBurned: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    try {
+      if (!args.userId) {
+        throw new Error("userId is required");
+      }
+
+      // Проверяем, что план принадлежит пользователю
+      const plan = await ctx.db.get(args.planId);
+      if (!plan) {
+        throw new Error("Plan not found");
+      }
+
+      if (plan.userId !== args.userId) {
+        throw new Error("Unauthorized - Plan belongs to another user");
+      }
+
+      // Сохраняем тренировочную сессию
+      const sessionId = await ctx.db.insert("workoutSessions", {
+        userId: args.userId,
+        planId: args.planId,
+        sessionDate: args.sessionDate,
+        duration: args.duration,
+        exercises: args.exercises,
+        overallRating: args.overallRating,
+        notes: args.notes,
+        caloriesBurned: args.caloriesBurned,
+      });
+
+      // Обновляем прогресс по упражнениям
+      await ctx.scheduler.runAfter(0, internal.bodyAnalysis.updateExerciseProgress, {
+        userId: args.userId,
+        exercises: args.exercises,
+        sessionDate: args.sessionDate,
+      });
+
+      return {
+        success: true,
+        sessionId,
+      };
+    } catch (error) {
+      console.error("Error in saveWorkoutSession:", error);
+      throw error;
+    }
+  },
+});
+
+// Получение истории тренировок
+export const getWorkoutHistory = query({
+  args: {
+    userId: v.string(),
+    planId: v.optional(v.id("personalizedPlans")),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    try {
+      if (!args.userId) {
+        throw new Error("userId is required");
+      }
+
+      let query = ctx.db
+        .query("workoutSessions")
+        .withIndex("by_user", (q) => q.eq("userId", args.userId));
+
+      if (args.planId) {
+        query = ctx.db
+          .query("workoutSessions")
+          .withIndex("by_plan", (q) => q.eq("planId", args.planId!));
+      }
+
+      const sessions = await query
+        .order("desc")
+        .take(args.limit || 50);
+
+      return {
+        sessions,
+        totalSessions: sessions.length,
+        totalDuration: sessions.reduce((sum, session) => sum + session.duration, 0),
+      };
+    } catch (error) {
+      console.error("Error in getWorkoutHistory:", error);
+      throw error;
+    }
+  },
+});
+
+// Обновление прогресса по упражнениям (internal функция)
+export const updateExerciseProgress = internalMutation({
+  args: {
+    userId: v.string(),
+    exercises: v.array(v.any()),
+    sessionDate: v.number(),
+  },
+  handler: async (ctx, args) => {
+    try {
+      for (const exercise of args.exercises) {
+        if (!exercise.completed) continue;
+
+        // Ищем существующий прогресс по упражнению
+        const existingProgress = await ctx.db
+          .query("exerciseProgress")
+          .withIndex("user_exercise", (q) => 
+            q.eq("userId", args.userId).eq("exerciseId", exercise.exerciseId)
+          )
+          .first();
+
+        // Вычисляем максимальные показатели из сессии
+        const maxWeight = Math.max(...exercise.sets.map((set: any) => set.weight || 0));
+        const maxReps = Math.max(...exercise.sets.map((set: any) => set.reps || 0));
+        const totalVolume = exercise.sets.reduce((sum: number, set: any) => 
+          sum + (set.weight || 0) * (set.reps || 0), 0
+        );
+
+        if (existingProgress) {
+          // Обновляем существующий прогресс
+          const newMaxWeight = Math.max(existingProgress.maxWeight, maxWeight);
+          const newMaxReps = Math.max(existingProgress.maxReps, maxReps);
+          const newPersonalRecords = [...existingProgress.personalRecords];
+
+          // Проверяем новые рекорды
+          if (maxWeight > existingProgress.maxWeight) {
+            newPersonalRecords.push({
+              date: args.sessionDate,
+              type: "max_weight",
+              value: maxWeight,
+              notes: `Новый рекорд веса: ${maxWeight}кг`,
+            });
+          }
+
+          if (maxReps > existingProgress.maxReps) {
+            newPersonalRecords.push({
+              date: args.sessionDate,
+              type: "max_reps",
+              value: maxReps,
+              notes: `Новый рекорд повторений: ${maxReps}`,
+            });
+          }
+
+          // Обновляем тренд
+          const newWeightTrend = [...existingProgress.weightTrend, {
+            date: args.sessionDate,
+            weight: maxWeight,
+            reps: maxReps,
+          }].slice(-50); // Храним последние 50 записей
+
+          await ctx.db.patch(existingProgress._id, {
+            maxWeight: newMaxWeight,
+            maxReps: newMaxReps,
+            totalVolume: existingProgress.totalVolume + totalVolume,
+            totalSessions: existingProgress.totalSessions + 1,
+            lastSessionDate: args.sessionDate,
+            weightTrend: newWeightTrend,
+            personalRecords: newPersonalRecords,
+          });
+        } else {
+          // Создаем новый прогресс
+          await ctx.db.insert("exerciseProgress", {
+            userId: args.userId,
+            exerciseId: exercise.exerciseId,
+            exerciseName: exercise.name || "Unknown Exercise",
+            maxWeight,
+            maxReps,
+            weightTrend: [{
+              date: args.sessionDate,
+              weight: maxWeight,
+              reps: maxReps,
+            }],
+            totalVolume,
+            totalSessions: 1,
+            lastSessionDate: args.sessionDate,
+            personalRecords: maxWeight > 0 ? [{
+              date: args.sessionDate,
+              type: "max_weight",
+              value: maxWeight,
+              notes: `Первая тренировка: ${maxWeight}кг`,
+            }] : [],
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Error in updateExerciseProgress:", error);
+      throw error;
+    }
+  },
+});
+
+// Получение прогресса по упражнениям
+export const getExerciseProgress = query({
+  args: {
+    userId: v.string(),
+    exerciseId: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    try {
+      if (!args.userId) {
+        throw new Error("userId is required");
+      }
+
+      if (args.exerciseId) {
+        // Получаем прогресс по конкретному упражнению
+        const progress = await ctx.db
+          .query("exerciseProgress")
+          .withIndex("user_exercise", (q) => 
+            q.eq("userId", args.userId).eq("exerciseId", args.exerciseId!)
+          )
+          .first();
+
+        return progress;
+      } else {
+        // Получаем весь прогресс пользователя
+        const allProgress = await ctx.db
+          .query("exerciseProgress")
+          .withIndex("by_user", (q) => q.eq("userId", args.userId))
+          .collect();
+
+        return {
+          exercises: allProgress,
+          totalExercises: allProgress.length,
+          totalSessions: allProgress.reduce((sum, ex) => sum + ex.totalSessions, 0),
+          totalVolume: allProgress.reduce((sum, ex) => sum + ex.totalVolume, 0),
+        };
+      }
+    } catch (error) {
+      console.error("Error in getExerciseProgress:", error);
+      throw error;
+    }
+  },
+});
+
+// Создание шаблона упражнения
+export const createExerciseTemplate = mutation({
+  args: {
+    name: v.string(),
+    category: v.string(),
+    muscleGroups: v.array(v.string()),
+    equipment: v.optional(v.string()),
+    difficulty: v.union(
+      v.literal("beginner"),
+      v.literal("intermediate"),
+      v.literal("advanced")
+    ),
+    description: v.string(),
+    instructions: v.array(v.string()),
+    tips: v.array(v.string()),
+    videoUrl: v.optional(v.string()),
+    imageUrl: v.optional(v.string()),
+    defaultSets: v.number(),
+    defaultReps: v.union(v.number(), v.string()),
+    defaultRestTime: v.number(),
+    tags: v.array(v.string()),
+  },
+  handler: async (ctx, args) => {
+    try {
+      const now = Date.now();
+
+      const templateId = await ctx.db.insert("exerciseTemplates", {
+        name: args.name,
+        category: args.category,
+        muscleGroups: args.muscleGroups,
+        equipment: args.equipment,
+        difficulty: args.difficulty,
+        description: args.description,
+        instructions: args.instructions,
+        tips: args.tips,
+        videoUrl: args.videoUrl,
+        imageUrl: args.imageUrl,
+        defaultSets: args.defaultSets,
+        defaultReps: args.defaultReps,
+        defaultRestTime: args.defaultRestTime,
+        tags: args.tags,
+        usageCount: 0,
+        rating: 0,
+        isActive: true,
+        createdAt: now,
+      });
+
+      return {
+        success: true,
+        templateId,
+      };
+    } catch (error) {
+      console.error("Error in createExerciseTemplate:", error);
+      throw error;
+    }
+  },
+});
+
+// Поиск шаблонов упражнений
+export const searchExerciseTemplates = query({
+  args: {
+    category: v.optional(v.string()),
+    difficulty: v.optional(v.union(
+      v.literal("beginner"),
+      v.literal("intermediate"),
+      v.literal("advanced")
+    )),
+    muscleGroups: v.optional(v.array(v.string())),
+    tags: v.optional(v.array(v.string())),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    try {
+      let query = ctx.db
+        .query("exerciseTemplates")
+        .filter((q) => q.eq(q.field("isActive"), true));
+
+      if (args.category) {
+        query = query.filter((q) => q.eq(q.field("category"), args.category));
+      }
+
+      if (args.difficulty) {
+        query = query.filter((q) => q.eq(q.field("difficulty"), args.difficulty));
+      }
+
+      const templates = await query
+        .order("desc")
+        .take(args.limit || 50);
+
+      // Дополнительная фильтрация по мышечным группам и тегам
+      let filteredTemplates = templates;
+
+      if (args.muscleGroups && args.muscleGroups.length > 0) {
+        filteredTemplates = filteredTemplates.filter(template =>
+          args.muscleGroups!.some(group => template.muscleGroups.includes(group))
+        );
+      }
+
+      if (args.tags && args.tags.length > 0) {
+        filteredTemplates = filteredTemplates.filter(template =>
+          args.tags!.some(tag => template.tags.includes(tag))
+        );
+      }
+
+      return {
+        templates: filteredTemplates,
+        totalCount: filteredTemplates.length,
+      };
+    } catch (error) {
+      console.error("Error in searchExerciseTemplates:", error);
       throw error;
     }
   },

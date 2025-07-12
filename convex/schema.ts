@@ -136,11 +136,11 @@ export default defineSchema({
       v.literal("endomorph"),
       v.literal("mixed")
     ),
-    estimatedBodyFat: v.float64(),  // Изменено на float64 для соответствия мутации
-    estimatedMuscleMass: v.float64(),  // Изменено на float64
+    estimatedBodyFat: v.float64(),
+    estimatedMuscleMass: v.float64(),
     posture: v.union(v.literal("good"), v.literal("fair"), v.literal("poor")),
-    fitnessScore: v.float64(),  // Изменено на float64
-    progressPotential: v.float64(),  // Изменено на float64
+    fitnessScore: v.float64(),
+    progressPotential: v.float64(),
     problemAreas: v.array(
       v.object({
         area: v.union(
@@ -157,17 +157,17 @@ export default defineSchema({
     recommendations: v.object({
       primaryGoal: v.string(),
       secondaryGoals: v.array(v.string()),
-      estimatedTimeToGoal: v.float64(),  // Изменено на float64
-      weeklyTrainingHours: v.float64(),  // Изменено на float64
+      estimatedTimeToGoal: v.float64(),
+      weeklyTrainingHours: v.float64(),
     }),
     currentVisualData: v.object({
       imageUrl: v.string(),
-      analyzedImageUrl: v.string(),  // Сделано обязательным как в мутации
+      analyzedImageUrl: v.string(),
       bodyOutlineData: v.optional(v.any()),
     }),
     futureProjections: v.object({
       weeks4: v.object({
-        estimatedWeight: v.float64(),  // Изменено на float64
+        estimatedWeight: v.float64(),
         estimatedBodyFat: v.float64(),
         estimatedMuscleMass: v.float64(),
         confidenceLevel: v.float64(),
@@ -201,7 +201,6 @@ export default defineSchema({
       onTrack: v.boolean(),
       deviationPercent: v.float64(),
     })),
-    // Убираем createdAt, используем _creationTime
   })
     .index("by_user", ["userId"])
     .index("by_analysis", ["analysisId"]),
@@ -227,7 +226,7 @@ export default defineSchema({
     .index("score_active", ["isActive", "score"])
     .index("user_active", ["userId", "isActive"]),
 
-  // Персонализированные планы
+  // Персонализированные планы - ОБНОВЛЕНО с поддержкой exercises
   personalizedPlans: defineTable({
     userId: v.string(),
     analysisId: v.id("bodyAnalysis"),
@@ -245,6 +244,63 @@ export default defineSchema({
       sessionsPerWeek: v.number(),
       focusAreas: v.array(v.string()),
     }),
+    // НОВОЕ ПОЛЕ: exercises хранится отдельно от trainingProgram
+    exercises: v.optional(v.array(
+      v.object({
+        id: v.string(),
+        name: v.string(),
+        category: v.string(),
+        muscleGroups: v.array(v.string()),
+        equipment: v.optional(v.string()),
+        difficulty: v.union(
+          v.literal("beginner"),
+          v.literal("intermediate"),
+          v.literal("advanced")
+        ),
+        sets: v.number(),
+        reps: v.union(v.number(), v.string()), // Поддержка "8-12", "до отказа" и т.д.
+        restTime: v.number(), // в секундах
+        description: v.optional(v.string()),
+        videoUrl: v.optional(v.string()),
+        imageUrl: v.optional(v.string()),
+        instructions: v.optional(v.array(v.string())),
+        tips: v.optional(v.array(v.string())),
+        // Прогрессия упражнения
+        progression: v.optional(v.object({
+          week1: v.object({
+            sets: v.number(),
+            reps: v.union(v.number(), v.string()),
+            weight: v.optional(v.number()),
+          }),
+          week2: v.object({
+            sets: v.number(),
+            reps: v.union(v.number(), v.string()),
+            weight: v.optional(v.number()),
+          }),
+          week3: v.object({
+            sets: v.number(),
+            reps: v.union(v.number(), v.string()),
+            weight: v.optional(v.number()),
+          }),
+          week4: v.object({
+            sets: v.number(),
+            reps: v.union(v.number(), v.string()),
+            weight: v.optional(v.number()),
+          }),
+        })),
+        // Альтернативные упражнения
+        alternatives: v.optional(v.array(v.object({
+          id: v.string(),
+          name: v.string(),
+          reason: v.string(), // "если нет оборудования", "для дома" и т.д.
+        }))),
+        // Модификации для разных уровней
+        modifications: v.optional(v.object({
+          easier: v.optional(v.string()),
+          harder: v.optional(v.string()),
+        })),
+      })
+    )),
     nutritionPlan: v.object({
       dailyCalories: v.number(),
       macros: v.object({
@@ -319,6 +375,108 @@ export default defineSchema({
     expiresAt: v.number(),
     createdAt: v.number(),
   }).index("by_user", ["userId"]),
+
+  // НОВАЯ ТАБЛИЦА: Выполненные тренировки
+  workoutSessions: defineTable({
+    userId: v.string(),
+    planId: v.id("personalizedPlans"),
+    sessionDate: v.number(),
+    duration: v.number(), // в минутах
+    exercises: v.array(
+      v.object({
+        exerciseId: v.string(),
+        sets: v.array(
+          v.object({
+            reps: v.number(),
+            weight: v.optional(v.number()),
+            completed: v.boolean(),
+            notes: v.optional(v.string()),
+          })
+        ),
+        completed: v.boolean(),
+        skipped: v.boolean(),
+        skipReason: v.optional(v.string()),
+      })
+    ),
+    overallRating: v.optional(v.number()), // 1-5 звезд
+    notes: v.optional(v.string()),
+    caloriesBurned: v.optional(v.number()),
+  })
+    .index("by_user", ["userId"])
+    .index("by_plan", ["planId"])
+    .index("by_date", ["sessionDate"]),
+
+  // НОВАЯ ТАБЛИЦА: Прогресс по упражнениям
+  exerciseProgress: defineTable({
+    userId: v.string(),
+    exerciseId: v.string(),
+    exerciseName: v.string(),
+    // История максимальных весов
+    maxWeight: v.number(),
+    maxReps: v.number(),
+    // Тренды
+    weightTrend: v.array(
+      v.object({
+        date: v.number(),
+        weight: v.number(),
+        reps: v.number(),
+      })
+    ),
+    // Статистика
+    totalVolume: v.number(), // общий объем за все время
+    totalSessions: v.number(),
+    lastSessionDate: v.number(),
+    // Персональные рекорды
+    personalRecords: v.array(
+      v.object({
+        date: v.number(),
+        type: v.union(
+          v.literal("max_weight"),
+          v.literal("max_reps"),
+          v.literal("max_volume"),
+          v.literal("best_form")
+        ),
+        value: v.number(),
+        notes: v.optional(v.string()),
+      })
+    ),
+  })
+    .index("by_user", ["userId"])
+    .index("by_exercise", ["exerciseId"])
+    .index("user_exercise", ["userId", "exerciseId"]),
+
+  // НОВАЯ ТАБЛИЦА: Шаблоны упражнений
+  exerciseTemplates: defineTable({
+    name: v.string(),
+    category: v.string(),
+    muscleGroups: v.array(v.string()),
+    equipment: v.optional(v.string()),
+    difficulty: v.union(
+      v.literal("beginner"),
+      v.literal("intermediate"),
+      v.literal("advanced")
+    ),
+    description: v.string(),
+    instructions: v.array(v.string()),
+    tips: v.array(v.string()),
+    videoUrl: v.optional(v.string()),
+    imageUrl: v.optional(v.string()),
+    // Базовые параметры
+    defaultSets: v.number(),
+    defaultReps: v.union(v.number(), v.string()),
+    defaultRestTime: v.number(),
+    // Теги для поиска
+    tags: v.array(v.string()),
+    // Популярность
+    usageCount: v.number(),
+    rating: v.number(),
+    isActive: v.boolean(),
+    createdAt: v.number(),
+  })
+    .index("by_category", ["category"])
+    .index("by_difficulty", ["difficulty"])
+    .index("by_popularity", ["usageCount"])
+    .index("by_rating", ["rating"]),
 
   messageGroups: defineTable({
     name: v.string(),

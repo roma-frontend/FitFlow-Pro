@@ -189,13 +189,13 @@ export function UserDetailsModal({
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 <Card>
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <CardTitle className="text-sm font-medium flex flex-col sm:flex-row items:start sm:items-center gap-2">
                       <Calendar className="h-4 w-4" />
                       Дата регистрации
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-2xl font-bold">{formatDate(user.createdAt)}</p>
+                    <p className="text-lg sm:text-xl font-bold">{formatDate(user.createdAt)}</p>
                   </CardContent>
                 </Card>
 
@@ -329,19 +329,19 @@ export function UserDetailsModal({
                       <CardContent>
                         <div className="grid grid-cols-3 gap-4 text-center">
                           <div className="space-y-2">
-                            <p className="text-3xl font-bold text-blue-600">
+                            <p className="text-base sm:text-lg md:text-xl font-bold text-blue-600">
                               {membership.usageStats.visitsThisMonth || 0}
                             </p>
                             <p className="text-sm text-gray-500">Визитов в этом месяце</p>
                           </div>
                           <div className="space-y-2">
-                            <p className="text-3xl font-bold text-green-600">
+                            <p className="text-base sm:text-lg md:text-xl font-bold text-green-600">
                               {membership.usageStats.totalVisits || 0}
                             </p>
                             <p className="text-sm text-gray-500">Всего визитов</p>
                           </div>
                           <div className="space-y-2">
-                            <p className="text-xl font-bold text-purple-600">
+                            <p className="text-base sm:text-lg md:text-xl font-bold text-purple-600">
                               {membership.usageStats.favoriteTime || 'Не определено'}
                             </p>
                             <p className="text-sm text-gray-500">Любимое время</p>

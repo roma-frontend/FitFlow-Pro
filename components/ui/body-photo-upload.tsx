@@ -308,7 +308,7 @@ export function BodyPhotoUpload({
                 <Button
                   type="button"
                   disabled={disabled || isUploading}
-                  className="bg-blue-600 hover:bg-blue-700"
+                  className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600"
                 >
                   <Upload className="h-4 w-4 mr-2" />
                   Выбрать фото

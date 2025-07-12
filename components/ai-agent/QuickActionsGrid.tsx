@@ -10,7 +10,7 @@ interface QuickActionsGridProps {
 
 export const QuickActionsGrid: React.FC<QuickActionsGridProps> = memo(({ actions, onActionClick }) => {
   return (
-    <div className="px-4 py-6 sm:px-6">
+    <div className="px-4 py-5 sm:px-6">
       <div className="mb-6">
         <div className="flex items-center space-x-2 mb-2">
           <Sparkles className="h-5 w-5 text-blue-600" />
