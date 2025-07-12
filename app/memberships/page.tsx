@@ -96,10 +96,8 @@ function MembershipsPageContent() {
     setShowPaymentForm(false);
     setSelectedPlan(null);
 
-    setTimeout(async () => {
       await refetch();
       setSelectedTab("current");
-    }, 500);
   };
 
   const handlePaymentCancel = () => {

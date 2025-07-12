@@ -208,8 +208,6 @@ export default function RootLayout({
                               </AIAgentProvider>
                             </SafeChildrenWrapper>
 
-                            {/* ИИ-агент - доступен на всех страницах */}
-                            <AIAgent />
 
                             {(process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_DEBUG === 'true') && (
                               <DebugLogout />

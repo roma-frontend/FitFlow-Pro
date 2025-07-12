@@ -1,42 +1,38 @@
-// app/api/auth/face-register/route.ts - исправленная типизация ошибок
+// app/api/auth/face-register/route.ts - Полноценная регистрация Face ID
 import { NextRequest, NextResponse } from 'next/server';
-import { ConvexHttpClient } from "convex/browser";
+import { getSession } from '@/lib/simple-auth';
+import { faceIdStorage } from '@/lib/face-id-storage';
 import jwt from 'jsonwebtoken';
-
-const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
 interface FaceRegisterRequest {
   descriptor: number[];
   confidence: number;
   sessionToken?: string;
+  metadata?: {
+    source?: string;
+    timestamp?: number;
+  };
 }
 
-// ✅ Функция для безопасного получения сообщения об ошибке
-function getErrorMessage(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
-  }
-  if (typeof error === 'string') {
-    return error;
-  }
-  return 'Неизвестная ошибка';
-}
-
-// ✅ Функция для получения деталей ошибки (только в dev режиме)
-function getErrorDetails(error: unknown) {
-  if (process.env.NODE_ENV !== 'development') {
-    return undefined;
+// Функция для получения информации об устройстве
+function getDeviceInfo(request: NextRequest) {
+  const userAgent = request.headers.get('user-agent') || 'Unknown';
+  const platform = request.headers.get('sec-ch-ua-platform') || 'Unknown';
+  
+  // Определяем разрешение экрана из User-Agent (приблизительно)
+  let screenResolution = '1920x1080'; // По умолчанию
+  
+  if (userAgent.includes('Mobile')) {
+    screenResolution = '390x844'; // iPhone 13
+  } else if (userAgent.includes('iPad')) {
+    screenResolution = '1024x768';
   }
   
-  if (error instanceof Error) {
-    return {
-      name: error.name,
-      message: error.message,
-      stack: error.stack
-    };
-  }
-  
-  return { error };
+  return {
+    userAgent,
+    platform: platform.replace(/"/g, ''),
+    screenResolution
+  };
 }
 
 export async function POST(request: NextRequest) {
@@ -44,20 +40,21 @@ export async function POST(request: NextRequest) {
   
   try {
     const body: FaceRegisterRequest = await request.json();
-    const { descriptor, confidence, sessionToken } = body;
+    const { descriptor, confidence, sessionToken, metadata } = body;
 
     console.log('📸 Face Register: получены данные:', {
       hasDescriptor: !!descriptor,
       descriptorLength: descriptor?.length,
       confidence,
-      hasSessionToken: !!sessionToken
+      hasSessionToken: !!sessionToken,
+      metadata
     });
 
-    // Проверяем качество данных
-    if (!descriptor || descriptor.length === 0) {
+    // ✅ Валидация данных
+    if (!descriptor || descriptor.length < 128) {
       return NextResponse.json({
         success: false,
-        message: 'Недостаточно данных лица для регистрации'
+        message: 'Недостаточно данных лица для регистрации. Требуется дескриптор из 128 значений.'
       }, { status: 400 });
     }
 
@@ -77,123 +74,236 @@ export async function POST(request: NextRequest) {
       }, { status: 500 });
     }
 
-    // ✅ Получаем текущего пользователя из JWT токена в cookie
+    // ✅ Получаем текущего пользователя
     let currentUser = null;
+    let userSession = null;
     
-    // Получаем токен из cookies
-    const token = request.cookies.get('auth_token')?.value || sessionToken;
-    console.log('🍪 Токен найден:', !!token);
+    // Получаем токен из cookies или параметра
+    const authToken = request.cookies.get('auth_token')?.value;
+    const sessionId = request.cookies.get('session_id')?.value;
+    const token = authToken || sessionId || sessionToken;
     
-    if (token) {
-      try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
-        console.log('🎫 Токен декодирован:', { userId: decoded.userId, email: decoded.email });
-        
-        // Используем правильный query name
-        currentUser = await convex.query("users:getById", { id: decoded.userId });
-        console.log('👤 Пользователь найден:', currentUser ? currentUser.name : 'не найден');
-      } catch (jwtError) {
-        const jwtErrorMessage = getErrorMessage(jwtError);
-        console.log('❌ Ошибка проверки токена:', jwtErrorMessage);
-      }
-    }
-
-    if (!currentUser) {
-      console.log('❌ Пользователь не авторизован');
+    console.log('🍪 Проверяем авторизацию:', {
+      hasAuthToken: !!authToken,
+      hasSessionId: !!sessionId,
+      hasSessionToken: !!sessionToken
+    });
+    
+    if (!token) {
       return NextResponse.json({
         success: false,
         message: 'Необходимо войти в систему для регистрации Face ID'
       }, { status: 401 });
     }
 
-    // ✅ Проверяем, есть ли уже Face ID у пользователя (пропускаем для демо)
-    console.log('🔍 Проверяем существующий Face ID профиль...');
+    // Проверяем сессию
+    userSession = await getSession(token);
     
-    // Для демо версии - просто создаем "профиль" без реальной БД
-    console.log('📝 Создаем демо Face ID профиль...');
-    
-    // Симулируем создание профиля
-    const faceProfileId = `face_profile_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
-    console.log('✅ Face ID профиль создан (демо):', faceProfileId);
+    if (!userSession || !userSession.user) {
+      console.log('❌ Сессия не найдена или недействительна');
+      return NextResponse.json({
+        success: false,
+        message: 'Сессия истекла. Пожалуйста, войдите заново.'
+      }, { status: 401 });
+    }
 
-    return NextResponse.json({
+    currentUser = userSession.user;
+    console.log('👤 Пользователь найден:', {
+      id: currentUser.id,
+      email: currentUser.email,
+      name: currentUser.name
+    });
+
+    // ✅ Проверяем, есть ли уже активные Face ID профили у пользователя
+    const existingProfiles = await faceIdStorage.getUserProfiles(currentUser.id);
+    console.log('🔍 Существующие профили:', existingProfiles.length);
+    
+    // Деактивируем старые профили (оставляем только 3 последних)
+    if (existingProfiles.length >= 3) {
+      // Сортируем по дате создания
+      existingProfiles.sort((a, b) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      
+      // Деактивируем все, кроме 2 последних (так как добавим новый)
+      for (let i = 2; i < existingProfiles.length; i++) {
+        await faceIdStorage.deactivateProfile(existingProfiles[i].id);
+        console.log('🗑️ Деактивирован старый профиль:', existingProfiles[i].id);
+      }
+    }
+
+    // ✅ Получаем информацию об устройстве
+    const deviceInfo = getDeviceInfo(request);
+    
+    // ✅ Создаем новый Face ID профиль
+    const profile = await faceIdStorage.createProfile({
+      userId: currentUser.id,
+      userEmail: currentUser.email,
+      userName: currentUser.name || currentUser.email,
+      userRole: currentUser.role,
+      descriptor,
+      confidence,
+      deviceInfo
+    });
+    
+    console.log('✅ Face ID профиль создан:', profile.id);
+
+    // ✅ Создаем токен для Face ID
+    const faceIdToken = faceIdStorage.createFaceIdToken(profile);
+    
+    // ✅ Создаем response с установкой cookies
+    const response = NextResponse.json({
       success: true,
-      message: `Face ID успешно зарегистрирован для ${currentUser.name}`,
-      profileId: faceProfileId,
+      message: `Face ID успешно зарегистрирован для ${currentUser.name || currentUser.email}`,
+      profileId: profile.id,
       user: {
-        id: currentUser._id,
+        id: currentUser.id,
         name: currentUser.name,
-        email: currentUser.email
+        email: currentUser.email,
+        role: currentUser.role
+      },
+      stats: {
+        totalProfiles: existingProfiles.length + 1,
+        activeProfiles: existingProfiles.filter(p => p.isActive).length + 1
       }
     });
 
+    // ✅ Устанавливаем cookie для Face ID
+    response.cookies.set('face_id_registered', faceIdToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 30 * 24 * 60 * 60, // 30 дней
+      path: '/'
+    });
+
+    // Также сохраняем ID профиля для быстрого доступа
+    response.cookies.set('face_id_profile', profile.id, {
+      httpOnly: false, // Доступен из JS
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 30 * 24 * 60 * 60,
+      path: '/'
+    });
+
+    console.log('✅ Face ID cookies установлены');
+
+    return response;
+
   } catch (error) {
-    // ✅ Правильная типизация ошибки
-    const errorMessage = getErrorMessage(error);
-    const errorDetails = getErrorDetails(error);
-    
+    const errorMessage = error instanceof Error ? error.message : 'Неизвестная ошибка';
     console.error('❌ Face Register API: ошибка:', error);
     
     return NextResponse.json({
       success: false,
       message: 'Внутренняя ошибка сервера при регистрации Face ID',
-      error: errorMessage,
-      ...(errorDetails && { details: errorDetails })
+      error: process.env.NODE_ENV === 'development' ? errorMessage : undefined
     }, { status: 500 });
   }
 }
 
-// ✅ GET метод для проверки статуса
-export async function GET() {
+// ✅ GET метод для проверки статуса Face ID
+export async function GET(request: NextRequest) {
   try {
+    // Получаем токен из cookies
+    const faceIdToken = request.cookies.get('face_id_registered')?.value;
+    const profileId = request.cookies.get('face_id_profile')?.value;
+    
+    if (!faceIdToken) {
+      return NextResponse.json({
+        registered: false,
+        message: 'Face ID не зарегистрирован'
+      });
+    }
+
+    // Проверяем валидность токена
+    const profile = await faceIdStorage.validateFaceIdToken(faceIdToken);
+    
+    if (!profile) {
+      return NextResponse.json({
+        registered: false,
+        message: 'Face ID токен недействителен или истек'
+      });
+    }
+
+    // Получаем статистику использования
+    const stats = await faceIdStorage.getStats();
+    
     return NextResponse.json({
-      message: 'Face ID register endpoint',
-      status: 'active',
-      methods: ['POST'],
-      timestamp: new Date().toISOString()
+      registered: true,
+      profile: {
+        id: profile.id,
+        createdAt: profile.createdAt,
+        lastUsedAt: profile.lastUsedAt,
+        usageCount: profile.usageCount,
+        deviceInfo: profile.deviceInfo
+      },
+      user: {
+        id: profile.userId,
+        name: profile.userName,
+        email: profile.userEmail
+      },
+      stats
     });
+    
   } catch (error) {
-    const errorMessage = getErrorMessage(error);
+    const errorMessage = error instanceof Error ? error.message : 'Неизвестная ошибка';
     console.error('❌ Face Register GET: ошибка:', error);
     
     return NextResponse.json({
-      message: 'Ошибка сервера',
-      error: errorMessage
+      registered: false,
+      message: 'Ошибка проверки статуса Face ID',
+      error: process.env.NODE_ENV === 'development' ? errorMessage : undefined
     }, { status: 500 });
   }
 }
 
-// ✅ Опционально: DELETE метод для удаления Face ID профиля
+// ✅ DELETE метод для удаления Face ID профиля
 export async function DELETE(request: NextRequest) {
   try {
-    const token = request.cookies.get('auth_token')?.value;
+    const token = request.cookies.get('auth_token')?.value || 
+                 request.cookies.get('session_id')?.value;
     
-    if (!token || !process.env.JWT_SECRET) {
+    if (!token) {
       return NextResponse.json({
         success: false,
         message: 'Не авторизован'
       }, { status: 401 });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+    const session = await getSession(token);
+    if (!session || !session.user) {
+      return NextResponse.json({
+        success: false,
+        message: 'Сессия недействительна'
+      }, { status: 401 });
+    }
+
+    // Деактивируем все Face ID профили пользователя
+    const deactivatedCount = await faceIdStorage.deactivateUserProfiles(session.user.id);
     
-    // Симулируем удаление профиля
-    console.log(`🗑️ Удаляем Face ID профиль для пользователя ${decoded.userId}`);
+    console.log(`🗑️ Деактивировано ${deactivatedCount} Face ID профилей для пользователя ${session.user.id}`);
     
-    return NextResponse.json({
+    // Очищаем cookies
+    const response = NextResponse.json({
       success: true,
-      message: 'Face ID профиль удален'
+      message: 'Face ID профили удалены',
+      deactivatedCount
     });
 
+    response.cookies.delete('face_id_registered');
+    response.cookies.delete('face_id_profile');
+    
+    return response;
+
   } catch (error) {
-    const errorMessage = getErrorMessage(error);
+    const errorMessage = error instanceof Error ? error.message : 'Неизвестная ошибка';
     console.error('❌ Face Register DELETE: ошибка:', error);
     
     return NextResponse.json({
       success: false,
       message: 'Ошибка при удалении Face ID профиля',
-      error: errorMessage
+      error: process.env.NODE_ENV === 'development' ? errorMessage : undefined
     }, { status: 500 });
   }
 }

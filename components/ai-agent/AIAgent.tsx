@@ -100,6 +100,7 @@ const AIAgent: React.FC<AIAgentProps> = ({ isOpen: propIsOpen, onClose, initialM
   // Use prop isOpen if provided, otherwise use store isOpen
   const isOpen = propIsOpen !== undefined ? propIsOpen : storeIsOpen;
 
+  const [isMounted, setIsMounted] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -127,6 +128,10 @@ const AIAgent: React.FC<AIAgentProps> = ({ isOpen: propIsOpen, onClose, initialM
     setActivityData,
     connectAppleHealth
   });
+
+   useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Handle close and reset state
   const handleClose = useCallback(() => {
@@ -391,6 +396,10 @@ const AIAgent: React.FC<AIAgentProps> = ({ isOpen: propIsOpen, onClose, initialM
 
   const quickActions = useMemo(() => quickActionsConfig, []);
 
+  if (!isMounted) {
+    return null;
+  }
+
   return (
     <>
       {/* Floating Action Button */}
@@ -419,7 +428,7 @@ const AIAgent: React.FC<AIAgentProps> = ({ isOpen: propIsOpen, onClose, initialM
 
             {/* Pulse effect */}
             <motion.div
-              className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-600 to-indigo-500"
+              className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-600 to-indigo-500 opacity-0"
               animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0, 0.5] }}
               transition={{ duration: 2, repeat: Infinity }}
             />

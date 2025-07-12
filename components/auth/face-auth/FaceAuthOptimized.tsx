@@ -84,7 +84,7 @@ const FaceAuthContent = React.memo(({
 
   // Преобразование viewMode для VideoCamera
   const videoViewMode = useMemo(() => {
-    if (viewMode === "legacy") return "modern"; // fallback
+    if (viewMode === "legacy") return "modern";
     return viewMode as "mobile" | "desktop" | "modern";
   }, [viewMode]);
 
