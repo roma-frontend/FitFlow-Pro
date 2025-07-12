@@ -197,7 +197,7 @@ export function BackupSettings() {
             <Button 
               onClick={createManualBackup}
               disabled={isCreatingBackup}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600"
             >
               {isCreatingBackup ? (
                 <>
@@ -326,7 +326,7 @@ export function BackupSettings() {
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-sm">Статус</span>
-                  <Badge variant="outline" className="bg-gray-50">
+                  <Badge variant="custom" className="bg-gray-50">
                     Не настроено
                   </Badge>
                 </div>

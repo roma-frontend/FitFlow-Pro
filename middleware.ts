@@ -1,6 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
 
+declare global {
+  var cacheCleanupStarted: boolean | undefined;
+}
+
+// Alternative approach - create a custom global interface
+interface CustomGlobal {
+  cacheCleanupStarted?: boolean;
+}
+
+// Then cast global to your custom type (avoid naming conflict)
+const customGlobal = global as typeof global & CustomGlobal;
+
 // 🚀 PRODUCTION OPTIMIZATION
 const isDev = process.env.NODE_ENV === 'development';
 const isVercel = process.env.VERCEL === '1';
@@ -15,22 +27,14 @@ interface AuthResult {
   userName?: string;
 }
 
-interface CacheEntry {
-  authenticated: boolean;
-  role?: string;
-  userId?: string;
-  timestamp: number;
-}
-
-interface RouteCacheEntry {
-  type: string;
-  role?: string;
-  timestamp: number;
-}
-
 // 🔧 ENHANCED CACHING с автоочисткой
 const CACHE_TTL = isVercel ? 300000 : 60000; // 5 минут на Vercel, 1 минута локально
 const MAX_CACHE_SIZE = 1000;
+
+// 🎯 СОЗДАЕМ КЭШИ ДЛЯ РАЗНЫХ ТИПОВ ДАННЫХ
+const authCache = new Map<string, { data: AuthResult; timestamp: number }>();
+const roleCache = new Map<string, { hasAccess: boolean; timestamp: number }>();
+const jwtCache = new Map<string, { payload: any; timestamp: number }>();
 
 // Очистка кэша
 const cleanCache = (cache: Map<any, any>) => {
@@ -316,6 +320,24 @@ const checkAuthentication = async (request: NextRequest): Promise<AuthResult> =>
     const authToken = getCookieValue(request, 'auth_token');
     const userRoleCookie = getCookieValue(request, 'user_role');
 
+    // 🔧 СОЗДАЕМ КЛЮЧ ДЛЯ КЭША
+    const cacheKey = `${authToken || 'no-token'}_${sessionId || 'no-session'}_${userRoleCookie || 'no-role'}`;
+    
+    // 🔧 ПРОВЕРЯЕМ КЭШИ И ОЧИЩАЕМ ИХ
+    const now = Date.now();
+    const cachedAuth = authCache.get(cacheKey);
+    
+    if (cachedAuth && (now - cachedAuth.timestamp) < CACHE_TTL) {
+      if (isDev) {
+        console.log('✅ Cache hit for auth:', cacheKey.substring(0, 20) + '...');
+      }
+      return cachedAuth.data;
+    }
+
+    // 🧹 ОЧИЩАЕМ КЭШИ ПЕРЕД ДОБАВЛЕНИЕМ НОВЫХ ДАННЫХ
+    cleanCache(authCache);
+    cleanCache(jwtCache);
+
     // 🔧 ИНИЦИАЛИЗИРУЕМ РЕЗУЛЬТАТ
     let result: AuthResult = {
       authenticated: false,
@@ -323,30 +345,56 @@ const checkAuthentication = async (request: NextRequest): Promise<AuthResult> =>
       token: undefined
     };
 
-    // Приоритет 1: JWT токен
+    // Приоритет 1: JWT токен с кэшированием
     if (authToken) {
-      try {
-        const secret = new TextEncoder().encode(
-          process.env.JWT_SECRET || process.env.NEXT_PUBLIC_JWT_SECRET || 'your-secret-key'
-        );
-
-        const { payload } = await jwtVerify(authToken, secret);
-        if (payload && payload.userId && payload.email && payload.role) {
-          const normalizedRole = normalizeUserRole(payload.role as string);
-          result = {
-            authenticated: true,
-            userRole: normalizedRole,
-            token: authToken,
-            userId: payload.userId as string,
-            userEmail: payload.email as string,
-            userName: payload.name as string
-          };
-
-          console.log('✅ JWT валиден для:', payload.email, 'роль:', normalizedRole);
-        }
-      } catch (error) {
+      // Проверяем кэш JWT
+      const cachedJwt = jwtCache.get(authToken);
+      
+      if (cachedJwt && (now - cachedJwt.timestamp) < CACHE_TTL) {
         if (isDev) {
-          console.error('💥 JWT validation error:', error);
+          console.log('✅ JWT cache hit');
+        }
+        const payload = cachedJwt.payload;
+        const normalizedRole = normalizeUserRole(payload.role as string);
+        result = {
+          authenticated: true,
+          userRole: normalizedRole,
+          token: authToken,
+          userId: payload.userId as string,
+          userEmail: payload.email as string,
+          userName: payload.name as string
+        };
+      } else {
+        // Валидируем JWT и кэшируем результат
+        try {
+          const secret = new TextEncoder().encode(
+            process.env.JWT_SECRET || process.env.NEXT_PUBLIC_JWT_SECRET || 'your-secret-key'
+          );
+
+          const { payload } = await jwtVerify(authToken, secret);
+          if (payload && payload.userId && payload.email && payload.role) {
+            // 🔧 КЭШИРУЕМ РЕЗУЛЬТАТ JWT
+            jwtCache.set(authToken, {
+              payload: payload,
+              timestamp: now
+            });
+            
+            const normalizedRole = normalizeUserRole(payload.role as string);
+            result = {
+              authenticated: true,
+              userRole: normalizedRole,
+              token: authToken,
+              userId: payload.userId as string,
+              userEmail: payload.email as string,
+              userName: payload.name as string
+            };
+
+            console.log('✅ JWT валиден для:', payload.email, 'роль:', normalizedRole);
+          }
+        } catch (error) {
+          if (isDev) {
+            console.error('💥 JWT validation error:', error);
+          }
         }
       }
     }
@@ -377,6 +425,12 @@ const checkAuthentication = async (request: NextRequest): Promise<AuthResult> =>
       console.log('✅ Авторизация по роли из cookie:', normalizedRole);
     }
 
+    // 🔧 КЭШИРУЕМ РЕЗУЛЬТАТ АВТОРИЗАЦИИ
+    authCache.set(cacheKey, {
+      data: result,
+      timestamp: now
+    });
+
     return result;
 
   } catch (error) {
@@ -387,8 +441,25 @@ const checkAuthentication = async (request: NextRequest): Promise<AuthResult> =>
   }
 };
 
-// 🚀 ДИНАМИЧЕСКАЯ ПРОВЕРКА ДОСТУПА К МАРШРУТУ
+// 🚀 ДИНАМИЧЕСКАЯ ПРОВЕРКА ДОСТУПА К МАРШРУТУ с кэшированием
 const checkRouteAccess = (pathname: string, userRole: string): boolean => {
+  // 🔧 СОЗДАЕМ КЛЮЧ ДЛЯ КЭША ДОСТУПА
+  const accessCacheKey = `${pathname}_${userRole}`;
+  const now = Date.now();
+  
+  // 🔧 ПРОВЕРЯЕМ КЭШИ ДОСТУПА
+  const cachedAccess = roleCache.get(accessCacheKey);
+  
+  if (cachedAccess && (now - cachedAccess.timestamp) < CACHE_TTL) {
+    if (isDev) {
+      console.log('✅ Route access cache hit:', accessCacheKey);
+    }
+    return cachedAccess.hasAccess;
+  }
+
+  // 🧹 ОЧИЩАЕМ КЭШИ ДОСТУПА
+  cleanCache(roleCache);
+
   // Специальный дебаг для /admin/users
   if (pathname === '/admin/users' || pathname.startsWith('/admin/users/')) {
     console.log('🔍 DEBUG /admin/users:', {
@@ -405,45 +476,76 @@ const checkRouteAccess = (pathname: string, userRole: string): boolean => {
     return false;
   }
 
+  let hasAccess = false;
+
   // СНАЧАЛА проверяем специальные правила для конкретных путей
   if (pathname.startsWith('/admin/')) {
-    const hasAccess = ['admin', 'super-admin'].includes(userRole);
+    hasAccess = ['admin', 'super-admin'].includes(userRole);
     if (pathname.startsWith('/admin/users')) {
       console.log('🔍 /admin/users access check:', { userRole, hasAccess });
     }
-    return hasAccess;
-  }
+  } else if (pathname.startsWith('/manager-') && ['manager', 'admin', 'super-admin'].includes(userRole)) {
+    hasAccess = true;
+  } else if (pathname.startsWith('/trainer-') && ['trainer', 'manager', 'admin', 'super-admin'].includes(userRole)) {
+    hasAccess = true;
+  } else if (pathname.startsWith('/member-') && ['member', 'client', 'trainer', 'manager', 'admin', 'super-admin'].includes(userRole)) {
+    hasAccess = true;
+  } else {
+    const roleLevel = ROLE_CONFIG.hierarchy[userRole];
 
-  if (pathname.startsWith('/manager-') && ['manager', 'admin', 'super-admin'].includes(userRole)) {
-    return true;
-  }
-
-  if (pathname.startsWith('/trainer-') && ['trainer', 'manager', 'admin', 'super-admin'].includes(userRole)) {
-    return true;
-  }
-
-  if (pathname.startsWith('/member-') && ['member', 'client', 'trainer', 'manager', 'admin', 'super-admin'].includes(userRole)) {
-    return true;
-  }
-
-  const roleLevel = ROLE_CONFIG.hierarchy[userRole];
-
-  // ПОТОМ проверяем паттерны для роли и всех ролей выше
-  for (const [role, level] of Object.entries(ROLE_CONFIG.hierarchy)) {
-    if (level <= roleLevel) {
-      const typedRole = role as UserRole;
-      const patterns = ROLE_CONFIG.routePatterns[typedRole];
-      if (patterns) {
-        for (const pattern of patterns) {
-          if (pattern.test(pathname)) {
-            return true;
+    // ПОТОМ проверяем паттерны для роли и всех ролей выше
+    for (const [role, level] of Object.entries(ROLE_CONFIG.hierarchy)) {
+      if (level <= roleLevel) {
+        const typedRole = role as UserRole;
+        const patterns = ROLE_CONFIG.routePatterns[typedRole];
+        if (patterns) {
+          for (const pattern of patterns) {
+            if (pattern.test(pathname)) {
+              hasAccess = true;
+              break;
+            }
           }
+          if (hasAccess) break;
         }
       }
     }
   }
 
-  return false;
+  // 🔧 КЭШИРУЕМ РЕЗУЛЬТАТ ПРОВЕРКИ ДОСТУПА
+  roleCache.set(accessCacheKey, {
+    hasAccess: hasAccess,
+    timestamp: now
+  });
+
+  return hasAccess;
+};
+
+// 🔧 ФУНКЦИЯ ОЧИСТКИ ВСЕХ КЭШЕЙ (для использования при необходимости)
+const clearAllCaches = () => {
+  authCache.clear();
+  roleCache.clear();
+  jwtCache.clear();
+  console.log('🧹 Все кэши очищены');
+};
+
+// Best practice solution - using a module-level variable instead of global
+let cacheCleanupStarted = false;
+
+
+// 🔧 ПЕРИОДИЧЕСКАЯ ОЧИСТКА КЭШЕЙ (опционально)
+const startCacheCleanupJob = () => {
+  if (!cacheCleanupStarted) {
+    cacheCleanupStarted = true;
+    
+    setInterval(() => {
+      if (isDev) {
+        console.log('🧹 Периодическая очистка кэшей...');
+      }
+      cleanCache(authCache);
+      cleanCache(roleCache);
+      cleanCache(jwtCache);
+    }, CACHE_TTL);
+  }
 };
 
 // 🎯 УЛУЧШЕННОЕ ОПРЕДЕЛЕНИЕ ТИПА МАРШРУТА
@@ -737,3 +839,8 @@ export const config = {
     '/((?!api|_next/static|_next/image|favicon.ico|public).*)',
   ],
 };
+
+if (process.env.NODE_ENV === 'production' || process.env.ENABLE_CACHE_CLEANUP === 'true') {
+  startCacheCleanupJob();
+  clearAllCaches();
+}

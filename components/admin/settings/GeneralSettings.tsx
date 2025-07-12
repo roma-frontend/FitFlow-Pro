@@ -309,7 +309,7 @@ export function GeneralSettings({ config, businessConfig, onUpdate, onBusinessUp
               ].map(method => (
                 <Badge
                   key={method.key}
-                  variant={businessConfig.paymentSettings.acceptedMethods.includes(method.key) ? 'default' : 'outline'}
+                  variant={businessConfig.paymentSettings.acceptedMethods.includes(method.key) ? 'default' : 'custom'}
                   className="cursor-pointer"
                   onClick={() => {
                     const methods = businessConfig.paymentSettings.acceptedMethods;
