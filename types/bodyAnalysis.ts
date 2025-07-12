@@ -1,14 +1,16 @@
+// Updated types to match your implementation
+
 import { Id } from "@/convex/_generated/dataModel";
 
 type Exercise = {
   id: string;
   name: string;
   category: string;
-  intensity: string;
   sets: number;
   reps: string;
-  restTime: string;
-  targetMuscles: string[];
+  restTime: number;  // Changed from string to number
+  muscleGroups: string[];  // Changed from targetMuscles to muscleGroups
+  difficulty: 'beginner' | 'intermediate' | 'advanced';  // Added difficulty field
 };
 
 type TrainingProgram = {
@@ -17,7 +19,7 @@ type TrainingProgram = {
   duration: number;
   sessionsPerWeek: number;
   focusAreas: string[];
-  exercises: Exercise[]; // Добавлено поле exercises
+  exercises: Exercise[];
 };
 
 export interface BodyMetrics {
@@ -49,7 +51,7 @@ export interface BodyAnalysisHookReturn {
   currentAnalysis: BodyAnalysisResult | null;
   progressCheckpoints: ProgressData | null;
   transformationLeaderboard: LeaderboardData | null;
-  updateProgress: (input: ProgressUpdateInput) => Promise<ProgressData>; // Changed from Promise<void>
+  updateProgress: (input: ProgressUpdateInput) => Promise<ProgressData>;
   shareResults: (analysis: BodyAnalysisResult, platform: string) => Promise<void>;
   compareWithOthers: (analysis: BodyAnalysisResult) => Promise<void>;
   isProcessing: boolean;

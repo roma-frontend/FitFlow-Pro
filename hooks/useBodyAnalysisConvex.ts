@@ -287,7 +287,7 @@ export function useBodyAnalysisConvex() {
         }
     };
 
-    // Сохранение персонализированного плана - ОБНОВЛЕНО
+    // Сохранение персонализированного плана
     const savePersonalizedPlan = async (
         analysisId: Id<"bodyAnalysis">,
         plan: PersonalizedPlan
@@ -310,7 +310,6 @@ export function useBodyAnalysisConvex() {
                 throw new Error('Отсутствует рекомендуемый тренер');
             }
 
-            // Подготавливаем данные - отделяем exercises от основных полей trainingProgram
             const preparedPlan = {
                 analysisId,
                 recommendedTrainer: {
@@ -318,14 +317,9 @@ export function useBodyAnalysisConvex() {
                     matchScore: Number(plan.recommendedTrainer.matchScore) || 0
                 },
                 trainingProgram: {
-                    // Оставляем только те поля, которые есть в Convex валидаторе
+                    ...plan.trainingProgram,
                     duration: Number(plan.trainingProgram.duration) || 0,
-                    sessionsPerWeek: Number(plan.trainingProgram.sessionsPerWeek) || 0,
-                    focusAreas: plan.trainingProgram.focusAreas || [],
-                    id: plan.trainingProgram.id,
-                    name: plan.trainingProgram.name,
-                    // exercises передаем отдельно - НЕ в trainingProgram
-                    exercises: plan.trainingProgram.exercises || []
+                    sessionsPerWeek: Number(plan.trainingProgram.sessionsPerWeek) || 0
                 },
                 nutritionPlan: {
                     dailyCalories: Number(plan.nutritionPlan.dailyCalories) || 0,
@@ -354,8 +348,7 @@ export function useBodyAnalysisConvex() {
                 analysisId: preparedPlan.analysisId,
                 hasTrainer: !!preparedPlan.recommendedTrainer,
                 hasProgram: !!preparedPlan.trainingProgram,
-                hasNutrition: !!preparedPlan.nutritionPlan,
-                exercisesCount: preparedPlan.trainingProgram.exercises.length
+                hasNutrition: !!preparedPlan.nutritionPlan
             });
 
             const savedPlan = await fetchApi<PersonalizedPlan>('personalized-plan', {

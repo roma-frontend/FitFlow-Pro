@@ -119,16 +119,16 @@ export function UserDetailsModal({
             <TabsContent value="general" className="space-y-6 mt-6">
               {/* Основная информация */}
               <div className="flex items-start gap-6">
-                <Avatar className="h-24 w-24 ring-4 ring-white shadow-xl">
+                <Avatar className="w-20 sm:h-24 h-20 sm:w-24 ring-4 ring-white shadow-xl">
                   <AvatarImage src={user.photoUrl} alt={user.name} />
                   <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-2xl">
                     {user.name.split(' ').map((n: string) => n[0]).join('').toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
 
-                <div className="flex-1 space-y-4">
+                <div className="flex-1 space-y-2 sm:space-y-4">
                   <div>
-                    <h3 className="text-2xl font-bold">{user.name}</h3>
+                    <h3 className="text-xl sm:text-2xl font-bold">{user.name}</h3>
                     <div className="flex items-center gap-3 mt-2">
                       <Badge className={getRoleBadgeColor(user.role)}>
                         <Shield className="h-3 w-3 mr-1" />
@@ -201,13 +201,13 @@ export function UserDetailsModal({
 
                 <Card>
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <CardTitle className="text-sm font-medium flex flex-col sm:flex-row items:start sm:items-center gap-2">
                       <Clock className="h-4 w-4" />
                       Последний вход
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-2xl font-bold">
+                    <p className="text-lg sm:text-xl font-bold">
                       {user.lastLogin ? formatDateTime(user.lastLogin) : 'Никогда'}
                     </p>
                   </CardContent>

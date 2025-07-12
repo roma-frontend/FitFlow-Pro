@@ -30,11 +30,15 @@ export async function POST(request: NextRequest) {
       userId,
       analysisId: body.analysisId,
       hasTrainer: !!body.recommendedTrainer,
-      hasProgram: !!body.trainingProgram
+      hasProgram: !!body.trainingProgram,
+      exercisesCount: body.trainingProgram?.exercises?.length || 0
     });
 
     try {
-      // Очищаем trainingProgram от лишних полей для соответствия валидатору
+      // Проверяем и извлекаем exercises из trainingProgram
+      const exercises = body.trainingProgram?.exercises || [];
+      
+      // Очищаем trainingProgram от exercises для соответствия валидатору
       const cleanTrainingProgram = {
         duration: body.trainingProgram.duration,
         focusAreas: body.trainingProgram.focusAreas,
@@ -43,19 +47,24 @@ export async function POST(request: NextRequest) {
         sessionsPerWeek: body.trainingProgram.sessionsPerWeek
       };
 
-      // Сохраняем exercises отдельно в поле exercises (если нужно)
+      // Подготавливаем данные для Convex
       const planData = {
         userId,
         analysisId: body.analysisId,
         recommendedTrainer: body.recommendedTrainer,
         trainingProgram: cleanTrainingProgram,
-        // Сохраняем exercises отдельно
-        exercises: body.trainingProgram.exercises || [],
+        exercises: exercises, // Передаем exercises отдельным полем
         nutritionPlan: body.nutritionPlan,
         recommendedProducts: body.recommendedProducts,
         membershipRecommendation: body.membershipRecommendation,
         projectedResults: body.projectedResults
       };
+
+      console.log('📦 Подготовленные данные для Convex:', {
+        ...planData,
+        exercisesCount: exercises.length,
+        firstExercise: exercises[0] // Для отладки
+      });
 
       // Используем ConvexHttpClient для вызова mutation
       const result = await convex.mutation("bodyAnalysis:savePersonalizedPlan", planData);
@@ -70,7 +79,7 @@ export async function POST(request: NextRequest) {
         recommendedTrainer: body.recommendedTrainer,
         trainingProgram: {
           ...cleanTrainingProgram,
-          exercises: body.trainingProgram.exercises || [] // Возвращаем exercises для фронтенда
+          exercises: exercises // Возвращаем exercises для фронтенда
         },
         nutritionPlan: body.nutritionPlan,
         recommendedProducts: body.recommendedProducts,
@@ -90,14 +99,10 @@ export async function POST(request: NextRequest) {
       // Более детальная обработка ошибок валидации
       if (convexError instanceof Error && convexError.message.includes('ArgumentValidationError')) {
         console.error('🔍 Детали ошибки валидации:', {
-          originalData: body.trainingProgram,
-          cleanedData: {
-            duration: body.trainingProgram.duration,
-            focusAreas: body.trainingProgram.focusAreas,
-            id: body.trainingProgram.id,
-            name: body.trainingProgram.name,
-            sessionsPerWeek: body.trainingProgram.sessionsPerWeek
-          }
+          error: convexError.message,
+          trainingProgram: body.trainingProgram,
+          exercisesCount: body.trainingProgram?.exercises?.length,
+          firstExercise: body.trainingProgram?.exercises?.[0]
         });
       }
       
@@ -153,16 +158,6 @@ export async function GET(request: NextRequest) {
         userId,
         analysisId: analysisId as any
       });
-
-      // Если план найден, восстанавливаем exercises в trainingProgram
-      if (plan && plan.exercises) {
-        plan.trainingProgram = {
-          ...plan.trainingProgram,
-          exercises: plan.exercises
-        };
-        // Удаляем exercises из корня объекта
-        delete plan.exercises;
-      }
 
       return NextResponse.json({
         success: true,

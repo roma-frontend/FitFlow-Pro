@@ -3,6 +3,28 @@
 import { Id } from '@/convex/_generated/dataModel';
 import type { BodyAnalysisResult, PersonalizedPlan } from '@/types/bodyAnalysis';
 
+// Define the Exercise type locally to ensure it matches your implementation
+interface Exercise {
+  id: string;
+  name: string;
+  category: string;
+  sets: number;
+  reps: string;
+  restTime: number;
+  muscleGroups: string[];
+  difficulty: 'beginner' | 'intermediate' | 'advanced';
+}
+
+// Define the TrainingProgram type locally
+interface TrainingProgram {
+  id: string;
+  name: string;
+  duration: number;
+  sessionsPerWeek: number;
+  focusAreas: string[];
+  exercises: Exercise[];
+}
+
 export async function generatePersonalizedPlan(
     analysis: BodyAnalysisResult
 ): Promise<PersonalizedPlan> {
@@ -55,7 +77,6 @@ export async function generatePersonalizedPlan(
         projectedResults: createProjectedResults(validatedAnalysis),
     };
 }
-
 
 function selectTrainer(analysis: BodyAnalysisResult) {
     // Проверяем наличие необходимых данных
@@ -111,7 +132,7 @@ function selectTrainer(analysis: BodyAnalysisResult) {
             score += 40;
         }
 
-        // Соответствие целям - здесь была ошибка
+        // Соответствие целям
         const primaryGoal = (analysis.recommendations.primaryGoal || '').toLowerCase();
         trainer.focus.forEach(focus => {
             if (primaryGoal.includes(focus) ||
@@ -145,8 +166,8 @@ function selectTrainer(analysis: BodyAnalysisResult) {
     };
 }
 
-function selectTrainingProgram(analysis: BodyAnalysisResult) {
-    const programs = {
+function selectTrainingProgram(analysis: BodyAnalysisResult): TrainingProgram {
+    const programs: Record<string, TrainingProgram> = {
         weight_loss: {
             id: 'prog-1',
             name: 'Интенсивное жиросжигание',
@@ -157,42 +178,42 @@ function selectTrainingProgram(analysis: BodyAnalysisResult) {
                 {
                     id: 'ex-1',
                     name: 'Бег на беговой дорожке',
-                    sets: 1, // исправлено на number
+                    sets: 1,
                     reps: '30 мин',
-                    intensity: 'high',
                     category: 'cardio',
-                    restTime: '60 сек',
-                    targetMuscles: ['Ноги', 'Кардиоваскулярная система']
+                    restTime: 60,
+                    muscleGroups: ['Ноги', 'Кардиоваскулярная система'],
+                    difficulty: 'beginner'
                 },
                 {
                     id: 'ex-2',
                     name: 'Приседания',
-                    sets: 3, // исправлено на number
+                    sets: 3,
                     reps: '15',
-                    intensity: 'medium',
                     category: 'strength',
-                    restTime: '45 сек',
-                    targetMuscles: ['Квадрицепсы', 'Ягодицы', 'Бедра']
+                    restTime: 45,
+                    muscleGroups: ['Квадрицепсы', 'Ягодицы', 'Бедра'],
+                    difficulty: 'intermediate'
                 },
                 {
                     id: 'ex-3',
                     name: 'Берпи',
-                    sets: 4, // исправлено на number
+                    sets: 4,
                     reps: '10',
-                    intensity: 'high',
                     category: 'hiit',
-                    restTime: '60 сек',
-                    targetMuscles: ['Все тело', 'Кардиоваскулярная система']
+                    restTime: 60,
+                    muscleGroups: ['Все тело', 'Кардиоваскулярная система'],
+                    difficulty: 'advanced'
                 },
                 {
                     id: 'ex-4',
                     name: 'Планка',
-                    sets: 3, // исправлено на number
+                    sets: 3,
                     reps: '60 сек',
-                    intensity: 'medium',
                     category: 'core',
-                    restTime: '30 сек',
-                    targetMuscles: ['Пресс', 'Кор', 'Плечи']
+                    restTime: 30,
+                    muscleGroups: ['Пресс', 'Кор', 'Плечи'],
+                    difficulty: 'intermediate'
                 }
             ]
         },
@@ -206,42 +227,42 @@ function selectTrainingProgram(analysis: BodyAnalysisResult) {
                 {
                     id: 'ex-5',
                     name: 'Жим лежа',
-                    sets: 4, // исправлено на number
+                    sets: 4,
                     reps: '8',
-                    intensity: 'high',
                     category: 'strength',
-                    restTime: '2 мин',
-                    targetMuscles: ['Грудь', 'Трицепсы', 'Плечи']
+                    restTime: 120,
+                    muscleGroups: ['Грудь', 'Трицепсы', 'Плечи'],
+                    difficulty: 'intermediate'
                 },
                 {
                     id: 'ex-6',
                     name: 'Приседания со штангой',
-                    sets: 4, // исправлено на number
+                    sets: 4,
                     reps: '10',
-                    intensity: 'high',
                     category: 'strength',
-                    restTime: '3 мин',
-                    targetMuscles: ['Квадрицепсы', 'Ягодицы', 'Бедра', 'Кор']
+                    restTime: 180,
+                    muscleGroups: ['Квадрицепсы', 'Ягодицы', 'Бедра', 'Кор'],
+                    difficulty: 'advanced'
                 },
                 {
                     id: 'ex-7',
                     name: 'Становая тяга',
-                    sets: 3, // исправлено на number
+                    sets: 3,
                     reps: '6',
-                    intensity: 'high',
                     category: 'strength',
-                    restTime: '3 мин',
-                    targetMuscles: ['Спина', 'Ягодицы', 'Бедра', 'Трапеции']
+                    restTime: 180,
+                    muscleGroups: ['Спина', 'Ягодицы', 'Бедра', 'Трапеции'],
+                    difficulty: 'advanced'
                 },
                 {
                     id: 'ex-8',
                     name: 'Подтягивания',
-                    sets: 3, // исправлено на number
+                    sets: 3,
                     reps: '8',
-                    intensity: 'medium',
                     category: 'strength',
-                    restTime: '90 сек',
-                    targetMuscles: ['Широчайшие', 'Бицепсы', 'Плечи']
+                    restTime: 90,
+                    muscleGroups: ['Широчайшие', 'Бицепсы', 'Плечи'],
+                    difficulty: 'intermediate'
                 }
             ]
         },
@@ -257,40 +278,40 @@ function selectTrainingProgram(analysis: BodyAnalysisResult) {
                     name: 'Выпады',
                     sets: 3,
                     reps: '12',
-                    intensity: 'medium',
                     category: 'functional',
-                    restTime: '45 сек',
-                    targetMuscles: ['Квадрицепсы', 'Ягодицы', 'Икры']
+                    restTime: 45,
+                    muscleGroups: ['Квадрицепсы', 'Ягодицы', 'Икры'],
+                    difficulty: 'beginner'
                 },
                 {
                     id: 'ex-10',
                     name: 'Отжимания',
                     sets: 3,
                     reps: '15',
-                    intensity: 'medium',
                     category: 'strength',
-                    restTime: '60 сек',
-                    targetMuscles: ['Грудь', 'Трицепсы', 'Плечи', 'Кор']
+                    restTime: 60,
+                    muscleGroups: ['Грудь', 'Трицепсы', 'Плечи', 'Кор'],
+                    difficulty: 'beginner'
                 },
                 {
                     id: 'ex-11',
                     name: 'Русские скручивания',
                     sets: 3,
                     reps: '20',
-                    intensity: 'medium',
                     category: 'core',
-                    restTime: '30 сек',
-                    targetMuscles: ['Пресс', 'Косые мышцы']
+                    restTime: 30,
+                    muscleGroups: ['Пресс', 'Косые мышцы'],
+                    difficulty: 'intermediate'
                 },
                 {
                     id: 'ex-12',
                     name: 'Растяжка',
                     sets: 1,
                     reps: '15 мин',
-                    intensity: 'low',
                     category: 'flexibility',
-                    restTime: '0 сек',
-                    targetMuscles: ['Все тело', 'Суставы']
+                    restTime: 0,
+                    muscleGroups: ['Все тело', 'Суставы'],
+                    difficulty: 'beginner'
                 }
             ]
         },
@@ -304,42 +325,42 @@ function selectTrainingProgram(analysis: BodyAnalysisResult) {
                 {
                     id: 'ex-13',
                     name: 'Спринты',
-                    sets: 6, // исправлено на number
+                    sets: 6,
                     reps: '30 сек',
-                    intensity: 'high',
                     category: 'cardio',
-                    restTime: '2 мин',
-                    targetMuscles: ['Ноги', 'Кардиоваскулярная система']
+                    restTime: 120,
+                    muscleGroups: ['Ноги', 'Кардиоваскулярная система'],
+                    difficulty: 'advanced'
                 },
                 {
                     id: 'ex-14',
                     name: 'Плиометрические прыжки',
-                    sets: 4, // исправлено на number
+                    sets: 4,
                     reps: '10',
-                    intensity: 'high',
                     category: 'plyometric',
-                    restTime: '90 сек',
-                    targetMuscles: ['Ноги', 'Взрывная сила', 'Кор']
+                    restTime: 90,
+                    muscleGroups: ['Ноги', 'Взрывная сила', 'Кор'],
+                    difficulty: 'advanced'
                 },
                 {
                     id: 'ex-15',
                     name: 'Лестница координации',
-                    sets: 5, // исправлено на number
+                    sets: 5,
                     reps: '45 сек',
-                    intensity: 'medium',
                     category: 'agility',
-                    restTime: '60 сек',
-                    targetMuscles: ['Ноги', 'Координация', 'Ловкость']
+                    restTime: 60,
+                    muscleGroups: ['Ноги', 'Координация', 'Ловкость'],
+                    difficulty: 'intermediate'
                 },
                 {
                     id: 'ex-16',
                     name: 'Круговая тренировка',
-                    sets: 3, // исправлено на number
+                    sets: 3,
                     reps: '20 мин',
-                    intensity: 'high',
                     category: 'circuit',
-                    restTime: '3 мин',
-                    targetMuscles: ['Все тело', 'Выносливость']
+                    restTime: 180,
+                    muscleGroups: ['Все тело', 'Выносливость'],
+                    difficulty: 'advanced'
                 }
             ]
         },
