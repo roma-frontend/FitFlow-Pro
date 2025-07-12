@@ -65,7 +65,7 @@ const ProductFilters = memo(() => {
       <CardContent className="p-6">
         <div className="space-y-4">
           {/* Заголовок и счетчик */}
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between">
             <h2 className="text-lg font-semibold flex items-center">
               <Filter className="h-5 w-5 mr-2" />
               Фильтры

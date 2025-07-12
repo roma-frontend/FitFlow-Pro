@@ -169,12 +169,11 @@ export const SmartFiltersAI: React.FC<SmartFiltersAIProps> = memo(({
       <Button
         onClick={handleGetAIRecommendations}
         disabled={selectedGoals.length === 0}
-        className="w-full bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white"
+        className="relative flex flex-wrap gap-2 h-auto w-full bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white"
       >
-        <Brain className="h-4 w-4 mr-2" />
         Получить AI-рекомендации
         {selectedGoals.length > 0 && (
-          <Badge className="ml-2 bg-white/20 text-white">
+          <Badge className="text-white border-white/30 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 bg-transparent/65 hover:bg-transparent/80 absolute -right-2 -top-2 z-50">
             {selectedGoals.length}
           </Badge>
         )}

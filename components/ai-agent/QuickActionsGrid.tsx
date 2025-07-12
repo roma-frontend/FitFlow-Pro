@@ -60,14 +60,6 @@ const QuickActionButton: React.FC<{
 
   return (
     <motion.button
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ 
-        delay: index * 0.05,
-        type: "spring",
-        damping: 20,
-        stiffness: 200
-      }}
       whileHover={{ scale: 1.03, y: -3 }}
       whileTap={{ scale: 0.97 }}
       onClick={onClick}
@@ -77,21 +69,16 @@ const QuickActionButton: React.FC<{
       <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-50" />
       
       {/* Hover shimmer effect */}
-      <motion.div
+      <div
         className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"
-        initial={{ x: "-100%" }}
-        whileHover={{ x: "100%" }}
-        transition={{ duration: 0.6 }}
       />
       
       <div className="relative z-10">
-        <motion.div 
-          whileHover={{ scale: 1.1, rotate: 5 }}
-          transition={{ type: "spring", damping: 15 }}
+        <div
           className="w-8 h-8 sm:w-10 sm:h-10 mb-2 sm:mb-4 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm"
         >
           <action.icon className="h-4 w-4 sm:h-5 sm:w-5" />
-        </motion.div>
+        </div>
         
         <h3 className="font-bold text-xs sm:text-sm lg:text-base leading-tight">
           {action.title}
@@ -99,9 +86,7 @@ const QuickActionButton: React.FC<{
       </div>
       
       {/* Small pulse indicator */}
-      <motion.div
-        animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.8, 0.5] }}
-        transition={{ duration: 2, repeat: Infinity, delay: index * 0.2 }}
+      <div
         className="absolute bottom-3 right-3 w-2 h-2 bg-white/60 rounded-full"
       />
     </motion.button>

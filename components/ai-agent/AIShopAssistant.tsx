@@ -48,8 +48,6 @@ export const AIShopAssistant: React.FC<AIShopAssistantProps> = memo(({
     isOpen: storeIsOpen,
     closeAgent,
     conversationMode,
-    recommendations,
-    currentProducts,
     setCurrentProducts,
     setConversationMode
   } = useAIShopAgent();
@@ -198,7 +196,7 @@ export const AIShopAssistant: React.FC<AIShopAssistantProps> = memo(({
         className="fixed inset-0 sm:bottom-6 sm:right-6 sm:top-auto sm:left-auto z-50 w-full sm:w-[480px] h-full sm:h-[90vh] sm:max-h-[796px] bg-white sm:rounded-3xl shadow-2xl sm:border border-gray-200 overflow-hidden flex flex-col"
       >
         {/* Header */}
-        <div className="bg-gradient-to-r from-purple-600 to-blue-600 p-6 text-white">
+        <div className="bg-gradient-to-r from-indigo-600 to-blue-600 p-6 text-white">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center">
@@ -262,7 +260,7 @@ const TypingIndicator = memo(() => (
         {[0, 0.2, 0.4].map((delay, i) => (
           <motion.div
             key={i}
-            className="w-2 h-2 bg-purple-500 rounded-full"
+            className="w-2 h-2 bg-indigo-500 rounded-full"
             animate={{
               scale: [1, 1.5, 1],
               opacity: [0.5, 1, 0.5]

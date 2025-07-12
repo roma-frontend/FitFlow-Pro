@@ -1,5 +1,6 @@
 // components/shop/ProductCard.tsx
 import React, { memo } from 'react';
+import { usePathname } from 'next/navigation';
 import { ShopProduct } from '@/hooks/useShopProductsAPI';
 import { useCartStore } from '@/stores/cartStore';
 import { useToast } from '@/hooks/use-toast';
@@ -18,10 +19,14 @@ interface ProductCardProps {
 }
 
 const ProductCard = memo(({ product }: ProductCardProps) => {
+  const pathname = usePathname();
   const addItem = useCartStore(state => state.addItem);
   const { toast } = useToast();
   const { openWithAction } = useAIAgent();
   const stockStatus = getStockStatus(product);
+  
+  // Определяем, нужно ли показывать статус товара
+  const shouldShowStockStatus = pathname !== '/shop';
   
   const handleAddToCart = () => {
     const cartData = productToAddCartData(product);
@@ -49,7 +54,7 @@ const ProductCard = memo(({ product }: ProductCardProps) => {
   return (
     <Card className="h-full flex flex-col hover:shadow-lg transition-shadow group">
       <CardHeader className="p-4">
-        <div className="relative w-full h-48 mb-3 bg-gray-100 rounded-lg overflow-hidden">
+        <div className="relative w-full h-48 mb-3 bg-gray-100 rounded-lg">
           <SafeImage
             src={product.imageUrl}
             alt={imageAlt}
@@ -63,30 +68,33 @@ const ProductCard = memo(({ product }: ProductCardProps) => {
           <Button
             onClick={handleAIConsultation}
             size="sm"
-            className="w-8 h-8 absolute top-2 right-2 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white p-2 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-20 border-none"
+            className="w-8 h-8 absolute -top-2 -right-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white p-2 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 border-none"
             aria-label={`Получить AI консультацию по ${product.name}`}
           >
             <Bot className="h-4 w-4" />
           </Button>
           
           {product.isPopular && (
-            <Badge className="absolute top-2 right-12 bg-yellow-500 text-white z-20">
+            <Badge className={`absolute top-2 ${shouldShowStockStatus ? 'right-12' : 'left-2'} bg-yellow-500 text-white z-20`}>
               <Star className="w-3 h-3 mr-1" aria-hidden="true" />
               <span className="sr-only">Популярный товар</span>
               Популярный
             </Badge>
           )}
           
-          <Badge 
-            className={`absolute top-2 left-2 z-20 ${
-              stockStatus === 'in_stock' ? 'bg-green-500' :
-              stockStatus === 'low_stock' ? 'bg-yellow-500' :
-              'bg-red-500'
-            } text-white`}
-            aria-label={`Статус товара: ${getStockStatusText(stockStatus)}`}
-          >
-            {getStockStatusText(stockStatus)}
-          </Badge>
+          {/* Условно отображаем статус товара только если не на странице /shop */}
+          {shouldShowStockStatus && (
+            <Badge 
+              className={`absolute top-2 left-2 z-20 ${
+                stockStatus === 'in_stock' ? 'bg-green-500' :
+                stockStatus === 'low_stock' ? 'bg-yellow-500' :
+                'bg-red-500'
+              } text-white`}
+              aria-label={`Статус товара: ${getStockStatusText(stockStatus)}`}
+            >
+              {getStockStatusText(stockStatus)}
+            </Badge>
+          )}
         </div>
 
         <CardTitle className="text-lg font-semibold line-clamp-2">
