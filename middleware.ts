@@ -5,14 +5,6 @@ declare global {
   var cacheCleanupStarted: boolean | undefined;
 }
 
-// Alternative approach - create a custom global interface
-interface CustomGlobal {
-  cacheCleanupStarted?: boolean;
-}
-
-// Then cast global to your custom type (avoid naming conflict)
-const customGlobal = global as typeof global & CustomGlobal;
-
 // 🚀 PRODUCTION OPTIMIZATION
 const isDev = process.env.NODE_ENV === 'development';
 const isVercel = process.env.VERCEL === '1';
