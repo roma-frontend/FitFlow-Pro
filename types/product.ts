@@ -11,6 +11,9 @@ export interface Product {
   createdAt: string; // Используем string для совместимости с API
   updatedAt: string;
   isDeleted?: boolean;
+  ingredient1?: string;
+  ingredient2?: string;
+  ingredient3?: string;
 }
 
 export interface ProductFormData {
@@ -21,6 +24,10 @@ export interface ProductFormData {
   inStock: number;
   isPopular: boolean;
   imageUrl: string;
+  ingredient1?: string;
+  ingredient2?: string;
+  ingredient3?: string;
+
 }
 
 export type CategoryFilter = 'all' | 'supplements' | 'drinks' | 'snacks' | 'merchandise';

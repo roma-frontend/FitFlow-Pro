@@ -107,6 +107,7 @@ export function SecurityWidget() {
                   size="sm"
                   variant="outline"
                   onClick={() => setShowFaceIdSetup(true)}
+                  className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600"
                 >
                   <Settings className="h-3 w-3 mr-1" />
                   Настроить
@@ -116,7 +117,7 @@ export function SecurityWidget() {
               <Button
                 size="sm"
                 onClick={() => setShowFaceIdSetup(true)}
-                className="bg-blue-600 hover:bg-blue-700"
+                className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600"
               >
                 <Camera className="h-3 w-3 mr-1" />
                 Настроить

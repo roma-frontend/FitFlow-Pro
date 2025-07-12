@@ -13,12 +13,11 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { useProducts } from '@/hooks/useProducts';
 import { useCloudinaryUpload } from '@/hooks/useCloudinaryUpload';
 import type { Product, ProductFormData } from '@/types/product';
-import { Loader2, Upload, X, Image as ImageIcon } from 'lucide-react';
+import { Loader2, Upload, X, Image as ImageIcon, FlaskConical } from 'lucide-react';
 
-// Схема Zod - точно соответствует ProductFormData
+// Схема Zod - расширенная с ингредиентами
 const productSchema = z.object({
   name: z.string().min(1, 'Название обязательно').max(100, 'Название слишком длинное'),
   description: z.string().min(1, 'Описание обязательно').max(500, 'Описание слишком длинное'),
@@ -28,7 +27,11 @@ const productSchema = z.object({
   }),
   inStock: z.number().min(0, 'Количество не может быть отрицательным'),
   isPopular: z.boolean(),
-  imageUrl: z.string().optional()
+  imageUrl: z.string().optional(),
+  // Новые поля для ингредиентов
+  ingredient1: z.string().optional().or(z.literal('')),
+  ingredient2: z.string().optional().or(z.literal('')),
+  ingredient3: z.string().optional().or(z.literal(''))
 });
 
 type ProductFormSchema = z.infer<typeof productSchema>;
@@ -42,7 +45,6 @@ interface ProductFormProps {
 }
 
 export function ProductForm({ product, isOpen, onClose, onSubmit, isLoading }: ProductFormProps) {
-  const queryClient = useQueryClient();
   const { upload, isUploading, error: uploadError, clearError } = useCloudinaryUpload();
   const [imagePreview, setImagePreview] = useState<string>('');
   const [uploadMethod, setUploadMethod] = useState<'url' | 'file'>('url');
@@ -60,7 +62,10 @@ export function ProductForm({ product, isOpen, onClose, onSubmit, isLoading }: P
       category: product?.category || 'supplements',
       inStock: product?.inStock || 0,
       isPopular: product?.isPopular || false,
-      imageUrl: product?.imageUrl || ''
+      imageUrl: product?.imageUrl || '',
+      ingredient1: product?.ingredient1 || '',
+      ingredient2: product?.ingredient2 || '',
+      ingredient3: product?.ingredient3 || ''
     }
   });
 
@@ -76,7 +81,10 @@ export function ProductForm({ product, isOpen, onClose, onSubmit, isLoading }: P
         category: product?.category || 'supplements',
         inStock: product?.inStock || 0,
         isPopular: product?.isPopular || false,
-        imageUrl: product?.imageUrl || ''
+        imageUrl: product?.imageUrl || '',
+        ingredient1: product?.ingredient1 || '',
+        ingredient2: product?.ingredient2 || '',
+        ingredient3: product?.ingredient3 || ''
       });
       setImagePreview(product?.imageUrl || '');
       setUploadedImageUrl('');
@@ -172,7 +180,11 @@ export function ProductForm({ product, isOpen, onClose, onSubmit, isLoading }: P
       const finalImageUrl = uploadedImageUrl || data.imageUrl || '';
       const formDataToSend: ProductFormData = {
         ...data,
-        imageUrl: finalImageUrl
+        imageUrl: finalImageUrl,
+        // Очищаем пустые ингредиенты
+        ingredient1: data.ingredient1?.trim() || undefined,
+        ingredient2: data.ingredient2?.trim() || undefined,
+        ingredient3: data.ingredient3?.trim() || undefined
       };
 
       await onSubmit(formDataToSend);
@@ -218,7 +230,7 @@ export function ProductForm({ product, isOpen, onClose, onSubmit, isLoading }: P
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {product ? 'Редактировать продукт' : 'Создать новый продукт'}
@@ -227,7 +239,7 @@ export function ProductForm({ product, isOpen, onClose, onSubmit, isLoading }: P
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Основная информация */}
               <div className="space-y-4">
                 <FormField
@@ -359,6 +371,73 @@ export function ProductForm({ product, isOpen, onClose, onSubmit, isLoading }: P
                     </FormItem>
                   )}
                 />
+
+                {/* Секция ингредиентов */}
+                <div className="space-y-4 border rounded-lg p-4 bg-gradient-to-r from-green-50 to-blue-50">
+                  <div className="flex items-center gap-2 mb-3">
+                    <FlaskConical className="w-5 h-5 text-green-600" />
+                    <Label className="text-base font-medium text-green-800">Ингредиенты (опционально)</Label>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 gap-3">
+                    <FormField
+                      control={form.control}
+                      name="ingredient1"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm text-gray-700">Основной ингредиент</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="Например: Протеин сывороточный"
+                              {...field}
+                              disabled={isFormLoading}
+                              className="bg-white"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="ingredient2"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm text-gray-700">Второй ингредиент</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="Например: Креатин моногидрат"
+                              {...field}
+                              disabled={isFormLoading}
+                              className="bg-white"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="ingredient3"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm text-gray-700">Третий ингредиент</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="Например: Витамин B12"
+                              {...field}
+                              disabled={isFormLoading}
+                              className="bg-white"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
               </div>
 
               {/* Изображение */}
@@ -373,6 +452,7 @@ export function ProductForm({ product, isOpen, onClose, onSubmit, isLoading }: P
                       size="sm"
                       onClick={() => setUploadMethod('file')}
                       disabled={isUploading || isFormLoading}
+                      className='bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white'
                     >
                       <Upload className="w-4 h-4 mr-2" />
                       Загрузить файл
@@ -383,6 +463,7 @@ export function ProductForm({ product, isOpen, onClose, onSubmit, isLoading }: P
                       size="sm"
                       onClick={() => setUploadMethod('url')}
                       disabled={isUploading || isFormLoading}
+                      className='bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white'
                     >
                       <ImageIcon className="w-4 h-4 mr-2" />
                       URL изображения
@@ -405,7 +486,7 @@ export function ProductForm({ product, isOpen, onClose, onSubmit, isLoading }: P
                           />
                         </FormControl>
                         <FormMessage />
-                                            </FormItem>
+                      </FormItem>
                     )}
                   />
                 )}
@@ -423,8 +504,8 @@ export function ProductForm({ product, isOpen, onClose, onSubmit, isLoading }: P
 
                     <div
                       className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${isUploading || isFormLoading
-                          ? 'border-blue-300 bg-blue-50 cursor-not-allowed'
-                          : 'border-gray-300 hover:border-gray-400'
+                        ? 'border-blue-300 bg-blue-50 cursor-not-allowed'
+                        : 'border-gray-300 hover:border-gray-400'
                         }`}
                       onClick={() => !isUploading && !isFormLoading && fileInputRef.current?.click()}
                       onDrop={handleDrop}
@@ -508,8 +589,8 @@ export function ProductForm({ product, isOpen, onClose, onSubmit, isLoading }: P
             {/* Статус операции */}
             {submitStatus !== 'idle' && (
               <div className={`p-4 rounded-lg ${submitStatus === 'saving' ? 'bg-blue-50 border border-blue-200' :
-                  submitStatus === 'success' ? 'bg-green-50 border border-green-200' :
-                    submitStatus === 'error' ? 'bg-red-50 border border-red-200' : ''
+                submitStatus === 'success' ? 'bg-green-50 border border-green-200' :
+                  submitStatus === 'error' ? 'bg-red-50 border border-red-200' : ''
                 }`}>
                 <div className="flex items-center">
                   {submitStatus === 'saving' && (
@@ -552,6 +633,7 @@ export function ProductForm({ product, isOpen, onClose, onSubmit, isLoading }: P
                 type="submit"
                 variant={getButtonVariant()}
                 disabled={isFormLoading || isUploading || submitStatus === 'success'}
+                className='bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-600'
               >
                 {(isFormLoading || submitStatus === 'saving') && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -570,4 +652,3 @@ export function ProductForm({ product, isOpen, onClose, onSubmit, isLoading }: P
     </Dialog>
   );
 }
-

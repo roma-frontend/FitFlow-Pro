@@ -384,7 +384,7 @@ export function PersonalizedProgress() {
           Отслеживание ключевых показателей эффективности
         </p>
       </CardHeader>
-      <CardContent className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 p-6 pt-0 gap-6">
+      <CardContent className="grid grid-cols-1 xl:grid-cols-2 p-6 pt-0 gap-6">
         {progressItems.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
             <Target className="h-12 w-12 mx-auto mb-4 opacity-50" />

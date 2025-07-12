@@ -1,4 +1,4 @@
-// convex/products.ts (с логами для отладки)
+// convex/products.ts (с добавленными ингредиентами)
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
@@ -32,7 +32,6 @@ export const getAllIncludingDeleted = query({
     return products;
   },
 });
-
 
 export const getById = query({
   args: { id: v.id("products") },
@@ -168,7 +167,7 @@ export const getPopular = query({
   },
 });
 
-// Создать продукт
+// Создать продукт (с ингредиентами)
 export const create = mutation({
   args: {
     name: v.string(),
@@ -180,10 +179,14 @@ export const create = mutation({
       v.literal("merchandise")
     ),
     price: v.number(),
-    imageUrl: v.optional(v.string()), // ✅ Убедитесь, что это есть
+    imageUrl: v.optional(v.string()),
     inStock: v.number(),
     minStock: v.optional(v.number()),
     isPopular: v.optional(v.boolean()),
+    // Добавляем ингредиенты
+    ingredient1: v.optional(v.string()),
+    ingredient2: v.optional(v.string()),
+    ingredient3: v.optional(v.string()),
     nutrition: v.optional(v.object({
       calories: v.optional(v.number()),
       protein: v.optional(v.number()),
@@ -194,10 +197,15 @@ export const create = mutation({
   },
   handler: async (ctx, args) => {
     console.log("🔄 Convex Mutation: Создание продукта:", args.name);
-    console.log("🖼️ Convex Mutation: imageUrl:", args.imageUrl); // Добавьте лог
+    console.log("🖼️ Convex Mutation: imageUrl:", args.imageUrl);
+    console.log("🥬 Convex Mutation: Ингредиенты:", {
+      ingredient1: args.ingredient1,
+      ingredient2: args.ingredient2,
+      ingredient3: args.ingredient3
+    });
 
     const productId = await ctx.db.insert("products", {
-      ...args, // ✅ Это должно включать imageUrl
+      ...args,
       isActive: true,
       isPopular: args.isPopular || false,
       minStock: args.minStock || 10,
@@ -236,7 +244,7 @@ export const getCount = query({
   },
 });
 
-
+// Обновить продукт (с ингредиентами)
 export const update = mutation({
   args: {
     id: v.id("products"),
@@ -253,6 +261,10 @@ export const update = mutation({
     inStock: v.optional(v.number()),
     minStock: v.optional(v.number()),
     isPopular: v.optional(v.boolean()),
+    // Добавляем ингредиенты
+    ingredient1: v.optional(v.string()),
+    ingredient2: v.optional(v.string()),
+    ingredient3: v.optional(v.string()),
     nutrition: v.optional(v.object({
       calories: v.optional(v.number()),
       protein: v.optional(v.number()),
@@ -265,6 +277,11 @@ export const update = mutation({
   handler: async (ctx, args) => {
     console.log("🔄 Convex: Обновление продукта:", args.id);
     console.log("🖼️ Convex: Новый imageUrl:", args.imageUrl);
+    console.log("🥬 Convex: Обновление ингредиентов:", {
+      ingredient1: args.ingredient1,
+      ingredient2: args.ingredient2,
+      ingredient3: args.ingredient3
+    });
 
     const { id, ...updateData } = args;
 
@@ -359,5 +376,51 @@ export const updateStock = mutation({
       inStock: args.newStock,
       updatedAt: Date.now(),
     });
+  },
+});
+
+// Новая функция: поиск по ингредиентам
+export const searchByIngredient = query({
+  args: { ingredient: v.string() },
+  handler: async (ctx, args) => {
+    console.log("🔄 Convex Query: Поиск продуктов по ингредиенту:", args.ingredient);
+
+    const products = await ctx.db.query("products")
+      .filter((q) => q.and(
+        q.eq(q.field("isActive"), true),
+        q.or(
+          q.eq(q.field("ingredient1"), args.ingredient),
+          q.eq(q.field("ingredient2"), args.ingredient),
+          q.eq(q.field("ingredient3"), args.ingredient)
+        )
+      ))
+      .collect();
+
+    console.log("✅ Convex Query: Найдено продуктов с ингредиентом:", products.length);
+    return products;
+  },
+});
+
+// Новая функция: получить все уникальные ингредиенты
+export const getAllIngredients = query({
+  handler: async (ctx) => {
+    console.log("🔄 Convex Query: Получение всех уникальных ингредиентов");
+
+    const products = await ctx.db.query("products")
+      .filter((q) => q.eq(q.field("isActive"), true))
+      .collect();
+
+    const ingredients = new Set<string>();
+    
+    products.forEach(product => {
+      if (product.ingredient1) ingredients.add(product.ingredient1);
+      if (product.ingredient2) ingredients.add(product.ingredient2);
+      if (product.ingredient3) ingredients.add(product.ingredient3);
+    });
+
+    const uniqueIngredients = Array.from(ingredients).sort();
+    console.log("✅ Convex Query: Найдено уникальных ингредиентов:", uniqueIngredients.length);
+    
+    return uniqueIngredients;
   },
 });

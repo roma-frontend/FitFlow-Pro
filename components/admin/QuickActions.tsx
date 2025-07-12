@@ -422,7 +422,7 @@ export function QuickActions({
                   variant={selectedCategory === category ? "default" : "outline"}
                   size="sm"
                   onClick={() => setSelectedCategory(category)}
-                  className={`${selectedCategory === category ? '' : getCategoryColor(category)}`}
+                  className={`${selectedCategory === category ? 'bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-500 hover:to-indigo-600' : getCategoryColor(category)}`}
                 >
                   {getCategoryName(category)}
                   <Badge variant="secondary" className="ml-2 text-xs">
@@ -459,7 +459,7 @@ export function QuickActions({
                             </Badge>
                           )}
                           {action.roleSpecific && (
-                            <Badge variant="outline" className="text-xs">
+                            <Badge variant="custom" className="text-xs">
                               Для {roleTexts.roleDisplayName}
                             </Badge>
                           )}

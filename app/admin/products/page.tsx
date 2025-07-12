@@ -82,7 +82,7 @@ export default function ProductsPage() {
 
   const handleRefresh = () => {
     // Логика обновления продуктов
-    window.location.reload();
+    router.refresh();
   };
 
   const handleSearch = () => {

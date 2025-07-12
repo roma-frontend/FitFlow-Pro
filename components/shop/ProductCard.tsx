@@ -11,11 +11,18 @@ import { productToAddCartData } from '@/utils/cartUtils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ShoppingCart, Star, Bot } from 'lucide-react';
+import { ShoppingCart, Star, Bot, FlaskConical } from 'lucide-react';
 import SafeImage from '@/components/common/SafeImage';
 
+// Расширяем тип для поддержки ингредиентов
+type ShopProductWithIngredients = ShopProduct & {
+  ingredient1?: string;
+  ingredient2?: string;
+  ingredient3?: string;
+};
+
 interface ProductCardProps {
-  product: ShopProduct;
+  product: ShopProductWithIngredients;
 }
 
 const ProductCard = memo(({ product }: ProductCardProps) => {
@@ -26,9 +33,9 @@ const ProductCard = memo(({ product }: ProductCardProps) => {
   const stockStatus = getStockStatus(product);
   
   // Определяем, нужно ли показывать статус товара
-  const shouldShowStockStatus = pathname !== '/shop';
+  const shouldShowStockStatus: boolean = pathname !== '/shop';
   
-  const handleAddToCart = () => {
+  const handleAddToCart = (): void => {
     const cartData = productToAddCartData(product);
     addItem(cartData);
     
@@ -38,7 +45,7 @@ const ProductCard = memo(({ product }: ProductCardProps) => {
     });
   };
 
-  const handleAIConsultation = () => {
+  const handleAIConsultation = (): void => {
     openWithAction('product_consultation', {
       page: 'shop',
       intent: 'product_consultation',
@@ -48,8 +55,17 @@ const ProductCard = memo(({ product }: ProductCardProps) => {
     });
   };
 
-  const imageAlt = generateProductImageAlt(product);
-  const fallbackText = generateFallbackText(product.name);
+  // Безопасно получаем список ингредиентов
+  const ingredients: string[] = [
+    product.ingredient1,
+    product.ingredient2,
+    product.ingredient3
+  ].filter((ingredient): ingredient is string => 
+    ingredient !== undefined && ingredient.trim() !== ''
+  );
+
+  const imageAlt: string = generateProductImageAlt(product);
+  const fallbackText: string = generateFallbackText(product.name);
 
   return (
     <Card className="h-full flex flex-col hover:shadow-lg transition-shadow group">
@@ -106,6 +122,28 @@ const ProductCard = memo(({ product }: ProductCardProps) => {
         <p className="text-sm text-gray-600 mb-4 line-clamp-3 flex-1">
           {product.description}
         </p>
+
+        {/* Секция ингредиентов */}
+        {ingredients.length > 0 && (
+          <div className="mb-4 p-3 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg border border-green-200">
+            <div className="flex items-center gap-2 mb-2">
+              <FlaskConical className="w-4 h-4 text-green-600" aria-hidden="true" />
+              <h4 className="text-xs font-medium text-green-800">Основные ингредиенты</h4>
+            </div>
+            <div className="flex flex-wrap gap-1" role="list" aria-label="Список ингредиентов">
+              {ingredients.map((ingredient: string, index: number) => (
+                <Badge 
+                  key={index} 
+                  variant="outline" 
+                  className="text-xs bg-white text-green-700 border-green-300 hover:bg-green-50"
+                  role="listitem"
+                >
+                  {ingredient}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
 
         {product.nutrition && (
           <div className="mb-4 p-3 bg-gray-50 rounded-lg">

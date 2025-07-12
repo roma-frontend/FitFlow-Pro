@@ -3,7 +3,7 @@ import React, { memo, useCallback } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Edit, Trash2, Star, Package } from "lucide-react";
+import { Edit, Trash2, Star, Package, FlaskConical } from "lucide-react";
 import { LazyImage } from "@/components/ui/LazyImage";
 import { Product } from "@/types/product";
 
@@ -57,6 +57,13 @@ export const ProductCard = memo(function ProductCard({
     };
     return categoryMap[category as keyof typeof categoryMap] || category;
   };
+
+  // Получаем список ингредиентов, исключая пустые
+  const ingredients = [
+    product.ingredient1,
+    product.ingredient2,
+    product.ingredient3
+  ].filter(ingredient => ingredient && ingredient.trim() !== '');
 
   const stockStatus = getStockStatus();
 
@@ -137,6 +144,27 @@ export const ProductCard = memo(function ProductCard({
             {product.description}
           </p>
 
+          {/* Секция ингредиентов */}
+          {ingredients.length > 0 && (
+            <div className="p-3 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg border border-green-200">
+              <div className="flex items-center gap-2 mb-2">
+                <FlaskConical className="w-4 h-4 text-green-600" />
+                <h4 className="text-xs font-medium text-green-800">Основные ингредиенты</h4>
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {ingredients.map((ingredient, index) => (
+                  <Badge 
+                    key={index} 
+                    variant="outline" 
+                    className="text-xs bg-white text-green-700 border-green-300 hover:bg-green-50"
+                  >
+                    {ingredient}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Цена и категория */}
           <div className="flex items-center justify-between">
             <div className="flex flex-col gap-1">
@@ -163,3 +191,7 @@ export const ProductCard = memo(function ProductCard({
     </Card>
   );
 });
+
+ProductCard.displayName = 'ProductCard';
+
+export default ProductCard;

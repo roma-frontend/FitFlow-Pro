@@ -128,7 +128,7 @@ export default defineSchema({
     .index("archived_status", ["isArchived", "status"])
     .index("priority_status", ["priority", "status"]),
 
-    bodyAnalysis: defineTable({
+  bodyAnalysis: defineTable({
     userId: v.string(),
     bodyType: v.union(
       v.literal("ectomorph"),
@@ -674,6 +674,9 @@ export default defineSchema({
       fat: v.optional(v.number()),
       sugar: v.optional(v.number()),
     })),
+    ingredient1: v.optional(v.string()),
+    ingredient2: v.optional(v.string()),
+    ingredient3: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.optional(v.number()),
     // Поля для синхронизации
@@ -687,6 +690,9 @@ export default defineSchema({
     .index("by_deleted", ["isDeleted"])
     .index("category_active", ["category", "isActive"])
     .index("active_popular", ["isActive", "isPopular"])
+    .index("by_ingredient1", ["ingredient1"])
+    .index("by_ingredient2", ["ingredient2"])
+    .index("by_ingredient3", ["ingredient3"])
   ,
 
   orders: defineTable({
