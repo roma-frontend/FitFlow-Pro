@@ -14,6 +14,7 @@ import { useEffect, useState } from "react";
 import { ShieldButtonV1 } from "./components/StaffLoginButton";
 import { GoogleLoginButton } from "@/components/auth/GoogleLoginButton";
 import { useLoaderStore } from "@/stores/loaderStore";
+import { FaceIdQuickAccess } from "@/components/FaceIdQuickAccess";
 
 export default function StaffLoginContent() {
   const router = useRouter();
@@ -496,6 +497,7 @@ export default function StaffLoginContent() {
 
         </div>
       </div>
+      <FaceIdQuickAccess variant="floating" className="bottom-10 right-10 hidden lg:block" />
     </div>
   );
 }

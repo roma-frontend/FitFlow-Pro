@@ -21,6 +21,7 @@ import { useRouter } from "next/navigation";
 import SparklesButton from "./components/MemberLoginButton";
 import { Input } from "@/components/ui/input";
 import { GoogleLoginButton } from "@/components/auth/GoogleLoginButton";
+import { FaceIdQuickAccess } from "@/components/FaceIdQuickAccess";
 
 export default function MemberLoginContent() {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
@@ -592,6 +593,8 @@ export default function MemberLoginContent() {
 
         </div>
       </div>
+      <FaceIdQuickAccess variant="floating" className="bottom-10 right-10 hidden lg:block" />
+      <FaceIdQuickAccess variant="banner" className="bottom-10 right-10 lg:hidden" />
     </div>
   );
 }
