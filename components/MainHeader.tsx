@@ -28,6 +28,7 @@ import MobileMenu from "./menu-mobile/MobileMenu";
 import { NavigationItem } from "./types/navigation";
 import LoginTypeSelector from "./auth/LoginTypeSelector";
 import HeaderAuthLoader from "./home/components/HeaderAuthLoader";
+import { FaceIdStatusIndicator } from "./auth/FaceIdStatusIndicator";
 
 // ✅ Мемоизированные компоненты для производительности
 export const Logo = memo(() => (
@@ -223,6 +224,12 @@ export default function MainHeader() {
     router.push("/register");
   };
 
+  // ✅ Обработчик для настройки Face ID
+  const handleFaceIdSetup = () => {
+    router.push('/setup-face-recognition');
+    handleNavClick('/setup-face-recognition');
+  };
+
   const navigationItems: NavigationItem[] = [
     {
       href: "/trainers",
@@ -329,6 +336,15 @@ export default function MainHeader() {
               />
             ) : (
               <div className="flex items-center gap-2 sm:gap-3 lg:gap-4">
+                {/* ✅ Face ID Status Indicator - показываем только для авторизованных пользователей */}
+                {user && (
+                  <FaceIdStatusIndicator
+                    onClick={handleFaceIdSetup}
+                    variant="icon"
+                    showLabel={false}
+                  />
+                )}
+
                 {canInstall && (
                   <div className="hidden lg:block">
                     <PWAInstallButton

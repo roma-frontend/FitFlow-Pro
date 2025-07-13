@@ -112,7 +112,7 @@ export function FaceIdManager() {
   return (
     <div className="space-y-6">
       {/* Заголовок и статус */}
-      <div className="flex items-center justify-between">
+      <div className="relative flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Face ID</h2>
           <p className="text-muted-foreground">
@@ -120,7 +120,7 @@ export function FaceIdManager() {
           </p>
         </div>
         
-        <Badge variant={isFaceIdRegistered ? "default" : "secondary"} className="text-sm">
+        <Badge variant={isFaceIdRegistered ? "default" : "secondary"} className="absolute right-2 top-2 text-sm">
           {isFaceIdRegistered ? (
             <>
               <CheckCircle className="h-3 w-3 mr-1" />
@@ -137,7 +137,7 @@ export function FaceIdManager() {
 
       {/* Статистика */}
       {faceIdStatus?.stats && (
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 xl:grid-cols-3">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
@@ -192,8 +192,8 @@ export function FaceIdManager() {
       {/* Список профилей */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
+          <div className="flex flex-wrap gap-4 items-center justify-between">
+            <div className="space-y-2">
               <CardTitle>Face ID профили</CardTitle>
               <CardDescription>
                 Зарегистрированные устройства и браузеры
@@ -203,7 +203,7 @@ export function FaceIdManager() {
             {profiles.length < 3 && (
               <Dialog open={showRegisterDialog} onOpenChange={setShowRegisterDialog}>
                 <DialogTrigger asChild>
-                  <Button size="sm">
+                  <Button size="sm" className='bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600'>
                     <Plus className="h-4 w-4 mr-2" />
                     Добавить
                   </Button>
@@ -237,6 +237,7 @@ export function FaceIdManager() {
                     <Button
                       onClick={handleRegisterFaceId}
                       disabled={isRegistering}
+                      className='bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600'
                     >
                       {isRegistering ? (
                         <>

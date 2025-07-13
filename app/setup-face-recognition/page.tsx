@@ -290,13 +290,13 @@ export default function SetupFaceRecognitionPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
         {/* Заголовок */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl mb-4">
+          <Button onClick={() => router.push("/")} className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl mb-4">
             <Shield className="w-8 h-8 text-white" />
-          </div>
+          </Button>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
             Настройка Face ID
           </h1>

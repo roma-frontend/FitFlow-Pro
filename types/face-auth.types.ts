@@ -19,10 +19,10 @@ export interface Landmark {
 }
 
 export interface Detection {
-  box: BoundingBox;
-  score: number;
-  classScore: number;
-  className: string;
+  detected: boolean;
+  boundingBox: BoundingBox | null;
+  landmarks: Landmark[];
+  quality: QualityMetrics;
 }
 
 // 🔥 ДОБАВЛЕН тип для AuthStatus
@@ -53,6 +53,19 @@ export interface OptimizedFaceAuthProps {
   onFaceDetected?: (data: FaceDetectionData) => void;
   className?: string;
   isMobile?: boolean;
+}
+
+export interface QualityMetrics {
+  lighting: number;    // 0-1
+  stability: number;   // 0-1
+  clarity: number;     // 0-1
+}
+
+export interface Landmark {
+  x: number;
+  y: number;
+  type: 'eye' | 'nose' | 'mouth' | 'face';
+  confidence?: number;
 }
 
 // Оригинальный FaceAuthProps остается без изменений для совместимости
@@ -129,5 +142,99 @@ export interface FooterProps {
   sessionId: string;
   onSwitchMode?: (mode: SwitchModeType) => void;
 }
+
+export type ScanStage = 'initializing' | 'detecting' | 'analyzing' | 'processing' | 'complete' | 'failed';
+
+export interface ScanProgress {
+  stage: ScanStage;
+  progress: number;
+  countdown: number;
+}
+
+export interface AuthStatus {
+  authenticated: boolean;
+  user?: {
+    id: string;
+    email: string;
+    name?: string;
+    role: string;
+  };
+  loading: boolean;
+  error?: string;
+}
+
+export interface QualityMetrics {
+  lighting: number;    // 0-1
+  stability: number;   // 0-1
+  clarity: number;     // 0-1
+}
+
+
+
+// Детекция лица
+export interface Detection {
+  detected: boolean;
+  boundingBox: BoundingBox | null;
+  landmarks: Landmark[];
+  quality: QualityMetrics;
+}
+
+export interface FaceAuthState {
+  isScanning: boolean;
+  isRegistering: boolean;
+  faceDetection: Detection;
+  faceData: FaceDetectionData | null;
+  authStatus: AuthStatus | null;
+  scanProgress: ScanProgress;
+  scanCount: number;
+  lastScanTime: Date | null;
+}
+
+export type FaceAuthAction =
+  | { type: 'START_SCANNING' }
+  | { type: 'STOP_SCANNING' }
+  | { type: 'SET_REGISTERING'; payload: boolean }
+  | { type: 'SET_FACE_DETECTION'; payload: Detection }
+  | { type: 'SET_FACE_DATA'; payload: FaceDetectionData | null }
+  | { type: 'SET_AUTH_STATUS'; payload: AuthStatus }
+  | { type: 'SET_SCAN_PROGRESS'; payload: ScanProgress }
+  | { type: 'INCREMENT_SCAN_COUNT' }
+  | { type: 'SET_LAST_SCAN_TIME'; payload: Date }
+  | { type: 'RESET_STATE' };
+
+// Действия контекста
+export interface FaceAuthActions {
+  startScanning: () => void;
+  stopScanning: () => void;
+  setRegistering: (value: boolean) => void;
+  setFaceDetection: (detection: Detection) => void;
+  setFaceData: (data: FaceDetectionData | null) => void;
+  setAuthStatus: (status: AuthStatus) => void;
+  resetState: () => void;
+}
+
+export interface FaceAuthContextValue {
+  state: FaceAuthState;
+  dispatch: React.Dispatch<FaceAuthAction>;
+  actions: FaceAuthActions;
+}
+
+export const faceAuthAnimations = {
+  keyframes: {
+    scan: {
+      '0%': { transform: 'translateY(-100%)' },
+      '100%': { transform: 'translateY(100%)' }
+    },
+    'scan-vertical': {
+      '0%': { transform: 'translateY(-100%)' },
+      '50%': { transform: 'translateY(100%)' },
+      '100%': { transform: 'translateY(-100%)' }
+    }
+  },
+  animation: {
+    scan: 'scan 2s ease-in-out infinite',
+    'scan-vertical': 'scan-vertical 3s ease-in-out infinite'
+  }
+};
 
 export type VideoCameraViewMode = "mobile" | "desktop" | "modern";

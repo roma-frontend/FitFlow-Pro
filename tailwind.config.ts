@@ -18,6 +18,21 @@ export default {
 			'3xl': '1920px',  // Очень большие экраны
 		},
 		extend: {
+			animation: {
+				'scan': 'scan 2s ease-in-out infinite',
+				'scan-vertical': 'scan-vertical 3s ease-in-out infinite',
+			},
+			keyframes: {
+				scan: {
+					'0%': { transform: 'translateY(-100%)' },
+					'100%': { transform: 'translateY(100vh)' }
+				},
+				'scan-vertical': {
+					'0%': { transform: 'translateY(-100%)' },
+					'50%': { transform: 'translateY(100%)' },
+					'100%': { transform: 'translateY(-100%)' }
+				}
+			},
 			spacing: {
 				'safe-top': 'env(safe-area-inset-top)',
 				'safe-bottom': 'env(safe-area-inset-bottom)',

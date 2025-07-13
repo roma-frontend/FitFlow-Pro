@@ -1,117 +1,226 @@
-// utils/faceAuthUtils.ts
-import { BoundingBox, Landmark, FaceDetectionData, Detection } from '@/types/face-auth.types';
+// utils/faceAuthUtils.ts - Утилиты для Face Auth
 
-export const createBoundingBox = (
-  x: number, 
-  y: number, 
-  width: number, 
+import {
+  BoundingBox,
+  Landmark,
+  QualityMetrics,
+  FaceDetectionData,
+  Detection
+} from '@/types/face-auth.types';
+
+// Создание BoundingBox с правильными свойствами
+export function createBoundingBox(
+  x: number,
+  y: number,
+  width: number,
   height: number
-): BoundingBox => ({
-  x,
-  y,
-  width,
-  height,
-  top: y,
-  left: x,
-  bottom: y + height,
-  right: x + width
-});
+): BoundingBox {
+  return { 
+    x, 
+    y, 
+    width, 
+    height,
+    top: y,
+    left: x,
+    bottom: y + height,
+    right: x + width
+  };
+}
 
-// 🔥 ДОБАВЛЕНО: Функция создания FaceDetectionData
-export const createFaceDetectionData = (
+// Генерация случайных ключевых точек лица для демо (с типом, так как он обязательный)
+export function generateRandomLandmarks(boundingBox: BoundingBox): Landmark[] {
+  const { x, y, width, height } = boundingBox;
+  
+  return [
+    // Глаза
+    { x: x + width * 0.3, y: y + height * 0.35, type: 'eye' as const, confidence: 0.9 },
+    { x: x + width * 0.7, y: y + height * 0.35, type: 'eye' as const, confidence: 0.9 },
+    // Нос
+    { x: x + width * 0.5, y: y + height * 0.5, type: 'nose' as const, confidence: 0.85 },
+    // Рот
+    { x: x + width * 0.3, y: y + height * 0.7, type: 'mouth' as const, confidence: 0.8 },
+    { x: x + width * 0.5, y: y + height * 0.75, type: 'mouth' as const, confidence: 0.8 },
+    { x: x + width * 0.7, y: y + height * 0.7, type: 'mouth' as const, confidence: 0.8 },
+    // Контур лица
+    { x: x, y: y + height * 0.5, type: 'face' as const, confidence: 0.7 },
+    { x: x + width, y: y + height * 0.5, type: 'face' as const, confidence: 0.7 },
+    { x: x + width * 0.5, y: y, type: 'face' as const, confidence: 0.7 },
+    { x: x + width * 0.5, y: y + height, type: 'face' as const, confidence: 0.7 },
+  ];
+}
+
+// Расчет качества детекции
+export function calculateDetectionQuality(
+  boundingBox: BoundingBox,
+  landmarks: Landmark[]
+): QualityMetrics {
+  // Симуляция расчета качества
+  const lighting = 0.7 + Math.random() * 0.3; // 70-100%
+  const stability = 0.8 + Math.random() * 0.2; // 80-100%
+  const clarity = 0.75 + Math.random() * 0.25; // 75-100%
+  
+  return {
+    lighting: Math.min(1, lighting),
+    stability: Math.min(1, stability),
+    clarity: Math.min(1, clarity)
+  };
+}
+
+// Создание данных детекции лица согласно типу FaceDetectionData
+export function createFaceDetectionData(
   descriptor: Float32Array,
   confidence: number,
-  boundingBox: BoundingBox
-): FaceDetectionData => {
-  const landmarks: Landmark[] = [
-    { x: boundingBox.x + boundingBox.width * 0.3, y: boundingBox.y + boundingBox.height * 0.3 }, // left eye
-    { x: boundingBox.x + boundingBox.width * 0.7, y: boundingBox.y + boundingBox.height * 0.3 }, // right eye
-    { x: boundingBox.x + boundingBox.width * 0.5, y: boundingBox.y + boundingBox.height * 0.5 }, // nose
-    { x: boundingBox.x + boundingBox.width * 0.4, y: boundingBox.y + boundingBox.height * 0.7 }, // mouth left
-    { x: boundingBox.x + boundingBox.width * 0.6, y: boundingBox.y + boundingBox.height * 0.7 }, // mouth right
-  ];
-
+  boundingBox: BoundingBox,
+  landmarks?: Landmark[]
+): FaceDetectionData {
+  const generatedLandmarks = landmarks || generateRandomLandmarks(boundingBox);
+  
+  // Создаем Detection объект согласно актуальному интерфейсу Detection
   const detection: Detection = {
-    box: boundingBox,
-    score: confidence / 100,
-    classScore: confidence / 100,
-    className: 'face'
+    detected: true,
+    boundingBox: boundingBox,
+    landmarks: generatedLandmarks,
+    quality: calculateDetectionQuality(boundingBox, generatedLandmarks)
   };
 
   return {
     descriptor,
     confidence,
-    landmarks,
+    landmarks: generatedLandmarks,
     boundingBox,
     detection,
-    box: boundingBox
+    box: boundingBox // Дублируем boundingBox как box согласно интерфейсу
   };
-};
+}
 
-export const calculateFaceCenter = (boundingBox: BoundingBox): { x: number; y: number } => ({
-  x: boundingBox.x + boundingBox.width / 2,
-  y: boundingBox.y + boundingBox.height / 2
-});
+// Проверка качества для принятия решения
+export function isQualityAcceptable(quality: QualityMetrics): boolean {
+  const avgQuality = (quality.lighting + quality.stability + quality.clarity) / 3;
+  return avgQuality >= 0.6; // 60% минимальное среднее качество
+}
 
-export const calculateDistance = (point1: Landmark, point2: Landmark): number => {
-  return Math.sqrt(Math.pow(point2.x - point1.x, 2) + Math.pow(point2.y - point1.y, 2));
-};
+// Форматирование процентов качества
+export function formatQualityPercentage(value: number): string {
+  return `${Math.round(value * 100)}%`;
+}
 
-export const validateFaceData = (faceData: FaceDetectionData): boolean => {
+// Преобразование дескриптора в строку для сравнения
+export function descriptorToString(descriptor: Float32Array | number[]): string {
+  return Array.from(descriptor).map(v => v.toFixed(4)).join(',');
+}
+
+// Сравнение дескрипторов (простое косинусное сходство)
+export function compareDescriptors(
+  desc1: Float32Array | number[],
+  desc2: Float32Array | number[]
+): number {
+  const arr1 = Array.from(desc1);
+  const arr2 = Array.from(desc2);
+  
+  if (arr1.length !== arr2.length) return 0;
+  
+  let dotProduct = 0;
+  let norm1 = 0;
+  let norm2 = 0;
+  
+  for (let i = 0; i < arr1.length; i++) {
+    dotProduct += arr1[i] * arr2[i];
+    norm1 += arr1[i] * arr1[i];
+    norm2 += arr2[i] * arr2[i];
+  }
+  
+  norm1 = Math.sqrt(norm1);
+  norm2 = Math.sqrt(norm2);
+  
+  if (norm1 === 0 || norm2 === 0) return 0;
+  
+  const cosineSimilarity = dotProduct / (norm1 * norm2);
+  return (cosineSimilarity + 1) / 2; // Нормализуем к [0, 1]
+}
+
+// Валидация дескриптора
+export function isValidDescriptor(descriptor: any): boolean {
   return (
-    faceData.confidence > 0 &&
-    faceData.landmarks.length >= 5 &&
-    faceData.descriptor.length > 0 &&
-    faceData.boundingBox.width > 0 &&
-    faceData.boundingBox.height > 0
+    descriptor &&
+    (descriptor instanceof Float32Array || Array.isArray(descriptor)) &&
+    descriptor.length === 128
   );
-};
+}
 
-export const formatConfidence = (confidence: number): string => {
-  return `${confidence.toFixed(1)}%`;
-};
-
-export const formatTimestamp = (date: Date): string => {
-  return date.toLocaleString('ru-RU', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit'
-  });
-};
-
-// 🔥 ДОБАВЛЕНО: Функция генерации случайных ландмарков
-export const generateRandomLandmarks = (boundingBox: BoundingBox): Landmark[] => {
-  const centerX = boundingBox.x + boundingBox.width / 2;
-  const centerY = boundingBox.y + boundingBox.height / 2;
-  
-  return [
-    { x: centerX - 25 + (Math.random() - 0.5) * 10, y: centerY - 30 + (Math.random() - 0.5) * 10 }, // left eye
-    { x: centerX + 25 + (Math.random() - 0.5) * 10, y: centerY - 30 + (Math.random() - 0.5) * 10 }, // right eye
-    { x: centerX + (Math.random() - 0.5) * 10, y: centerY - 5 + (Math.random() - 0.5) * 10 }, // nose
-    { x: centerX - 15 + (Math.random() - 0.5) * 10, y: centerY + 25 + (Math.random() - 0.5) * 10 }, // mouth left
-    { x: centerX + 15 + (Math.random() - 0.5) * 10, y: centerY + 25 + (Math.random() - 0.5) * 10 }, // mouth right
-  ];
-};
-
-// 🔥 ДОБАВЛЕНО: Функция расчета качества детекции
-export const calculateDetectionQuality = (boundingBox: BoundingBox, landmarks: Landmark[]): {
-  lighting: number;
-  stability: number;
-  clarity: number;
-} => {
-  // Симуляция качества на основе размера лица и количества ландмарков
-  const faceSize = boundingBox.width * boundingBox.height;
-  const optimalSize = 200 * 200; // Оптимальный размер лица
-  
-  const sizeQuality = Math.min(100, (faceSize / optimalSize) * 100);
-  const landmarkQuality = Math.min(100, (landmarks.length / 5) * 100);
-  
+// Создание пустой детекции согласно актуальному типу Detection
+export function createEmptyDetection(): Detection {
   return {
-    lighting: 60 + Math.random() * 40,
-    stability: Math.max(50, sizeQuality + (Math.random() - 0.5) * 20),
-    clarity: Math.max(50, landmarkQuality + (Math.random() - 0.5) * 20)
+    detected: false,
+    boundingBox: null,
+    landmarks: [],
+    quality: {
+      lighting: 0,
+      stability: 0,
+      clarity: 0
+    }
   };
-};
+}
+
+// Создание полной пустой детекции для состояния
+export function createEmptyFaceDetection(): Detection {
+  return {
+    detected: false,
+    boundingBox: null,
+    landmarks: [],
+    quality: {
+      lighting: 0,
+      stability: 0,
+      clarity: 0
+    }
+  };
+}
+
+// Создание простой детекции с базовыми свойствами (если нужен первый тип Detection)
+export function createSimpleDetection(): {
+  box: BoundingBox;
+  score: number;
+  classScore: number;
+  className: string;
+} {
+  const emptyBox: BoundingBox = {
+    x: 0,
+    y: 0,
+    width: 0,
+    height: 0,
+    top: 0,
+    left: 0,
+    bottom: 0,
+    right: 0
+  };
+
+  return {
+    box: emptyBox,
+    score: 0,
+    classScore: 0,
+    className: ''
+  };
+}
+
+// Проверка поддержки getUserMedia
+export function isCameraSupported(): boolean {
+  return !!(
+    navigator.mediaDevices &&
+    navigator.mediaDevices.getUserMedia
+  );
+}
+
+// Получение сообщения об ошибке камеры
+export function getCameraErrorMessage(error: Error): string {
+  switch (error.name) {
+    case 'NotAllowedError':
+      return 'Доступ к камере запрещен. Разрешите доступ в настройках браузера.';
+    case 'NotFoundError':
+      return 'Камера не найдена. Проверьте подключение камеры.';
+    case 'NotReadableError':
+      return 'Камера уже используется другим приложением.';
+    case 'OverconstrainedError':
+      return 'Камера не поддерживает требуемые параметры.';
+    default:
+      return 'Не удалось получить доступ к камере.';
+  }
+}

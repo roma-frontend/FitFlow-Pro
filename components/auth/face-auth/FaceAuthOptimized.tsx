@@ -1,461 +1,335 @@
-// components/face-auth/FaceAuthOptimized.tsx - Версия с умной логикой Face ID
+// components/auth/face-auth/FaceAuthOptimized.tsx - Интегрированная версия
 "use client";
-import React, { Suspense, useMemo, useCallback, useEffect } from 'react';
-import { FaceAuthProvider } from './FaceAuthProvider';
-import VideoCamera from './VideoCamera';
-import ScanOverlay from './ScanOverlay';
-import StatusPanel from './StatusPanel';
-import ControlButtons from './ControlButtons';
-import SettingsPanel from './SettingsPanel';
-import Header from './Header';
-import Footer from './Footer';
-import ErrorBoundary from './ErrorBoundary';
-import PerformanceMonitor from './PerformanceMonitor';
-import { LazyDebugInfo, LazyDetectionPanel, withConditionalRender } from './LazyComponents';
-import { useFaceScanning } from '@/hooks/useFaceScanning';
-import { useFaceAuthContext } from './FaceAuthProvider';
-import { useFaceIdSmart } from '@/hooks/useFaceIdSmart';
+
+import React, { useCallback } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, AlertTriangle, Info, Shield, Camera, User, Settings } from 'lucide-react';
-import { StatisticsPanel } from './StatisticsPanel';
+import { 
+  Camera, 
+  Shield, 
+  Eye, 
+  CheckCircle, 
+  AlertTriangle,
+  Loader2,
+  RefreshCw,
+  Lock,
+  Sparkles
+} from 'lucide-react';
 
-// Импорт типов из файла типов
-import type {
-  FaceAuthMode,
+import { FaceAuthProvider } from './FaceAuthProvider';
+import { CameraView } from './CameraView';
+import { FaceDetectionOverlay } from './FaceDetectionOverlay';
+import { useFaceScanning } from '@/hooks/useFaceScanning';
+import { useAuth } from '@/hooks/useAuth';
+import { 
+  FaceAuthMode, 
   SwitchModeType,
-  FaceDetectionData,
-  OptimizedFaceAuthProps,
-  FaceAuthProps,
-  VideoCameraViewMode,
-  AuthStatusType
+  FaceDetectionData 
 } from '@/types/face-auth.types';
+import { cn } from '@/lib/utils';
 
-// 🔥 НОВЫЙ: Компонент статуса Face ID
-const FaceIdStatusBanner = React.memo(({ 
-  faceIdStatus, 
-  mode, 
-  isScanning,
-  isRegistering 
-}: { 
-  faceIdStatus: any;
+interface FaceAuthOptimizedProps {
   mode: FaceAuthMode;
-  isScanning: boolean;
-  isRegistering: boolean;
-}) => {
-  const getStatusInfo = useMemo(() => {
-    if (isScanning) {
-      return {
-        type: 'info' as const,
-        icon: Camera,
-        title: 'Сканирование...',
-        description: mode === 'login' ? 'Анализируем ваше лицо' : 'Регистрируем Face ID'
-      };
-    }
-
-    if (isRegistering) {
-      return {
-        type: 'info' as const,
-        icon: Shield,
-        title: 'Регистрация Face ID',
-        description: 'Создаем ваш биометрический профиль'
-      };
-    }
-
-    if (faceIdStatus?.registered) {
-      return {
-        type: 'success' as const,
-        icon: CheckCircle,
-        title: 'Face ID активен',
-        description: `Зарегистрирован ${new Date(faceIdStatus.profile?.createdAt || Date.now()).toLocaleDateString()}`
-      };
-    }
-
-    if (mode === 'register') {
-      return {
-        type: 'warning' as const,
-        icon: AlertTriangle,
-        title: 'Face ID не настроен',
-        description: 'Настройте Face ID для быстрого входа'
-      };
-    }
-
-    return {
-      type: 'info' as const,
-      icon: Info,
-      title: 'Face ID вход',
-      description: 'Войдите используя распознавание лица'
-    };
-  }, [faceIdStatus, mode, isScanning, isRegistering]);
-
-  const { type, icon: Icon, title, description } = getStatusInfo;
-
-  return (
-    <Alert className={`mb-4 ${
-      type === 'success' ? 'border-green-200 bg-green-50' :
-      type === 'warning' ? 'border-yellow-200 bg-yellow-50' :
-      'border-blue-200 bg-blue-50'
-    }`}>
-      <Icon className={`h-4 w-4 ${
-        type === 'success' ? 'text-green-600' :
-        type === 'warning' ? 'text-yellow-600' :
-        'text-blue-600'
-      }`} />
-      <AlertTitle className="flex items-center gap-2">
-        {title}
-        {faceIdStatus?.registered && (
-          <Badge variant="secondary" className="text-xs">
-            Активен
-          </Badge>
-        )}
-      </AlertTitle>
-      <AlertDescription>{description}</AlertDescription>
-    </Alert>
-  );
-});
-
-// 🔥 НОВЫЙ: Панель управления Face ID профилями
-const FaceIdProfileManager = React.memo(({ 
-  profiles, 
-  currentProfileId,
-  onDeleteProfile,
-  onDeleteAllProfiles 
-}: {
-  profiles: any[];
-  currentProfileId: string | null;
-  onDeleteProfile: (id: string) => void;
-  onDeleteAllProfiles: () => void;
-}) => {
-  if (!profiles.length) return null;
-
-  return (
-    <div className="bg-white/60 backdrop-blur-lg rounded-2xl border border-gray-200/30 p-4 shadow-lg">
-      <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-        <User className="h-5 w-5" />
-        Face ID профили ({profiles.length})
-      </h3>
-      
-      <div className="space-y-3">
-        {profiles.map((profile) => (
-          <div
-            key={profile.id}
-            className={`p-3 rounded-lg border ${
-              profile.id === currentProfileId 
-                ? 'border-blue-200 bg-blue-50' 
-                : 'border-gray-200 bg-gray-50'
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="flex items-center gap-2">
-                  <Shield className="h-4 w-4 text-blue-600" />
-                  <span className="text-sm font-medium">
-                    {profile.deviceInfo?.platform || 'Unknown'}
-                  </span>
-                  {profile.id === currentProfileId && (
-                    <Badge variant="secondary" className="text-xs">
-                      Текущий
-                    </Badge>
-                  )}
-                </div>
-                <p className="text-xs text-gray-600">
-                  Создан: {new Date(profile.createdAt).toLocaleDateString()}
-                </p>
-                <p className="text-xs text-gray-600">
-                  Использован: {profile.usageCount} раз
-                </p>
-              </div>
-              <button
-                onClick={() => onDeleteProfile(profile.id)}
-                className="text-red-600 hover:text-red-800 text-sm"
-              >
-                Удалить
-              </button>
-            </div>
-          </div>
-        ))}
-        
-        {profiles.length > 1 && (
-          <button
-            onClick={onDeleteAllProfiles}
-            className="w-full mt-3 py-2 px-4 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors text-sm"
-          >
-            Удалить все профили
-          </button>
-        )}
-      </div>
-    </div>
-  );
-});
-
-// Условные компоненты
-const ConditionalDetectionPanel = withConditionalRender(
-  LazyDetectionPanel, 
-  () => {
-    const { state } = useFaceAuthContext();
-    return state.isScanning;
-  }
-);
-
-const ConditionalDebugInfo = withConditionalRender(
-  LazyDebugInfo,
-  () => {
-    const { state } = useFaceAuthContext();
-    return state.showDebugInfo;
-  }
-);
-
-// 🔥 НОВЫЙ: Дополнительные типы для ControlButtons
-interface ControlButtonsProps {
-  mode: FaceAuthMode;
-  onStartScanning: () => void;
-  onStopScanning: () => void;
-  disabled?: boolean;
+  onSuccess: (userData: any) => void;
+  viewMode: SwitchModeType;
+  onSwitchMode: (mode: SwitchModeType) => void;
 }
 
-const FaceAuthContent = React.memo(({
+function FaceAuthContent({
   mode,
   onSuccess,
-  viewMode = "modern",
-  setMode,
-  sessionId,
-  onSwitchMode,
-  onFaceDetected,
-  className = "",
-  isMobile = false
-}: OptimizedFaceAuthProps) => {
-  const { state } = useFaceAuthContext();
+  viewMode,
+  onSwitchMode
+}: FaceAuthOptimizedProps) {
+  const { user } = useAuth();
   
-  // 🔥 НОВЫЙ: Используем умную логику Face ID
   const {
-    isScanning: smartScanning,
-    isRegistering: smartRegistering,
-    faceIdStatus,
-    profiles,
-    currentProfileId,
-    deleteFaceIdProfile,
-    deleteAllFaceIdProfiles,
-    checkFaceIdStatus,
-    isFaceIdRegistered,
-    user
-  } = useFaceIdSmart();
-
-  const { startScanning, stopScanning } = useFaceScanning({
+    startScanning,
+    stopScanning,
+    isScanning,
+    isRegistering,
+    authStatus,
+    faceDetection,
+    scanProgress,
+    faceData
+  } = useFaceScanning({
     mode,
     viewMode,
     onSuccess,
-    onFaceDetected
+    onFaceDetected: (data: FaceDetectionData) => {
+      console.log('Face detected:', data);
+    }
   });
 
-  // 🔥 НОВЫЙ: Обновляем статус Face ID при изменении режима
-  useEffect(() => {
-    if (user) {
-      checkFaceIdStatus();
+  // Обработчик кнопки действия
+  const handleActionClick = useCallback(() => {
+    if (isScanning) {
+      stopScanning();
+    } else {
+      startScanning();
     }
-  }, [mode, user, checkFaceIdStatus]);
+  }, [isScanning, startScanning, stopScanning]);
 
-  // 🔥 НОВЫЙ: Обработчики для управления профилями
-  const handleDeleteProfile = useCallback(async (profileId: string) => {
-    const confirmed = window.confirm('Удалить этот Face ID профиль?');
-    if (confirmed) {
-      await deleteFaceIdProfile(profileId);
+  // Проверка готовности к регистрации
+  const canRegister = mode === 'register' && user;
+  const showRegisterWarning = mode === 'register' && !user;
+
+  // Получение текста для кнопки
+  const getButtonText = () => {
+    if (isScanning) {
+      if (isRegistering) return 'Регистрация Face ID...';
+      if (scanProgress.stage === 'processing') return 'Обработка...';
+      return 'Остановить сканирование';
     }
-  }, [deleteFaceIdProfile]);
+    return mode === 'register' ? 'Начать регистрацию Face ID' : 'Войти через Face ID';
+  };
 
-  const handleDeleteAllProfiles = useCallback(async () => {
-    const confirmed = window.confirm('Удалить все Face ID профили? Это действие нельзя отменить.');
-    if (confirmed) {
-      await deleteAllFaceIdProfiles();
+  // Получение описания режима
+  const getModeDescription = () => {
+    if (mode === 'register') {
+      return user 
+        ? 'Создайте биометрический профиль для быстрого входа в будущем'
+        : 'Для регистрации Face ID необходимо войти в систему';
     }
-  }, [deleteAllFaceIdProfiles]);
-
-  // Мемоизация стилей
-  const containerClasses = useMemo(() => 
-    `bg-gradient-to-br from-gray-50 to-blue-50 p-6 face-auth-container ${className}`, 
-    [className]
-  );
-
-  const gridClasses = useMemo(() =>
-    "grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8",
-    []
-  );
-
-  const videoContainerClasses = useMemo(() =>
-    "bg-white/60 backdrop-blur-lg rounded-3xl border border-gray-200/30 p-6 shadow-xl",
-    []
-  );
-
-  const sidebarClasses = useMemo(() =>
-    "space-y-6",
-    []
-  );
-
-  const handleToggleDebug = useCallback((show: boolean) => {
-    console.log('Debug mode toggled:', show);
-  }, []);
-
-  const currentSessionId = sessionId || state.sessionId;
-
-  // Преобразование viewMode для VideoCamera
-  const videoViewMode = useMemo(() => {
-    if (viewMode === "legacy") return "modern";
-    return viewMode as VideoCameraViewMode;
-  }, [viewMode]);
-
-  // 🔥 НОВЫЙ: Определяем текущий статус сканирования
-  const isCurrentlyScanning = state.isScanning || smartScanning;
-  const isCurrentlyRegistering = state.isRegistering || smartRegistering;
+    return 'Используйте Face ID для мгновенного входа в систему';
+  };
 
   return (
-    <ErrorBoundary>
-      <div className={containerClasses}>
-        <PerformanceMonitor />
-        
-        <div className="max-w-4xl mx-auto">
-          <div className="relative">
-            {/* Заголовок */}
-            <ErrorBoundary fallback={<div className="text-red-500">Ошибка заголовка</div>}>
-              <Header mode={mode} />
-            </ErrorBoundary>
+    <Card className="w-full max-w-2xl mx-auto overflow-hidden">
+      <CardHeader className="bg-gradient-to-r from-blue-500 to-purple-600 text-white">
+        <CardTitle className="flex items-center justify-between">
+          <div className="flex items-center">
+            {mode === 'register' ? (
+              <>
+                <Shield className="h-6 w-6 mr-2" />
+                Регистрация Face ID
+              </>
+            ) : (
+              <>
+                <Eye className="h-6 w-6 mr-2" />
+                Face ID вход
+              </>
+            )}
+          </div>
+          <div className="flex items-center space-x-2">
+            <Badge 
+              variant={viewMode === 'modern' ? 'default' : 'secondary'}
+              className="cursor-pointer"
+              onClick={() => onSwitchMode(viewMode === 'modern' ? 'desktop' : 'modern')}
+            >
+              {viewMode === 'modern' ? 'Современный' : 'Минималистичный'}
+            </Badge>
+          </div>
+        </CardTitle>
+      </CardHeader>
 
-            {/* 🔥 НОВЫЙ: Баннер статуса Face ID */}
-            <ErrorBoundary fallback={<div className="text-red-500">Ошибка статуса Face ID</div>}>
-              <FaceIdStatusBanner 
-                faceIdStatus={faceIdStatus}
-                mode={mode}
-                isScanning={isCurrentlyScanning}
-                isRegistering={isCurrentlyRegistering}
+      <CardContent className="p-6">
+        {/* Описание */}
+        <div className="text-center mb-6">
+          <p className="text-gray-600">{getModeDescription()}</p>
+          {user && mode === 'register' && (
+            <p className="text-sm text-green-600 mt-2 flex items-center justify-center">
+              <CheckCircle className="h-4 w-4 mr-1" />
+              Вы вошли как: {user.email}
+            </p>
+          )}
+        </div>
+
+        {/* Предупреждение для неавторизованных пользователей */}
+        {showRegisterWarning && (
+          <Alert variant="destructive" className="mb-6">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Требуется авторизация</AlertTitle>
+            <AlertDescription>
+              Пожалуйста, войдите в систему перед настройкой Face ID
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Камера */}
+        <div className="relative mb-6">
+          <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
+            <CameraView 
+              isActive={isScanning}
+              mode={mode}
+            />
+            
+            {/* Оверлей детекции лица */}
+            {isScanning && faceDetection.detected && (
+              <FaceDetectionOverlay
+                boundingBox={faceDetection.boundingBox}
+                landmarks={faceDetection.landmarks}
+                quality={faceDetection.quality}
               />
-            </ErrorBoundary>
+            )}
 
-            {/* Основная область */}
-            <div className={gridClasses}>
-              {/* Видео область */}
-              <ErrorBoundary fallback={<div className="text-red-500">Ошибка видео компонента</div>}>
-                <div className={videoContainerClasses}>
-                  <div className="relative">
-                    <Suspense fallback={
-                      <div className="aspect-video bg-gray-100 rounded-2xl flex items-center justify-center">
-                        <div className="text-gray-500">Загрузка камеры...</div>
+            {/* Статус сканирования */}
+            {isScanning && (
+              <div className="absolute bottom-4 left-4 right-4">
+                <div className="bg-black/70 backdrop-blur-md rounded-lg p-4 text-white">
+                  {viewMode === 'modern' && scanProgress.stage !== 'initializing' && (
+                    <>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium">
+                          {scanProgress.stage === 'detecting' && 'Поиск лица...'}
+                          {scanProgress.stage === 'analyzing' && 'Анализ биометрии...'}
+                          {scanProgress.stage === 'processing' && 'Обработка данных...'}
+                          {scanProgress.stage === 'complete' && 'Завершено!'}
+                          {scanProgress.stage === 'failed' && 'Ошибка сканирования'}
+                        </span>
+                        <span className="text-sm">{Math.round(scanProgress.progress)}%</span>
                       </div>
-                    }>
-                      <VideoCamera viewMode={videoViewMode} />
-                    </Suspense>
-                    <ScanOverlay />
-                  </div>
+                      <Progress value={scanProgress.progress} className="h-2" />
+                    </>
+                  )}
                   
-                  <ControlButtons 
-                    mode={mode}
-                    onStartScanning={startScanning}
-                    onStopScanning={stopScanning}
-                    disabled={isCurrentlyScanning}
-                  />
+                  {viewMode === 'desktop' && (
+                    <div className="flex items-center">
+                      <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                      <span>Сканирование активно...</span>
+                    </div>
+                  )}
                 </div>
-              </ErrorBoundary>
-
-              {/* Панели статуса */}
-              <div className={sidebarClasses}>
-                <ErrorBoundary fallback={<div className="text-red-500">Ошибка статус панели</div>}>
-                  <StatusPanel 
-                    mode={mode} 
-                    authenticated={state.authStatus?.authenticated || false}
-                  />
-                </ErrorBoundary>
-                
-                <ErrorBoundary fallback={<div className="text-red-500">Ошибка панели детекции</div>}>
-                  <Suspense fallback={
-                    <div className="animate-pulse bg-gray-200 h-48 rounded-lg" />
-                  }>
-                    <ConditionalDetectionPanel />
-                  </Suspense>
-                </ErrorBoundary>
-                
-                <ErrorBoundary fallback={<div className="text-red-500">Ошибка статистики</div>}>
-                  <StatisticsPanel
-                    scanCount={state.scanCount}
-                    mode={mode}
-                    sessionId={currentSessionId}
-                    lastScanTime={state.lastScanTime}
-                  />
-                </ErrorBoundary>
-
-                {/* 🔥 НОВЫЙ: Панель управления Face ID профилями */}
-                {user && profiles.length > 0 && (
-                  <ErrorBoundary fallback={<div className="text-red-500">Ошибка панели профилей</div>}>
-                    <FaceIdProfileManager
-                      profiles={profiles}
-                      currentProfileId={currentProfileId}
-                      onDeleteProfile={handleDeleteProfile}
-                      onDeleteAllProfiles={handleDeleteAllProfiles}
-                    />
-                  </ErrorBoundary>
-                )}
-                
-                <ErrorBoundary fallback={<div className="text-red-500">Ошибка настроек</div>}>
-                  <SettingsPanel 
-                    showDebugInfo={state.showDebugInfo}
-                    onToggleDebug={handleToggleDebug}
-                  />
-                </ErrorBoundary>
               </div>
-            </div>
+            )}
 
-            {/* Отладочная информация */}
-            <ErrorBoundary fallback={<div className="text-red-500">Ошибка отладочной информации</div>}>
-              <Suspense fallback={
-                <div className="animate-pulse bg-gray-200 h-32 rounded-lg mb-8" />
-              }>
-                <ConditionalDebugInfo 
-                  mode={mode}
-                  isScanning={isCurrentlyScanning}
-                  authenticated={state.authStatus?.authenticated || false}
-                  sessionId={currentSessionId}
-                  scanCount={state.scanCount}
-                  faceData={state.faceData}
-                  lastScanTime={state.lastScanTime}
-                  props={{
-                    mode,
-                    setMode,
-                    faceData: state.faceData,
-                    sessionId: currentSessionId,
-                    scanCount: state.scanCount,
-                    lastScanTime: state.lastScanTime,
-                    onFaceDetected,
-                    onSwitchMode,
-                    isMobile,
-                    isRegistering: isCurrentlyRegistering,
-                    setIsRegistering: undefined,
-                    className,
-                    authStatus: state.authStatus
-                  }}
-                />
-              </Suspense>
-            </ErrorBoundary>
-
-            {/* Футер */}
-            <ErrorBoundary fallback={<div className="text-red-500">Ошибка футера</div>}>
-              <Footer 
-                sessionId={currentSessionId}
-                onSwitchMode={onSwitchMode}
-              />
-            </ErrorBoundary>
+            {/* Индикатор качества */}
+            {isScanning && faceDetection.detected && (
+              <div className="absolute top-4 right-4 bg-black/70 backdrop-blur-md rounded-lg p-3">
+                <div className="space-y-2 text-xs text-white">
+                  <div className="flex items-center justify-between">
+                    <span>Освещение</span>
+                    <div className="flex items-center">
+                      <div className="w-16 h-2 bg-gray-600 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-green-500 transition-all"
+                          style={{ width: `${faceDetection.quality.lighting * 100}%` }}
+                        />
+                      </div>
+                      <span className="ml-2">{Math.round(faceDetection.quality.lighting * 100)}%</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>Стабильность</span>
+                    <div className="flex items-center">
+                      <div className="w-16 h-2 bg-gray-600 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-blue-500 transition-all"
+                          style={{ width: `${faceDetection.quality.stability * 100}%` }}
+                        />
+                      </div>
+                      <span className="ml-2">{Math.round(faceDetection.quality.stability * 100)}%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
-      </div>
-    </ErrorBoundary>
-  );
-});
 
-export default function FaceAuthOptimized(props: OptimizedFaceAuthProps) {
-  return (
-    <ErrorBoundary>
-      <FaceAuthProvider>
-        <FaceAuthContent {...props} />
-      </FaceAuthProvider>
-    </ErrorBoundary>
+        {/* Основная кнопка действия */}
+        <Button
+          onClick={handleActionClick}
+          disabled={!canRegister && mode === 'register'}
+          className={cn(
+            "w-full",
+            isScanning && "bg-red-500 hover:bg-red-600"
+          )}
+          size="lg"
+        >
+          {isScanning ? (
+            <>
+              {isRegistering ? (
+                <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+              ) : (
+                <Camera className="h-5 w-5 mr-2" />
+              )}
+              {getButtonText()}
+            </>
+          ) : (
+            <>
+              <Camera className="h-5 w-5 mr-2" />
+              {getButtonText()}
+            </>
+          )}
+        </Button>
+
+        {/* Инструкции */}
+        <div className="mt-6 space-y-3">
+          <h4 className="font-medium text-gray-900 flex items-center">
+            <Sparkles className="h-4 w-4 mr-2 text-yellow-500" />
+            Советы для лучшего результата:
+          </h4>
+          <ul className="space-y-2 text-sm text-gray-600">
+            <li className="flex items-start">
+              <CheckCircle className="h-4 w-4 mr-2 mt-0.5 text-green-500 flex-shrink-0" />
+              <span>Убедитесь, что ваше лицо хорошо освещено</span>
+            </li>
+            <li className="flex items-start">
+              <CheckCircle className="h-4 w-4 mr-2 mt-0.5 text-green-500 flex-shrink-0" />
+              <span>Смотрите прямо в камеру</span>
+            </li>
+            <li className="flex items-start">
+              <CheckCircle className="h-4 w-4 mr-2 mt-0.5 text-green-500 flex-shrink-0" />
+              <span>Держите лицо в центре кадра</span>
+            </li>
+            <li className="flex items-start">
+              <CheckCircle className="h-4 w-4 mr-2 mt-0.5 text-green-500 flex-shrink-0" />
+              <span>Не двигайтесь во время сканирования</span>
+            </li>
+          </ul>
+        </div>
+
+        {/* Информация о безопасности */}
+        <Alert className="mt-6">
+          <Lock className="h-4 w-4" />
+          <AlertTitle>Ваши данные защищены</AlertTitle>
+          <AlertDescription>
+            Face ID использует математическое представление вашего лица. 
+            Мы не храним фотографии, только зашифрованные биометрические данные.
+          </AlertDescription>
+        </Alert>
+
+        {/* Результат сканирования */}
+        {faceData && !isScanning && authStatus && (
+          <Alert className="mt-6" variant={authStatus.authenticated ? "default" : "destructive"}>
+            {authStatus.authenticated ? (
+              <>
+                <CheckCircle className="h-4 w-4" />
+                <AlertTitle>Успешно!</AlertTitle>
+                <AlertDescription>
+                  {mode === 'register' 
+                    ? 'Face ID успешно зарегистрирован. Теперь вы можете использовать его для входа.'
+                    : 'Вход выполнен успешно. Перенаправление...'
+                  }
+                </AlertDescription>
+              </>
+            ) : (
+              <>
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>Ошибка</AlertTitle>
+                <AlertDescription>
+                  {mode === 'register'
+                    ? 'Не удалось зарегистрировать Face ID. Попробуйте еще раз.'
+                    : 'Face ID не распознан. Убедитесь, что вы зарегистрировали Face ID.'
+                  }
+                </AlertDescription>
+              </>
+            )}
+          </Alert>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
-FaceAuthContent.displayName = 'FaceAuthContent';
-FaceIdStatusBanner.displayName = 'FaceIdStatusBanner';
-FaceIdProfileManager.displayName = 'FaceIdProfileManager';
+export default function FaceAuthOptimized(props: FaceAuthOptimizedProps) {
+  return (
+    <FaceAuthProvider>
+      <FaceAuthContent {...props} />
+    </FaceAuthProvider>
+  );
+}

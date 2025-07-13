@@ -99,7 +99,7 @@ export function FaceIdStatusIndicator({
               Face ID {isFaceIdRegistered ? 'активен' : 'не настроен'}
             </p>
             {isFaceIdRegistered && (
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-white/80">
                 {getLastUsedText()}
               </p>
             )}
@@ -119,14 +119,14 @@ export function FaceIdStatusIndicator({
               onClick={handleClick}
               className={cn(
                 "relative p-2 rounded-lg transition-colors",
-                "hover:bg-accent hover:text-accent-foreground",
+                "hover:bg-transparent/10 hover:text-white/80",
                 className
               )}
             >
               {isFaceIdRegistered ? (
                 <ShieldCheck className="h-5 w-5 text-green-600" />
               ) : (
-                <ShieldOff className="h-5 w-5 text-muted-foreground" />
+                <ShieldOff className="h-5 w-5 text-white/80" />
               )}
               
               {/* Индикатор активности */}
@@ -154,21 +154,21 @@ export function FaceIdStatusIndicator({
                 <>
                   <div className="text-xs space-y-1">
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Последний вход:</span>
+                      <span className="text-white/80">Последний вход:</span>
                       <span>{getLastUsedText()}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Использований:</span>
+                      <span className="text-white/80">Использований:</span>
                       <span>{faceIdStatus.profile.usageCount}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Профилей:</span>
+                      <span className="text-white/80">Профилей:</span>
                       <span>{profiles.length} из 3</span>
                     </div>
                   </div>
                   
                   <div className="pt-2 border-t">
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-white/80">
                       Нажмите для управления Face ID
                     </p>
                   </div>
@@ -176,7 +176,7 @@ export function FaceIdStatusIndicator({
               )}
               
               {!isFaceIdRegistered && (
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-white/80">
                   Настройте Face ID для быстрого и безопасного входа
                 </p>
               )}

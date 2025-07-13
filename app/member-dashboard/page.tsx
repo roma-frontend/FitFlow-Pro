@@ -25,6 +25,8 @@ import { useLoaderStore, type LoaderType } from "@/stores/loaderStore";
 import StaffLogoutLoader from "@/app/staff-login/components/StaffLogoutLoader";
 import BodyAnalysisTrigger from "@/components/BodyAnalysisTrigger";
 import BodyProgressTracker from "@/components/member/BodyProgressTracker";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { FaceIdManager } from "@/components/dashboard/FaceIdManager";
 
 interface Workout {
   id: string;
@@ -470,12 +472,7 @@ export default function MemberDashboard() {
             <NextWorkout workout={nextWorkout} isLoading={workoutsLoading} />
 
             {/* Face ID карточка */}
-            <FaceIdCard
-              status={faceIdStatus}
-              isLoading={faceIdLoading}
-              onTest={handleTestFaceId}
-              onDisable={handleDisableFaceId}
-            />
+            <FaceIdManager />
 
             {/* Мини прогресс */}
             <MiniProgress stats={stats} />
