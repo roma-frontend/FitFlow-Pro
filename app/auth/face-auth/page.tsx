@@ -1,4 +1,4 @@
-// app/auth/face-auth/page.tsx - Полностью интегрированная версия
+// app/auth/face-auth/FaceAuthContent.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -16,7 +16,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Eye, Shield, ArrowRight, Info, Users, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export default function FaceAuthPage() {
+export default function FaceAuthContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, refreshUser } = useAuth();
