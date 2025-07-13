@@ -10,7 +10,6 @@ import { Badge } from '@/components/ui/badge';
 import ShopView from '@/components/shop/ShopView';
 import PaymentView from '@/components/shop/Payment/PaymentView';
 import MainHeader from '@/components/MainHeader';
-// Убираем ShopWithAI - будем использовать единый AI Agent
 
 export default function ShopPage() {
   const { orderStep, setOrderStep } = useShopStore();

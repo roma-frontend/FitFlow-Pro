@@ -72,7 +72,7 @@ const ProductCard = memo(({ product }: ProductCardProps) => {
       </CardHeader>
 
       <CardContent className="p-4 pt-0 flex-1 flex flex-col">
-        <p className="text-sm text-gray-600 mb-4 line-clamp-3 flex-1">
+        <p className="text-sm text-gray-600 mb-4 line-clamp-3">
           {product.description}
         </p>
 
@@ -100,7 +100,7 @@ const ProductCard = memo(({ product }: ProductCardProps) => {
           Остаток: {product.inStock} шт.
         </div>
 
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mt-auto">
           <div 
             className="text-xl font-bold text-blue-600"
             aria-label={`Цена товара: ${formatProductPrice(product.price)}`}

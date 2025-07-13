@@ -8,7 +8,7 @@ import { SwitchModeType } from "@/types/face-auth.types";
 
 export default function FaceAuthPage() {
 
-  const { authStatus, loading, logout, refreshUser  } = useAuth();
+  const { refreshUser  } = useAuth();
 
   const handleSuccess = async (userData: any) => {
     console.log('Успешная аутентификация:', userData);

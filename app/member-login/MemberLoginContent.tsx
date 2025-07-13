@@ -21,7 +21,6 @@ import { useRouter } from "next/navigation";
 import SparklesButton from "./components/MemberLoginButton";
 import { Input } from "@/components/ui/input";
 import { GoogleLoginButton } from "@/components/auth/GoogleLoginButton";
-import { FaceIdQuickLogin } from "@/components/auth/FaceIdQuickLogin";
 
 export default function MemberLoginContent() {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
@@ -246,7 +245,19 @@ export default function MemberLoginContent() {
                   isStaff={false}
                   className="bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all text-white"
                 />
-                <FaceIdQuickLogin />
+                <button
+                  onClick={() => {
+                    const faceAuthUrl = redirectParam
+                      ? `/auth/face-auth?redirect=${encodeURIComponent(redirectParam)}`
+                      : '/auth/face-auth';
+                    router.push(faceAuthUrl);
+                  }}
+                  disabled={loading}
+                  className="w-full flex items-center justify-center p-3 bg-white/20 backdrop-blur-sm border border-white/30 rounded-2xl hover:bg-white/30 transition-all text-white disabled:opacity-50"
+                >
+                  <Eye className="h-5 w-5 mr-2" />
+                  <span className="font-medium">Face ID вход</span>
+                </button>
 
                 <button
                   onClick={() => {
