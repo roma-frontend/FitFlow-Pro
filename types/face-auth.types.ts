@@ -42,7 +42,7 @@ export interface FaceDetectionData {
   box: BoundingBox;
 }
 
-// 🔥 ИСПРАВЛЕНО: Добавлен setIsRegistering согласно паттерну React.Dispatch<React.SetStateAction<boolean>> 【62-4】
+// 🔥 ИСПРАВЛЕНО: Добавлен setIsRegistering согласно паттерну React.Dispatch<React.SetStateAction<boolean>>
 export interface OptimizedFaceAuthProps {
   mode: FaceAuthMode;
   onSuccess: (userData: any) => void;
@@ -54,7 +54,6 @@ export interface OptimizedFaceAuthProps {
   className?: string;
   isMobile?: boolean;
 }
-
 
 // Оригинальный FaceAuthProps остается без изменений для совместимости
 export interface FaceAuthProps {
@@ -79,7 +78,6 @@ export interface HeaderProps {
   mode: FaceAuthMode;
 }
 
-
 export interface ModeSwitchProps {
   mode: FaceAuthMode;
   setMode?: (mode: FaceAuthMode) => void;
@@ -103,6 +101,7 @@ export interface StatusPanelProps {
   authenticated: boolean;
   mode: FaceAuthMode;
 }
+
 export interface StatisticsPanelProps {
   scanCount: number;
   mode: FaceAuthMode;
@@ -128,6 +127,7 @@ export interface DebugPanelProps {
 
 export interface FooterProps {
   sessionId: string;
+  onSwitchMode?: (mode: SwitchModeType) => void;
 }
 
 export type VideoCameraViewMode = "mobile" | "desktop" | "modern";

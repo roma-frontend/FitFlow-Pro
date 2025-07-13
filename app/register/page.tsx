@@ -35,6 +35,7 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { RegistrationSuccess } from "@/components/auth/RegistrationSuccess";
 import { useRouter } from "next/navigation";
+import { FaceIdQuickLogin } from "@/components/auth/FaceIdQuickLogin";
 
 // Компонент загрузки для Suspense
 function PageLoader() {
@@ -390,7 +391,7 @@ function MemberLoginContent() {
               {/* Быстрые действия */}
               <div className="mt-6 space-y-3">
                 <button
-                  onClick={() => router.push("/auth/face-auth")}
+                  onClick={() => router.push("/setup-face-recognition")}
                   className="w-full flex items-center justify-center p-3 bg-white/20 backdrop-blur-sm border border-white/30 rounded-2xl hover:bg-white/30 transition-all text-white"
                 >
                   <Eye className="h-5 w-5 mr-2" />
@@ -750,23 +751,7 @@ function MemberLoginContent() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <button
-                    onClick={() => (router.push("/auth/face-auth"))}
-                    className="w-full flex items-center justify-between p-3 bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-300/30 rounded-lg hover:from-purple-500/20 hover:to-blue-500/20 transition-all text-left group"
-                  >
-                    <div className="flex items-center">
-                      <Shield className="h-4 w-4 text-purple-600 mr-3" />
-                      <div>
-                        <div className="font-medium text-blue-900">
-                          Face ID вход
-                        </div>
-                        <div className="text-xs text-blue-700">
-                          Войти за 2 секунды
-                        </div>
-                      </div>
-                    </div>
-                    <ArrowRight className="h-4 w-4 text-blue-600 group-hover:translate-x-1 transition-transform" />
-                  </button>
+                  <FaceIdQuickLogin />
 
                   <button
                     onClick={() => (router.push("/staff-login"))}

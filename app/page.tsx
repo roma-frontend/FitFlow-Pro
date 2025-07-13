@@ -93,7 +93,7 @@ export default function HomePage() {
                     variant="ghost"
                     size="sm"
                     onClick={hidePWABanner}
-                    className="text-white hover:bg-white/20 p-1 sm:p-2"
+                    className="text-white hover:bg-white/20 hover:text-white/80 p-1 sm:p-2"
                   >
                     <X className="h-3 w-3 sm:h-4 sm:w-4" />
                   </Button>
