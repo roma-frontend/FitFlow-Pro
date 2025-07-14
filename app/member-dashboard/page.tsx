@@ -53,7 +53,6 @@ interface FaceIdStatus {
 }
 
 export default function MemberDashboard() {
-  // ВСЕ ХУКИ ДОЛЖНЫ БЫТЬ В САМОМ НАЧАЛЕ, БЕЗ УСЛОВИЙ
   useWelcomeToast();
   const router = useRouter();
   const { user, loading, logout, refreshUser } = useAuth();
@@ -217,7 +216,7 @@ export default function MemberDashboard() {
       await new Promise(resolve => setTimeout(resolve, 100));
 
       // НЕ скрываем loader - он должен оставаться до конца
-      await logout(true); // skipRedirect = true
+      await logout();
 
     } catch (error) {
       console.error("❌ Ошибка выхода:", error);
@@ -308,7 +307,7 @@ export default function MemberDashboard() {
     };
 
     checkAuth();
-  }, [loading, user, refreshUser, isLoggingOut]); // Убрали loaderType из зависимостей
+  }, [loading, user, refreshUser, isLoggingOut]);
 
   // Загрузка данных
   useEffect(() => {
@@ -317,7 +316,7 @@ export default function MemberDashboard() {
       fetchWorkouts();
       checkFaceIdStatus();
     }
-  }, [authChecked, user, accessDenied, isLoggingOut]); // Убрали loaderType из зависимостей
+  }, [authChecked, user, accessDenied, isLoggingOut]);
 
   // Получаем следующую тренировку
   const upcomingWorkouts = workouts
