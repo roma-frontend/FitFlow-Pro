@@ -47,7 +47,7 @@ export const create = mutation({
 export const getByUserId = query({
   args: {
     userId: v.string(),
-    userType: v.optional(v.union(v.literal("user"), v.literal("trainer"))) // Make userType optional
+    userType: v.optional(v.union(v.literal("user"), v.literal("trainer")))
   },
   handler: async (ctx, args) => {
     let query = ctx.db.query("faceProfiles")

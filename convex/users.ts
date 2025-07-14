@@ -1085,7 +1085,7 @@ export const getUserByEmail = query({
 export const updateAvatar = mutation({
   args: {
     userId: v.optional(v.string()),
-    email: v.string(),
+    email: v.optional(v.string()),
     avatarUrl: v.string(),
   },
   handler: async (ctx, args) => {
@@ -1095,34 +1095,58 @@ export const updateAvatar = mutation({
       avatarUrl: args.avatarUrl.substring(0, 50) + "..."
     });
 
-    let user;
+    if (!args.userId && !args.email) {
+      throw new Error("Необходимо указать userId или email");
+    }
+
+    let user = null;
     
-    // Поиск пользователя
+    // 1. Try by userId first if provided
     if (args.userId) {
       try {
         user = await ctx.db.get(args.userId as any);
+        if (!user) {
+          console.log("⚠️ Пользователь не найден по ID:", args.userId);
+        }
       } catch (error) {
-        console.log("❌ Не удалось найти пользователя по ID");
+        console.log("⚠️ Ошибка поиска по ID:", error);
       }
     }
     
-    if (!user) {
+    // 2. If still not found and email provided, search by email
+    if (!user && args.email) {
+      // Search in users table
       user = await ctx.db
         .query("users")
-        .withIndex("by_email", (q) => q.eq("email", args.email))
+        .filter((q) => q.eq(q.field("email"), args.email))
         .first();
+      
+      // If not found in users, search in trainers
+      if (!user) {
+        user = await ctx.db
+          .query("trainers")
+          .filter((q) => q.eq(q.field("email"), args.email))
+          .first();
+      }
+      
+      if (!user) {
+        console.log("⚠️ Пользователь не найден по email:", args.email);
+      }
     }
 
     if (!user) {
-      throw new Error("Пользователь не найден");
+      throw new Error(`Пользователь не найден ${args.userId ? `по ID: ${args.userId}` : ''}${args.email ? `по email: ${args.email}` : ''}`);
     }
 
-    // Обновляем оба поля для совместимости
-    await ctx.db.patch(user._id, {
+    // Prepare update data - update both avatar and photoUrl for compatibility
+    const updateData = {
       avatar: args.avatarUrl,
       photoUrl: args.avatarUrl,
       updatedAt: Date.now(),
-    });
+    };
+
+    // Update the user
+    await ctx.db.patch(user._id, updateData);
 
     console.log("✅ Аватар обновлен для пользователя:", user._id);
 
