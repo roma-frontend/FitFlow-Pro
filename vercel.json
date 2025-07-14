@@ -1,4 +1,10 @@
-"headers": [
+{
+  "functions": {
+    "app/api/**/*.ts": {
+      "maxDuration": 30
+    }
+  },
+  "headers": [
     {
       "source": "/api/admin/(.*)",
       "headers": [
@@ -17,6 +23,18 @@
         {
           "key": "Surrogate-Control",
           "value": "no-store"
+        },
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, POST, PUT, DELETE, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type, Authorization"
         }
       ]
     },
