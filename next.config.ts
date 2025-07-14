@@ -233,7 +233,7 @@ const nextConfig: NextConfig = {
           {
             key: 'Access-Control-Allow-Origin',
             value: process.env.NODE_ENV === 'production'
-              ? 'https://yourdomain.com'
+              ? 'https://fit-flow-pro.vercel.app/'
               : '*',
           },
           {

@@ -1,10 +1,4 @@
-{
-  "functions": {
-    "app/api/admin/users/route.ts": {
-      "maxDuration": 30
-    }
-  },
-  "headers": [
+"headers": [
     {
       "source": "/api/admin/(.*)",
       "headers": [
