@@ -1,6 +1,7 @@
-// app/api/upload/route.ts - ИСПРАВЛЕННАЯ ВЕРСИЯ
+// app/api/upload/route.ts - ИСПРАВЛЕННАЯ ВЕРСИЯ с детальным логированием
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/simple-auth';
+import { jwtVerify } from 'jose';
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,10 +11,17 @@ export async function POST(request: NextRequest) {
     const sessionId = request.cookies.get('session_id')?.value;
     const authToken = request.cookies.get('auth_token')?.value;
     const sessionIdDebug = request.cookies.get('session_id_debug')?.value;
+    const userRole = request.cookies.get('user_role')?.value;
+
+    console.log('🍪 Куки:', {
+      hasSessionId: !!sessionId,
+      hasAuthToken: !!authToken,
+      hasSessionIdDebug: !!sessionIdDebug,
+      userRole
+    });
 
     const jwtToken = sessionId || authToken || sessionIdDebug;
 
-    // ✅ ИСПРАВЛЕНИЕ: Возвращаем NextResponse вместо null
     if (!jwtToken) {
       console.log('❌ JWT токен не найден в куки');
       return NextResponse.json({
@@ -22,15 +30,44 @@ export async function POST(request: NextRequest) {
       }, { status: 401 });
     }
 
-    // ✅ ИСПРАВЛЕНИЕ: Детальная проверка сессии
-    console.log('🔍 Проверяем сессию...');
+    // ✅ НОВОЕ: Детальная проверка JWT токена
+    console.log('🔍 Проверяем JWT токен напрямую...');
+    try {
+      const secret = new TextEncoder().encode(
+        process.env.JWT_SECRET || 'fallback-secret-key-change-in-production'
+      );
+      
+      const { payload } = await jwtVerify(jwtToken, secret);
+      console.log('✅ JWT payload:', {
+        userId: payload.userId,
+        userRole: payload.userRole,
+        userEmail: payload.userEmail,
+        hasSessionData: !!payload.sessionData
+      });
+    } catch (jwtError) {
+      console.error('❌ JWT проверка провалилась:', jwtError);
+    }
+
+    // Проверяем сессию
+    console.log('🔍 Проверяем сессию через getSession...');
     const sessionData = await getSession(jwtToken);
 
     if (!sessionData) {
       console.log('❌ Upload: JWT токен недействителен');
+      console.log('🔍 Детали проверки:', {
+        tokenLength: jwtToken.length,
+        tokenStart: jwtToken.substring(0, 20) + '...',
+        JWT_SECRET: process.env.JWT_SECRET ? 'установлен' : 'НЕ УСТАНОВЛЕН'
+      });
+      
       return NextResponse.json({
         error: 'Сессия недействительна',
-        details: 'Токен не прошел проверку'
+        details: 'Токен не прошел проверку',
+        debug: {
+          hasJwtSecret: !!process.env.JWT_SECRET,
+          tokenType: sessionId ? 'session_id' : authToken ? 'auth_token' : 'session_id_debug',
+          userRole: userRole
+        }
       }, { status: 401 });
     }
 
@@ -40,7 +77,7 @@ export async function POST(request: NextRequest) {
       email: sessionData.user.email
     });
 
-    // ✅ ИСПРАВЛЕНИЕ: Детальная проверка FormData
+    // Парсим FormData
     console.log('📋 Парсим FormData...');
     const formData = await request.formData();
     const type = formData.get('type') as string || 'profile';
@@ -100,7 +137,7 @@ export async function POST(request: NextRequest) {
 
     console.log('☁️ Загружаем в Cloudinary...');
 
-    // ✅ ИСПРАВЛЕНИЕ: Проверяем переменные окружения
+    // Проверяем переменные окружения
     const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'dgbtipi5o';
     if (!cloudName) {
       console.log('❌ Upload: CLOUDINARY_CLOUD_NAME не настроен');

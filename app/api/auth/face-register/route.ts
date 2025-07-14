@@ -1,8 +1,8 @@
-// app/api/auth/face-register/route.ts - Полноценная регистрация Face ID
+// app/api/auth/face-register/route.ts - ИСПРАВЛЕННАЯ ВЕРСИЯ с детальным логированием
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/simple-auth';
 import { faceIdStorage } from '@/lib/face-id-storage';
-import jwt from 'jsonwebtoken';
+import { jwtVerify } from 'jose';
 
 interface FaceRegisterRequest {
   descriptor: number[];
@@ -66,13 +66,11 @@ export async function POST(request: NextRequest) {
     }
 
     // ✅ Проверяем JWT_SECRET
-    if (!process.env.JWT_SECRET) {
-      console.error('❌ JWT_SECRET не установлен!');
-      return NextResponse.json({
-        success: false,
-        message: 'Ошибка конфигурации сервера'
-      }, { status: 500 });
-    }
+    const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key-change-in-production';
+    console.log('🔐 JWT_SECRET статус:', {
+      isSet: !!process.env.JWT_SECRET,
+      usingFallback: !process.env.JWT_SECRET
+    });
 
     // ✅ Получаем текущего пользователя
     let currentUser = null;
@@ -81,29 +79,74 @@ export async function POST(request: NextRequest) {
     // Получаем токен из cookies или параметра
     const authToken = request.cookies.get('auth_token')?.value;
     const sessionId = request.cookies.get('session_id')?.value;
-    const token = authToken || sessionId || sessionToken;
+    const sessionIdDebug = request.cookies.get('session_id_debug')?.value;
+    const userRole = request.cookies.get('user_role')?.value;
+    const token = authToken || sessionId || sessionToken || sessionIdDebug;
     
     console.log('🍪 Проверяем авторизацию:', {
       hasAuthToken: !!authToken,
       hasSessionId: !!sessionId,
-      hasSessionToken: !!sessionToken
+      hasSessionToken: !!sessionToken,
+      hasSessionIdDebug: !!sessionIdDebug,
+      userRole,
+      usingToken: token ? token.substring(0, 20) + '...' : 'none'
     });
     
     if (!token) {
       return NextResponse.json({
         success: false,
-        message: 'Необходимо войти в систему для регистрации Face ID'
+        message: 'Необходимо войти в систему для регистрации Face ID',
+        debug: {
+          cookies: request.cookies.getAll().map(c => c.name)
+        }
       }, { status: 401 });
     }
 
+    // ✅ НОВОЕ: Детальная проверка JWT токена
+    console.log('🔍 Проверяем JWT токен напрямую...');
+    try {
+      const secret = new TextEncoder().encode(JWT_SECRET);
+      
+      const { payload } = await jwtVerify(token, secret);
+      console.log('✅ JWT payload:', {
+        userId: payload.userId,
+        userRole: payload.userRole,
+        userEmail: payload.userEmail,
+        hasSessionData: !!payload.sessionData,
+        exp: payload.exp,
+        iat: payload.iat
+      });
+    } catch (jwtError) {
+      console.error('❌ JWT проверка провалилась:', jwtError);
+      console.log('🔍 Детали ошибки:', {
+        errorName: jwtError instanceof Error ? jwtError.name : 'Unknown',
+        errorMessage: jwtError instanceof Error ? jwtError.message : String(jwtError),
+        tokenLength: token.length,
+        tokenStart: token.substring(0, 20) + '...'
+      });
+    }
+
     // Проверяем сессию
+    console.log('🔍 Проверяем сессию через getSession...');
     userSession = await getSession(token);
     
     if (!userSession || !userSession.user) {
       console.log('❌ Сессия не найдена или недействительна');
+      console.log('🔍 Детали проверки сессии:', {
+        hasSession: !!userSession,
+        hasUser: userSession ? !!userSession.user : false,
+        tokenType: authToken ? 'auth_token' : sessionId ? 'session_id' : 'session_token'
+      });
+      
       return NextResponse.json({
         success: false,
-        message: 'Сессия истекла. Пожалуйста, войдите заново.'
+        message: 'Сессия истекла. Пожалуйста, войдите заново.',
+        debug: {
+          hasJwtSecret: !!process.env.JWT_SECRET,
+          tokenType: authToken ? 'auth_token' : sessionId ? 'session_id' : 'session_token',
+          userRole: userRole,
+          tokenLength: token.length
+        }
       }, { status: 401 });
     }
 
@@ -111,7 +154,8 @@ export async function POST(request: NextRequest) {
     console.log('👤 Пользователь найден:', {
       id: currentUser.id,
       email: currentUser.email,
-      name: currentUser.name
+      name: currentUser.name,
+      role: currentUser.role
     });
 
     // ✅ Проверяем, есть ли уже активные Face ID профили у пользователя
@@ -193,11 +237,13 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Неизвестная ошибка';
     console.error('❌ Face Register API: ошибка:', error);
+    console.log('🔍 Stack trace:', error instanceof Error ? error.stack : 'No stack trace');
     
     return NextResponse.json({
       success: false,
       message: 'Внутренняя ошибка сервера при регистрации Face ID',
-      error: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+      error: process.env.NODE_ENV === 'development' ? errorMessage : undefined,
+      stack: process.env.NODE_ENV === 'development' && error instanceof Error ? error.stack : undefined
     }, { status: 500 });
   }
 }

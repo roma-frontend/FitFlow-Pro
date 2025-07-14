@@ -1,4 +1,4 @@
-// lib/simple-auth.ts - ИСПРАВЛЕННАЯ ВЕРСИЯ ДЛЯ VERCEL
+// lib/simple-auth.ts - ИСПРАВЛЕННАЯ ВЕРСИЯ ДЛЯ ВСЕХ РОЛЕЙ
 import { UserRole } from '@/lib/permissions';
 
 export interface User {
@@ -28,12 +28,18 @@ export interface Session {
   rating: number;
 }
 
-// ✅ ИСПРАВЛЕНИЕ ДЛЯ VERCEL: Используем JWT токены вместо in-memory сессий
+// ✅ ИСПРАВЛЕНИЕ: Используем JWT токены с правильным SECRET
 import { SignJWT, jwtVerify } from 'jose';
 
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'fallback-secret-key-change-in-production'
-);
+// ✅ ИСПРАВЛЕНИЕ: Функция для получения JWT_SECRET с фоллбеком
+const getJWTSecret = () => {
+  const secret = process.env.JWT_SECRET || 'fallback-secret-key-change-in-production';
+  console.log('🔐 JWT Secret статус:', {
+    hasEnvSecret: !!process.env.JWT_SECRET,
+    usingFallback: !process.env.JWT_SECRET
+  });
+  return new TextEncoder().encode(secret);
+};
 
 // ✅ Создание JWT токена вместо сессии в памяти
 export const createSession = async (user: User): Promise<string> => {
@@ -60,13 +66,13 @@ export const createSession = async (user: User): Promise<string> => {
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime('7d')
-    .sign(JWT_SECRET);
+    .sign(getJWTSecret());
 
   console.log(`✅ Session: создан JWT токен для ${user.email} (${user.role})`);
   return token;
 };
 
-// ✅ Получение сессии из JWT токена
+// ✅ Получение сессии из JWT токена - ИСПРАВЛЕННАЯ ВЕРСИЯ
 export const getSession = async (sessionToken: string): Promise<Session | null> => {
   try {
     console.log(`🔍 getSession: проверка JWT токена...`);
@@ -76,8 +82,18 @@ export const getSession = async (sessionToken: string): Promise<Session | null> 
       return null;
     }
 
+    // Используем функцию для получения секрета
+    const secret = getJWTSecret();
+
     // Верифицируем JWT токен
-    const { payload } = await jwtVerify(sessionToken, JWT_SECRET);
+    const { payload } = await jwtVerify(sessionToken, secret);
+    
+    console.log('🔍 getSession: payload структура:', {
+      hasSessionData: !!payload.sessionData,
+      hasUserId: !!payload.userId,
+      hasUserRole: !!payload.userRole,
+      keys: Object.keys(payload)
+    });
     
     if (!payload.sessionData) {
       console.log('❌ getSession: некорректная структура токена');
@@ -96,10 +112,23 @@ export const getSession = async (sessionToken: string): Promise<Session | null> 
     session.lastAccessed = new Date();
 
     console.log(`✅ getSession: сессия найдена для ${session.user.email} (${session.user.role})`);
+    console.log('🔍 getSession: детали пользователя:', {
+      id: session.user.id,
+      role: session.user.role,
+      email: session.user.email,
+      name: session.user.name
+    });
+    
     return session;
 
   } catch (error) {
     console.error('❌ getSession: ошибка верификации JWT:', error);
+    console.log('🔍 getSession: детали ошибки:', {
+      name: error instanceof Error ? error.name : 'Unknown',
+      message: error instanceof Error ? error.message : String(error),
+      tokenLength: sessionToken.length,
+      tokenPreview: sessionToken.substring(0, 20) + '...'
+    });
     return null;
   }
 };
@@ -129,7 +158,7 @@ export const updateSession = async (sessionToken: string, updatedSession: Sessio
       .setProtectedHeader({ alg: 'HS256' })
       .setIssuedAt()
       .setExpirationTime('7d')
-      .sign(JWT_SECRET);
+      .sign(getJWTSecret());
 
     console.log(`✅ updateSession: JWT токен обновлен для ${updatedSession.user.email}`);
     return newToken;
