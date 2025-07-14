@@ -241,7 +241,7 @@ export default function ProfilePageClient() {
                 </div>
               </div>
 
-              <Button className="mb-4" onClick={() => setIsEditing(!isEditing)}>
+              <Button className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 mb-4" onClick={() => setIsEditing(!isEditing)}>
                 <Edit2 className="h-4 w-4 mr-2" />
                 Редактировать
               </Button>

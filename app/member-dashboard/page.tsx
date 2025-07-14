@@ -17,16 +17,13 @@ import QuickActions from "@/components/member/QuickActions";
 import MemberProgress from "@/components/member/MemberProgress";
 import UpcomingWorkouts from "@/components/member/UpcomingWorkouts";
 import NextWorkout from "@/components/member/NextWorkout";
-import FaceIdCard from "@/components/member/FaceIdCard";
 import MiniProgress from "@/components/member/MiniProgress";
 import SidebarCards from "@/components/member/SidebarCards";
 import TipsSection from "@/components/member/TipsSection";
 import { useLoaderStore, type LoaderType } from "@/stores/loaderStore";
 import StaffLogoutLoader from "@/app/staff-login/components/StaffLogoutLoader";
-import BodyAnalysisTrigger from "@/components/BodyAnalysisTrigger";
-import BodyProgressTracker from "@/components/member/BodyProgressTracker";
-import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { FaceIdManager } from "@/components/dashboard/FaceIdManager";
+import FixJWTButton from "@/components/FixJWTButton";
 
 interface Workout {
   id: string;
@@ -493,6 +490,7 @@ export default function MemberDashboard() {
         {/* Советы */}
         <TipsSection />
       </div>
+      {process.env.NODE_ENV === 'development' && <FixJWTButton />}
     </div>
   );
 }

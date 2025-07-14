@@ -67,7 +67,7 @@ export function UserProfileDropdown({
         >
           <Avatar className="h-8 w-8 ring-2 ring-white/20 hover:ring-white/40 transition-all">
             <AvatarImage src={user?.avatar} />
-            <AvatarFallback className="bg-gradient-to-br from-blue-500 to-green-500 text-white text-sm font-bold">
+            <AvatarFallback className="bg-gradient-to-br from-blue-500 to-indigo-500 text-white text-sm font-bold">
               {isLoggingOut ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
@@ -82,7 +82,7 @@ export function UserProfileDropdown({
         <div className="flex items-center space-x-3 p-3 rounded-lg bg-gradient-to-r from-blue-50 to-green-50">
           <Avatar className="h-12 w-12 ring-2 ring-white">
             <AvatarImage src={user?.avatar} />
-            <AvatarFallback className="bg-gradient-to-br from-blue-500 to-green-500 text-white font-bold">
+            <AvatarFallback className="bg-gradient-to-br from-blue-500 to-indigo-500 text-white font-bold">
               {isLoggingOut ? (
                 <Loader2 className="h-6 w-6 animate-spin" />
               ) : (

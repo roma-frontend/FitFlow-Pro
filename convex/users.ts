@@ -1082,6 +1082,59 @@ export const getUserByEmail = query({
   },
 });
 
+export const updateAvatar = mutation({
+  args: {
+    userId: v.optional(v.string()),
+    email: v.string(),
+    avatarUrl: v.string(),
+  },
+  handler: async (ctx, args) => {
+    console.log("🖼️ updateAvatar mutation called:", {
+      userId: args.userId,
+      email: args.email,
+      avatarUrl: args.avatarUrl.substring(0, 50) + "..."
+    });
+
+    let user;
+    
+    // Поиск пользователя
+    if (args.userId) {
+      try {
+        user = await ctx.db.get(args.userId as any);
+      } catch (error) {
+        console.log("❌ Не удалось найти пользователя по ID");
+      }
+    }
+    
+    if (!user) {
+      user = await ctx.db
+        .query("users")
+        .withIndex("by_email", (q) => q.eq("email", args.email))
+        .first();
+    }
+
+    if (!user) {
+      throw new Error("Пользователь не найден");
+    }
+
+    // Обновляем оба поля для совместимости
+    await ctx.db.patch(user._id, {
+      avatar: args.avatarUrl,
+      photoUrl: args.avatarUrl,
+      updatedAt: Date.now(),
+    });
+
+    console.log("✅ Аватар обновлен для пользователя:", user._id);
+
+    return { 
+      success: true, 
+      userId: user._id,
+      avatarUrl: args.avatarUrl 
+    };
+  },
+});
+
+
 export const getUserById = query({
   args: { userId: v.string() }, // ✅ Изменяем на userId
   handler: async (ctx, args) => {

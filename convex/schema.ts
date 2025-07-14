@@ -513,8 +513,9 @@ export default defineSchema({
   ,
 
   faceProfiles: defineTable({
-    userId: v.id("users"),
-    faceDescriptor: v.array(v.number()), // Дескриптор лица
+    userId: v.union(v.id("users"), v.id("trainers")),
+    userType: v.union(v.literal("user"), v.literal("trainer")),
+    faceDescriptor: v.array(v.number()),
     confidence: v.number(),
     registeredAt: v.number(),
     lastUsed: v.optional(v.number()),

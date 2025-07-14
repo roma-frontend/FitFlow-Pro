@@ -31,14 +31,19 @@ export interface Session {
 // ✅ ИСПРАВЛЕНИЕ: Используем JWT токены с правильным SECRET
 import { SignJWT, jwtVerify } from 'jose';
 
+// ✅ ВАЖНО: Убедитесь, что JWT_SECRET одинаковый везде
+const JWT_SECRET_STRING = process.env.JWT_SECRET || 'fallback-secret-key-change-in-production';
+
 // ✅ ИСПРАВЛЕНИЕ: Функция для получения JWT_SECRET с фоллбеком
 const getJWTSecret = () => {
-  const secret = process.env.JWT_SECRET || 'fallback-secret-key-change-in-production';
-  console.log('🔐 JWT Secret статус:', {
-    hasEnvSecret: !!process.env.JWT_SECRET,
-    usingFallback: !process.env.JWT_SECRET
-  });
-  return new TextEncoder().encode(secret);
+  // Логируем только в development и только иногда
+  if (process.env.NODE_ENV === 'development' && Math.random() < 0.1) {
+    console.log('🔐 JWT Secret статус:', {
+      hasEnvSecret: !!process.env.JWT_SECRET,
+      usingFallback: !process.env.JWT_SECRET
+    });
+  }
+  return new TextEncoder().encode(JWT_SECRET_STRING);
 };
 
 // ✅ Создание JWT токена вместо сессии в памяти

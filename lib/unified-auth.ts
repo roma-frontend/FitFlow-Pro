@@ -3,6 +3,7 @@ import { ConvexHttpClient } from "convex/browser";
 import { authenticate, createSession, getSession, logout as simpleLogout, User } from '@/lib/simple-auth';
 import { verifyToken, createToken } from '@/lib/jwt-auth';
 import type { UserRole } from '@/lib/permissions';
+import { Id } from "@/convex/_generated/dataModel";
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
@@ -22,14 +23,19 @@ interface AuthAttempt {
 }
 
 interface FaceProfile {
-    _id: string;
-    userId: string;
-    descriptor: number[];
-    confidence: number;
-    isActive: boolean;
-    registeredAt: number;
-    lastUsed?: number;
-    metadata?: any;
+  _id: Id<"faceProfiles">;
+  userId: Id<"users"> | Id<"trainers">;
+  userType: "user" | "trainer";
+  faceDescriptor: number[];
+  confidence: number;
+  registeredAt: number;
+  lastUsed?: number;
+  isActive: boolean;
+  metadata?: {
+    registrationMethod: string;
+    userAgent?: string;
+    deviceInfo?: string;
+  };
 }
 
 export interface AuthUser {
