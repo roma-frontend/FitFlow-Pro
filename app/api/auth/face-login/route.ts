@@ -121,6 +121,7 @@ export async function POST(request: NextRequest) {
       'trainer': '/trainer-dashboard',
       'client': '/member-dashboard',
       'member': '/member-dashboard',
+      'staff': '/staff-dashboard'
     };
 
     const dashboardUrl = dashboardUrls[profile.userRole] || '/member-dashboard';

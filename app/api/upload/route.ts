@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
       const secret = new TextEncoder().encode(
         process.env.JWT_SECRET || 'fallback-secret-key-change-in-production'
       );
-      
+
       const { payload } = await jwtVerify(jwtToken, secret);
       console.log('✅ JWT payload:', {
         userId: payload.userId,
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
         tokenStart: jwtToken.substring(0, 20) + '...',
         JWT_SECRET: process.env.JWT_SECRET ? 'установлен' : 'НЕ УСТАНОВЛЕН'
       });
-      
+
       return NextResponse.json({
         error: 'Сессия недействительна',
         details: 'Токен не прошел проверку',
@@ -95,15 +95,18 @@ export async function POST(request: NextRequest) {
       console.log('✅ Upload: загрузка для анализа тела - разрешено для всех авторизованных');
     } else {
       // Для других типов проверяем права
-      if (!['super-admin', 'admin', 'manager', 'trainer'].includes(sessionData.user.role)) {
-        // Обычные пользователи могут загружать только свои аватары
-        if (type !== 'profile' && type !== 'avatar') {
-          console.log('❌ Upload: недостаточно прав для типа:', type);
-          return NextResponse.json({
-            error: 'Недостаточно прав для данного типа загрузки',
-            details: `Роль ${sessionData.user.role} не может загружать тип ${type}`
-          }, { status: 403 });
-        }
+      const allowedRoles = ['super-admin', 'admin', 'manager', 'trainer'];
+
+      // Для типов profile и avatar разрешаем всем авторизованным пользователям (включая member)
+      if (type === 'profile' || type === 'avatar') {
+        console.log('✅ Upload: загрузка аватара/профиля - разрешено для пользователя:', sessionData.user.role);
+      } else if (!allowedRoles.includes(sessionData.user.role)) {
+        // Для других типов требуются специальные права
+        console.log('❌ Upload: недостаточно прав для типа:', type);
+        return NextResponse.json({
+          error: 'Недостаточно прав для данного типа загрузки',
+          details: `Роль ${sessionData.user.role} не может загружать тип ${type}`
+        }, { status: 403 });
       }
     }
 

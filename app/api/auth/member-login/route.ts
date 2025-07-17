@@ -1,4 +1,4 @@
-// app/api/auth/member-login/route.ts (исправленная версия с redirect)
+// app/api/auth/member-login/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { ConvexHttpClient } from "convex/browser";
 import bcrypt from 'bcryptjs';

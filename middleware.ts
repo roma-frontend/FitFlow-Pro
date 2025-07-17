@@ -152,7 +152,8 @@ const ROLE_CONFIG = {
       /^\/trainer\/(.*)?$/,  // Доступ к профилям тренеров
       /^\/trainers(\/.*)?$/,
       /^\/qr-code(\/.*)?$/,
-      /^\/setup-face-recognition(\/.*)?$/
+      /^\/setup-face-recognition(\/.*)?$/,
+      /^\/auth\/face-(.*)?$/
     ],
     'guest': [
       // Гости имеют очень ограниченный доступ - только к публичным страницам

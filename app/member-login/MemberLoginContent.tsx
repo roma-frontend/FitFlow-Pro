@@ -48,32 +48,6 @@ export default function MemberLoginContent() {
     redirectParam,
   } = useAuthForm();
 
-  useEffect(() => {
-    const checkGoogleOAuthReturn = () => {
-      const googleLoginInProgress = sessionStorage.getItem('google_login_in_progress');
-      const urlParams = new URLSearchParams(window.location.search);
-      const code = urlParams.get('code');
-      const state = urlParams.get('state');
-      
-      // НОВОЕ: Проверяем и показываем loader сразу
-      if (googleLoginInProgress === 'true' && code && state) {
-        console.log('🔄 Обнаружен возврат после Google OAuth на member-login - показываем loader');
-        
-        const isStaff = sessionStorage.getItem('google_login_is_staff') === 'true';
-        const savedRedirect = sessionStorage.getItem('google_login_target_url') || 
-                             sessionStorage.getItem('google_login_redirect');
-        
-        const { showLoader } = useLoaderStore.getState();
-        showLoader("login", {
-          userRole: isStaff ? "admin" : "member",
-          userName: "Завершение авторизации...",
-          dashboardUrl: savedRedirect || "/member-dashboard"
-        });
-      }
-    };
-
-    checkGoogleOAuthReturn();
-  }, []);
 
   // ✅ ЕДИНАЯ ЛОГИКА: показываем полноэкранный loader только когда showFullScreenLoader = true
   if ((loaderType === "login" && loaderProps) || showFullScreenLoader) {

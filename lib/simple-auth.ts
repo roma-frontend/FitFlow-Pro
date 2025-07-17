@@ -34,6 +34,12 @@ import { SignJWT, jwtVerify } from 'jose';
 // ✅ ВАЖНО: Убедитесь, что JWT_SECRET одинаковый везде
 const JWT_SECRET_STRING = process.env.JWT_SECRET || 'fallback-secret-key-change-in-production';
 
+console.log('🔐 JWT_SECRET статус:', {
+  isSet: !!process.env.JWT_SECRET,
+  usingFallback: !process.env.JWT_SECRET,
+  envMode: process.env.NODE_ENV
+});
+
 // ✅ ИСПРАВЛЕНИЕ: Функция для получения JWT_SECRET с фоллбеком
 const getJWTSecret = () => {
   // Логируем только в development и только иногда
@@ -50,7 +56,7 @@ const getJWTSecret = () => {
 export const createSession = async (user: User): Promise<string> => {
   const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   const now = new Date();
-  
+
   const session: Session = {
     id: sessionId,
     email: user.email,
@@ -62,7 +68,7 @@ export const createSession = async (user: User): Promise<string> => {
   };
 
   // Создаем JWT токен с данными сессии
-  const token = await new SignJWT({ 
+  const token = await new SignJWT({
     sessionData: session,
     userId: user.id,
     userRole: user.role,
@@ -100,31 +106,52 @@ export const getSession = async (sessionToken: string): Promise<Session | null> 
       keys: Object.keys(payload)
     });
     
-    if (!payload.sessionData) {
-      console.log('❌ getSession: некорректная структура токена');
-      return null;
+    // Проверяем наличие sessionData (новый формат)
+    if (payload.sessionData) {
+      const session = payload.sessionData as Session;
+      
+      // Проверяем срок действия
+      if (new Date(session.expiresAt) < new Date()) {
+        console.log('⏰ getSession: сессия истекла');
+        return null;
+      }
+
+      // Обновляем время последнего доступа
+      session.lastAccessed = new Date();
+
+      console.log(`✅ getSession: сессия найдена для ${session.user.email} (${session.user.role})`);
+      return session;
+    }
+    
+    // Поддержка старого формата токена (для обратной совместимости)
+    if (payload.userId && payload.email && payload.role) {
+      console.log('🔄 getSession: обнаружен токен старого формата, конвертируем...');
+      
+      // Создаем сессию из старого формата
+      const now = new Date();
+      const session: Session = {
+        id: `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        email: payload.email as string,
+        user: {
+          id: payload.userId as string,
+          email: payload.email as string,
+          role: payload.userRole as UserRole || payload.role as UserRole,
+          name: payload.userName as string || payload.name as string || payload.email as string,
+          createdAt: now,
+          updatedAt: now
+        },
+        createdAt: now,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 дней
+        lastAccessed: now,
+        rating: 0
+      };
+      
+      console.log(`✅ getSession: сессия создана из старого формата для ${session.user.email} (${session.user.role})`);
+      return session;
     }
 
-    const session = payload.sessionData as Session;
-    
-    // Проверяем срок действия
-    if (new Date(session.expiresAt) < new Date()) {
-      console.log('⏰ getSession: сессия истекла');
-      return null;
-    }
-
-    // Обновляем время последнего доступа (но не пересоздаем токен каждый раз)
-    session.lastAccessed = new Date();
-
-    console.log(`✅ getSession: сессия найдена для ${session.user.email} (${session.user.role})`);
-    console.log('🔍 getSession: детали пользователя:', {
-      id: session.user.id,
-      role: session.user.role,
-      email: session.user.email,
-      name: session.user.name
-    });
-    
-    return session;
+    console.log('❌ getSession: некорректная структура токена');
+    return null;
 
   } catch (error) {
     console.error('❌ getSession: ошибка верификации JWT:', error);
@@ -142,7 +169,7 @@ export const getSession = async (sessionToken: string): Promise<Session | null> 
 export const updateSession = async (sessionToken: string, updatedSession: Session): Promise<string | null> => {
   try {
     console.log(`🔄 updateSession: обновление JWT токена...`);
-    
+
     // Проверяем существующий токен
     const currentSession = await getSession(sessionToken);
     if (!currentSession) {
@@ -151,7 +178,7 @@ export const updateSession = async (sessionToken: string, updatedSession: Sessio
     }
 
     // Создаем новый токен с обновленными данными
-    const newToken = await new SignJWT({ 
+    const newToken = await new SignJWT({
       sessionData: {
         ...updatedSession,
         lastAccessed: new Date()
@@ -178,7 +205,7 @@ export const updateSession = async (sessionToken: string, updatedSession: Sessio
 export const updateSessionUser = async (sessionToken: string, updatedUser: Partial<User>): Promise<string | null> => {
   try {
     console.log(`🔄 updateSessionUser: обновление пользователя в JWT токене...`);
-    
+
     const session = await getSession(sessionToken);
     if (!session) {
       console.log(`❌ updateSessionUser: сессия не найдена`);
@@ -207,7 +234,7 @@ export const updateSessionUser = async (sessionToken: string, updatedUser: Parti
 // ✅ Аутентификация пользователя (возвращает JWT токен)
 export const authenticate = async (email: string, password: string): Promise<{ session: Session; token: string } | null> => {
   console.log(`🔐 Auth: попытка входа для ${email}`);
-  
+
   // Специальная проверка для супер-админа
   if (email === 'romangulanyan@gmail.com' && password === 'Hovik-1970') {
     const superAdminUser: User = {
@@ -221,16 +248,16 @@ export const authenticate = async (email: string, password: string): Promise<{ s
       createdAt: new Date('2024-01-01'),
       updatedAt: new Date()
     };
-    
+
     const token = await createSession(superAdminUser);
     const session = await getSession(token);
-    
+
     if (session) {
       console.log(`✅ Auth: супер-админ авторизован`);
       return { session, token };
     }
   }
-  
+
   console.log('❌ Auth: пользователь не найден в simple-auth (проверьте Convex)');
   return null;
 };
@@ -238,7 +265,7 @@ export const authenticate = async (email: string, password: string): Promise<{ s
 // ✅ ДОБАВИМ СОВМЕСТИМОСТЬ: Синхронная версия для обратной совместимости  
 export const authenticateSync = (email: string, password: string): { user: User; id: string } | null => {
   console.log(`🔐 AuthSync: попытка входа для ${email}`);
-  
+
   // Специальная проверка для супер-админа
   if (email === 'romangulanyan@gmail.com' && password === 'Hovik-1970') {
     const superAdminUser: User = {
@@ -252,16 +279,16 @@ export const authenticateSync = (email: string, password: string): { user: User;
       createdAt: new Date('2024-01-01'),
       updatedAt: new Date()
     };
-    
+
     const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
+
     console.log(`✅ AuthSync: супер-админ авторизован`);
-    return { 
+    return {
       user: superAdminUser,
       id: sessionId
     };
   }
-  
+
   console.log('❌ AuthSync: пользователь не найден в simple-auth (проверьте Convex)');
   return null;
 };
@@ -327,23 +354,23 @@ export const isValidRole = (role: string): role is UserRole => {
 
 export const changePassword = (userId: string, oldPassword: string, newPassword: string): boolean => {
   console.log(`🔑 Auth: смена пароля для пользователя ${userId} (функция-заглушка)`);
-  
+
   if (newPassword.length < 6) {
     throw new Error('Пароль должен содержать минимум 6 символов');
   }
-  
+
   return true;
 };
 
 export const resetPassword = (email: string): string | null => {
   console.log(`🔄 Auth: сброс пароля для ${email} (функция-заглушка)`);
-  
+
   if (email === 'romangulanyan@gmail.com') {
     const tempPassword = Math.random().toString(36).substr(2, 10);
     console.log(`🔄 Auth: сгенерирован временный пароль для супер-админа: ${tempPassword}`);
     return tempPassword;
   }
-  
+
   return null;
 };
 
@@ -376,11 +403,11 @@ export const extendSession = async (sessionToken: string, hours: number = 24): P
 // ✅ Дополнительная функция для отладки JWT токенов
 export const debugSessionAccess = async (sessionToken: string) => {
   console.log(`🔍 Debug: проверка JWT токена...`);
-  
+
   try {
     const session = await getSession(sessionToken);
     console.log(`📋 Debug: результат парсинга токена:`, !!session);
-    
+
     if (session) {
       console.log(`👤 Debug: данные пользователя:`, {
         id: session.user.id,
@@ -393,7 +420,7 @@ export const debugSessionAccess = async (sessionToken: string) => {
       console.log(`⏰ Debug: последний доступ:`, session.lastAccessed);
       console.log(`✅ Debug: сессия активна:`, new Date(session.expiresAt) > new Date());
     }
-    
+
     return session;
   } catch (error) {
     console.error('❌ Debug: ошибка проверки токена:', error);

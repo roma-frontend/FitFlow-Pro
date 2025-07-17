@@ -118,7 +118,7 @@ export function useAuthForm() {
         
         showLoader("login", {
           userRole: authUser.role,
-          userName: authUser.name || authUser.email?.split('@')[0] || "Участник",
+          userName: authUser.name || authUser.email?.split('@')[0],
           dashboardUrl: targetUrl
         });
         
@@ -254,17 +254,6 @@ export function useAuthForm() {
         const targetUrl = redirectParam || "/member-dashboard";
         const needsFullScreenLoader = shouldShowFullScreenLoader(targetUrl);
         
-        if (needsFullScreenLoader) {
-          // ✅ Показываем полноэкранный лоадер только при редиректе на другую страницу
-          setShowFullScreenLoader(true);
-          showLoader("login", {
-            userRole: formData.role || "member",
-            userName: formData.email.split('@')[0] || "Участник",
-            dashboardUrl: targetUrl
-          });
-        }
-        // Если остаемся на той же странице - показываем только лоадер на кнопке
-        
         const success = await authLogin(
           formData.email.trim().toLowerCase(),
           formData.password,
@@ -296,11 +285,6 @@ export function useAuthForm() {
         
         // ✅ Для регистрации всегда показываем полноэкранный лоадер
         setShowFullScreenLoader(true);
-        showLoader("login", {
-          userRole: "member",
-          userName: formData.name || "Новый участник",
-          dashboardUrl: "/member-dashboard"
-        });
 
         const endpoint = "/api/auth/member-register";
         const payload = {

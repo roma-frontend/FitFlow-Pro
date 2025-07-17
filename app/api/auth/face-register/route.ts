@@ -18,16 +18,16 @@ interface FaceRegisterRequest {
 function getDeviceInfo(request: NextRequest) {
   const userAgent = request.headers.get('user-agent') || 'Unknown';
   const platform = request.headers.get('sec-ch-ua-platform') || 'Unknown';
-  
+
   // Определяем разрешение экрана из User-Agent (приблизительно)
   let screenResolution = '1920x1080'; // По умолчанию
-  
+
   if (userAgent.includes('Mobile')) {
     screenResolution = '390x844'; // iPhone 13
   } else if (userAgent.includes('iPad')) {
     screenResolution = '1024x768';
   }
-  
+
   return {
     userAgent,
     platform: platform.replace(/"/g, ''),
@@ -37,7 +37,7 @@ function getDeviceInfo(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   console.log('📸 Face Register API: начало регистрации Face ID');
-  
+
   try {
     const body: FaceRegisterRequest = await request.json();
     const { descriptor, confidence, sessionToken, metadata } = body;
@@ -69,20 +69,21 @@ export async function POST(request: NextRequest) {
     const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key-change-in-production';
     console.log('🔐 JWT_SECRET статус:', {
       isSet: !!process.env.JWT_SECRET,
-      usingFallback: !process.env.JWT_SECRET
+      usingFallback: !process.env.JWT_SECRET,
+      envMode: process.env.NODE_ENV
     });
 
     // ✅ Получаем текущего пользователя
     let currentUser = null;
     let userSession = null;
-    
+
     // Получаем токен из cookies или параметра
     const authToken = request.cookies.get('auth_token')?.value;
     const sessionId = request.cookies.get('session_id')?.value;
     const sessionIdDebug = request.cookies.get('session_id_debug')?.value;
     const userRole = request.cookies.get('user_role')?.value;
     const token = authToken || sessionId || sessionToken || sessionIdDebug;
-    
+
     console.log('🍪 Проверяем авторизацию:', {
       hasAuthToken: !!authToken,
       hasSessionId: !!sessionId,
@@ -91,7 +92,7 @@ export async function POST(request: NextRequest) {
       userRole,
       usingToken: token ? token.substring(0, 20) + '...' : 'none'
     });
-    
+
     if (!token) {
       return NextResponse.json({
         success: false,
@@ -106,7 +107,7 @@ export async function POST(request: NextRequest) {
     console.log('🔍 Проверяем JWT токен напрямую...');
     try {
       const secret = new TextEncoder().encode(JWT_SECRET);
-      
+
       const { payload } = await jwtVerify(token, secret);
       console.log('✅ JWT payload:', {
         userId: payload.userId,
@@ -129,7 +130,7 @@ export async function POST(request: NextRequest) {
     // Проверяем сессию
     console.log('🔍 Проверяем сессию через getSession...');
     userSession = await getSession(token);
-    
+
     if (!userSession || !userSession.user) {
       console.log('❌ Сессия не найдена или недействительна');
       console.log('🔍 Детали проверки сессии:', {
@@ -137,7 +138,7 @@ export async function POST(request: NextRequest) {
         hasUser: userSession ? !!userSession.user : false,
         tokenType: authToken ? 'auth_token' : sessionId ? 'session_id' : 'session_token'
       });
-      
+
       return NextResponse.json({
         success: false,
         message: 'Сессия истекла. Пожалуйста, войдите заново.',
@@ -161,14 +162,14 @@ export async function POST(request: NextRequest) {
     // ✅ Проверяем, есть ли уже активные Face ID профили у пользователя
     const existingProfiles = await faceIdStorage.getUserProfiles(currentUser.id);
     console.log('🔍 Существующие профили:', existingProfiles.length);
-    
+
     // Деактивируем старые профили (оставляем только 3 последних)
     if (existingProfiles.length >= 3) {
       // Сортируем по дате создания
-      existingProfiles.sort((a, b) => 
+      existingProfiles.sort((a, b) =>
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
-      
+
       // Деактивируем все, кроме 2 последних (так как добавим новый)
       for (let i = 2; i < existingProfiles.length; i++) {
         await faceIdStorage.deactivateProfile(existingProfiles[i].id);
@@ -178,7 +179,7 @@ export async function POST(request: NextRequest) {
 
     // ✅ Получаем информацию об устройстве
     const deviceInfo = getDeviceInfo(request);
-    
+
     // ✅ Создаем новый Face ID профиль
     const profile = await faceIdStorage.createProfile({
       userId: currentUser.id,
@@ -189,12 +190,12 @@ export async function POST(request: NextRequest) {
       confidence,
       deviceInfo
     });
-    
+
     console.log('✅ Face ID профиль создан:', profile.id);
 
     // ✅ Создаем токен для Face ID
     const faceIdToken = faceIdStorage.createFaceIdToken(profile);
-    
+
     // ✅ Создаем response с установкой cookies
     const response = NextResponse.json({
       success: true,
@@ -238,7 +239,7 @@ export async function POST(request: NextRequest) {
     const errorMessage = error instanceof Error ? error.message : 'Неизвестная ошибка';
     console.error('❌ Face Register API: ошибка:', error);
     console.log('🔍 Stack trace:', error instanceof Error ? error.stack : 'No stack trace');
-    
+
     return NextResponse.json({
       success: false,
       message: 'Внутренняя ошибка сервера при регистрации Face ID',
@@ -254,7 +255,7 @@ export async function GET(request: NextRequest) {
     // Получаем токен из cookies
     const faceIdToken = request.cookies.get('face_id_registered')?.value;
     const profileId = request.cookies.get('face_id_profile')?.value;
-    
+
     if (!faceIdToken) {
       return NextResponse.json({
         registered: false,
@@ -264,7 +265,7 @@ export async function GET(request: NextRequest) {
 
     // Проверяем валидность токена
     const profile = await faceIdStorage.validateFaceIdToken(faceIdToken);
-    
+
     if (!profile) {
       return NextResponse.json({
         registered: false,
@@ -274,7 +275,7 @@ export async function GET(request: NextRequest) {
 
     // Получаем статистику использования
     const stats = await faceIdStorage.getStats();
-    
+
     return NextResponse.json({
       registered: true,
       profile: {
@@ -291,11 +292,11 @@ export async function GET(request: NextRequest) {
       },
       stats
     });
-    
+
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Неизвестная ошибка';
     console.error('❌ Face Register GET: ошибка:', error);
-    
+
     return NextResponse.json({
       registered: false,
       message: 'Ошибка проверки статуса Face ID',
@@ -307,9 +308,9 @@ export async function GET(request: NextRequest) {
 // ✅ DELETE метод для удаления Face ID профиля
 export async function DELETE(request: NextRequest) {
   try {
-    const token = request.cookies.get('auth_token')?.value || 
-                 request.cookies.get('session_id')?.value;
-    
+    const token = request.cookies.get('auth_token')?.value ||
+      request.cookies.get('session_id')?.value;
+
     if (!token) {
       return NextResponse.json({
         success: false,
@@ -327,9 +328,9 @@ export async function DELETE(request: NextRequest) {
 
     // Деактивируем все Face ID профили пользователя
     const deactivatedCount = await faceIdStorage.deactivateUserProfiles(session.user.id);
-    
+
     console.log(`🗑️ Деактивировано ${deactivatedCount} Face ID профилей для пользователя ${session.user.id}`);
-    
+
     // Очищаем cookies
     const response = NextResponse.json({
       success: true,
@@ -339,13 +340,13 @@ export async function DELETE(request: NextRequest) {
 
     response.cookies.delete('face_id_registered');
     response.cookies.delete('face_id_profile');
-    
+
     return response;
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Неизвестная ошибка';
     console.error('❌ Face Register DELETE: ошибка:', error);
-    
+
     return NextResponse.json({
       success: false,
       message: 'Ошибка при удалении Face ID профиля',
