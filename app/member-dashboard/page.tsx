@@ -20,10 +20,9 @@ import NextWorkout from "@/components/member/NextWorkout";
 import MiniProgress from "@/components/member/MiniProgress";
 import SidebarCards from "@/components/member/SidebarCards";
 import TipsSection from "@/components/member/TipsSection";
-import { useLoaderStore, type LoaderType } from "@/stores/loaderStore";
+import { useLoaderStore } from "@/stores/loaderStore";
 import StaffLogoutLoader from "@/app/staff-login/components/StaffLogoutLoader";
 import { FaceIdManager } from "@/components/dashboard/FaceIdManager";
-import FixJWTButton from "@/components/FixJWTButton";
 
 interface Workout {
   id: string;
@@ -55,7 +54,7 @@ export default function MemberDashboard() {
   const { user, loading, logout, refreshUser } = useAuth();
   const { get, post } = useApiRequest();
   const { toast } = useToast();
-  const { loaderType, loaderProps, showLoader, hideLoader } = useLoaderStore();
+  const { loaderType,  showLoader, hideLoader } = useLoaderStore();
 
   // Состояния
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -167,16 +166,6 @@ export default function MemberDashboard() {
         description: "Не удалось отключить Face ID",
       });
     }
-  };
-
-  const handleTestFaceId = () => {
-    const testUrl = `/auth/face-auth?mode=test&session=${Date.now()}`;
-    window.open(testUrl, "_blank");
-
-    toast({
-      title: "🔍 Тестирование Face ID",
-      description: "Откройте новую вкладку для тестирования входа",
-    });
   };
 
   const calculateStats = (workouts: Workout[]) => {
@@ -490,7 +479,6 @@ export default function MemberDashboard() {
         {/* Советы */}
         <TipsSection />
       </div>
-      {process.env.NODE_ENV === 'development' && <FixJWTButton />}
     </div>
   );
 }

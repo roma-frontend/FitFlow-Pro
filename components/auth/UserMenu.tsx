@@ -13,7 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   User,
   Settings,
@@ -104,6 +104,7 @@ export default function UserMenu() {
           className="flex items-center gap-3 px-3 py-2 h-auto hover:bg-white/10 transition-colors"
         >
           <Avatar className="h-8 w-8">
+          <AvatarImage src={user?.avatar} />
             <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-semibold">
               {getInitials(user.name)}
             </AvatarFallback>
@@ -128,6 +129,7 @@ export default function UserMenu() {
         <DropdownMenuLabel className="px-4 py-3 border-b border-gray-100">
           <div className="flex items-center gap-3">
             <Avatar className="h-10 w-10">
+              <AvatarImage src={user?.avatar} />
               <AvatarFallback className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold">
                 {getInitials(user.name)}
               </AvatarFallback>

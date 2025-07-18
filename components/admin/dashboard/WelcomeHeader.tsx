@@ -5,7 +5,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Sparkles, User, Home, Settings, LogOut } from "lucide-react";
+import { Sparkles, User, Home, Settings, LogOut, Loader2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -48,14 +48,10 @@ export function WelcomeHeader({
     return user?.name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U';
   }, [user?.name]);
 
-  const hasAvatar = useMemo(() => {
-    return user?.photoUrl && !avatarError;
-  }, [user?.photoUrl, avatarError]);
-
   // ✅ ИЗМЕНИЛИ: новая функция handleLogout с loader
   const handleLogout = async () => {
     setIsLoggingOut(true);
-    
+
     // ✅ ДОБАВИЛИ: Определяем роль и название для loader
     const getUserRole = () => {
       // Для админ дашборда может быть admin или super-admin
@@ -82,49 +78,10 @@ export function WelcomeHeader({
       userName: user?.name || user?.email || getUserRoleName(),
       redirectUrl: "/"
     });
-    
+
     await logout(true);
   };
 
-  const handleAvatarError = useCallback(() => {
-    setAvatarError(true);
-  }, []);
-
-  // Мемоизированный компонент аватара
-  const AvatarComponent = useMemo(() => (
-    <Avatar className="h-12 w-12 ring-2 ring-white/30 hover:ring-white/50 transition-all duration-200">
-      {hasAvatar ? (
-        <AvatarImage 
-          src={user.photoUrl || undefined} 
-          alt={user.name || "User"}
-          onError={handleAvatarError}
-          className="object-cover"
-        />
-      ) : (
-        <AvatarFallback className="bg-white/20 text-white font-bold text-lg border-2 border-white/30">
-          {userInitials}
-        </AvatarFallback>
-      )}
-    </Avatar>
-  ), [hasAvatar, user.photoUrl, user.name, userInitials, handleAvatarError]);
-
-  // Компонент аватара для dropdown меню
-  const DropdownAvatarComponent = useMemo(() => (
-    <Avatar className="h-10 w-10">
-      {hasAvatar ? (
-        <AvatarImage 
-          src={user.photoUrl || undefined} 
-          alt={user.name || "User"}
-          onError={handleAvatarError}
-          className="object-cover"
-        />
-      ) : (
-        <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white font-bold text-sm">
-          {userInitials}
-        </AvatarFallback>
-      )}
-    </Avatar>
-  ), [hasAvatar, user.photoUrl, user.name, userInitials, handleAvatarError]);
 
   return (
     <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800 rounded-xl p-3 sm:p-6 text-white relative overflow-hidden">
@@ -157,13 +114,31 @@ export function WelcomeHeader({
                   variant="ghost"
                   className="relative h-12 w-12 mx-auto md:mx-0 rounded-full bg-white/20 hover:bg-white/30 transition-all duration-200 border-2 border-white/30 hover:border-white/50 p-0 overflow-hidden"
                 >
-                  {AvatarComponent}
+                  <Avatar className="h-12 w-12 ring-2 ring-white">
+                    <AvatarImage src={user?.avatar} />
+                    <AvatarFallback className="bg-gradient-to-br from-blue-500 to-indigo-500 text-white font-bold">
+                      {isLoggingOut ? (
+                        <Loader2 className="h-6 w-6 animate-spin" />
+                      ) : (
+                        userInitials
+                      )}
+                    </AvatarFallback>
+                  </Avatar>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-64" align="end" forceMount>
                 <div className="flex flex-col space-y-1 p-3 bg-gradient-to-r from-blue-50 to-purple-50">
                   <div className="flex items-center gap-3">
-                    {DropdownAvatarComponent}
+                    <Avatar className="h-12 w-12 ring-2 ring-white">
+                      <AvatarImage src={user?.avatar} />
+                      <AvatarFallback className="bg-gradient-to-br from-blue-500 to-indigo-500 text-white font-bold">
+                        {isLoggingOut ? (
+                          <Loader2 className="h-6 w-6 animate-spin" />
+                        ) : (
+                          userInitials
+                        )}
+                      </AvatarFallback>
+                    </Avatar>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium leading-none truncate">
                         {user?.name || "Пользователь"}
