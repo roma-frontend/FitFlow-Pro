@@ -52,11 +52,14 @@ const ManagerUserMenu = memo(
     showDebug = false,
     setShowDebug = () => { },
   }: ManagerUserMenuProps) => {
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
+
     const [isOpen, setIsOpen] = useState(false);
     const { user, logout, isLoading: authLoading, refreshUser } = useAuth();
-    const router = useRouter()
     const showLoader = useLoaderStore((state) => state.showLoader);
-    
+
+    const router = useRouter()
+
     useEffect(() => {
       console.log("🎯 ManagerUserMenu: состояние", {
         user,
@@ -78,10 +81,17 @@ const ManagerUserMenu = memo(
     }, [authLoading, user, refreshUser]);
 
     const handleLogout = async () => {
-      setIsOpen(false);
-      
+
+      setIsLoggingOut(true);
+
+      showLoader("logout", {
+        userRole: user?.role || "manager",
+        userName: user?.name || user?.email || "Менеджер",
+        redirectUrl: "/"
+      });
+
       await logout();
-    };
+    }
 
     const handleMenuItemClick = (action: () => void) => {
       setIsOpen(false);

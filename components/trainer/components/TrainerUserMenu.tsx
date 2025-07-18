@@ -85,9 +85,18 @@ const TrainerUserMenu = memo(({
   }, [authLoading, user, refreshUser]);
 
   const handleLogout = async () => {
+    console.log('🚪 TrainerActionsSection: начинаем logout...');
 
+    // ✅ ИСПРАВЛЕНО: Показываем loader сразу при клике
+    showLoader("logout", {
+      userRole: user?.role || "trainer",
+      userName: user?.name || user?.email?.split('@')[0] || "Тренер",
+      redirectUrl: "/"
+    });
+
+    console.log('📱 TrainerActionsSection: loader показан, вызываем logout...');
     await logout();
-  }
+  };
 
   const handleMenuItemClick = (action: () => void) => {
     setIsOpen(false);

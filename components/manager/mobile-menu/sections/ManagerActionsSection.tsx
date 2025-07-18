@@ -14,6 +14,7 @@ import {
   FileText,
   BarChart3,
 } from "lucide-react";
+import { useState } from "react";
 
 interface ManagerActionsSectionProps {
   onNavigation: (href: string) => void;
@@ -24,11 +25,14 @@ interface ManagerActionsSectionProps {
 
 export default function ManagerActionsSection({
   onNavigation,
-  isLoggingOut,
   onClose,
 }: ManagerActionsSectionProps) {
-  
-  const {  logout } = useAuth();
+
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const { logout, user } = useAuth();
+  const showLoader = useLoaderStore((state) => state.showLoader);
+
 
   const handleAction = (href: string) => {
     onNavigation(href);
@@ -36,11 +40,17 @@ export default function ManagerActionsSection({
   };
 
   const handleLogout = async () => {
-    onClose();
-    
-    // Выполняем logout
+
+    setIsLoggingOut(true);
+
+    showLoader("logout", {
+      userRole: user?.role || "manager",
+      userName: user?.name || user?.email || "Менеджер",
+      redirectUrl: "/"
+    });
+
     await logout();
-  };
+  }
 
   const quickActions = [
     {
@@ -99,7 +109,7 @@ export default function ManagerActionsSection({
         <div className="grid grid-cols-2 gap-2">
           {quickActions.map((action, index) => {
             const IconComponent = action.icon;
-            
+
             return (
               <div key={index}>
                 <Button
@@ -128,7 +138,7 @@ export default function ManagerActionsSection({
         <div className="space-y-2">
           {profileActions.map((action, index) => {
             const IconComponent = action.icon;
-            
+
             return (
               <div key={index}>
                 <Button

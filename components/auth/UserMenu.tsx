@@ -26,7 +26,6 @@ import {
 import { useAuth, useRole } from "@/hooks/useAuth";
 import { getRoleLabel, getUserDashboardUrl } from "@/utils/roleHelpers";
 import { useRouter } from "next/navigation";
-import { useLoaderStore } from "@/stores/loaderStore"; // ✅ ДОБАВИЛИ
 
 export default function UserMenu() {
   const { user, logout } = useAuth();

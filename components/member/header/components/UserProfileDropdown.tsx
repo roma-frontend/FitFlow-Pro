@@ -43,7 +43,7 @@ export function UserProfileDropdown({
       if (onLogout) {
         onLogout();
       } else {
-        await logout(true);
+        await logout();
       }
     } catch (error) {
       console.error('Ошибка выхода:', error);
