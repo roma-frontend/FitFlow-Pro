@@ -30,22 +30,35 @@ export default function TrainerActionsSection({
   onClose,
 }: TrainerActionsSectionProps) {
   const { logout, user } = useAuth();
-  const showLoader = useLoaderStore((state) => state.showLoader);
+  const { showLoader } = useLoaderStore();
 
   const handleAction = (action: () => void) => {
     action();
     onClose();
   };
 
-  const handleLogout = async () => {
+const handleLogout = async () => {
+    console.log('🚪 TrainerActionsSection: начинаем logout...');
     
+    // ✅ ИСПРАВЛЕНО: Показываем loader сразу при клике
     showLoader("logout", {
       userRole: user?.role || "trainer",
-      userName: user?.name || user?.email || "Тренер", 
+      userName: user?.name || user?.email?.split('@')[0] || "Тренер",
       redirectUrl: "/"
     });
     
-    await logout();
+    console.log('📱 TrainerActionsSection: loader показан, вызываем logout...');
+    
+    try {
+      // Закрываем меню сразу
+      onClose();
+      
+      // Вызываем logout (который уже НЕ будет показывать loader, так как он уже показан)
+      await logout();
+    } catch (error) {
+      console.error('❌ TrainerActionsSection: ошибка logout:', error);
+      // При ошибке loader скроется автоматически в useAuth.logout()
+    }
   };
 
   const quickActions = [

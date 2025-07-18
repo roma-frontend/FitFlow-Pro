@@ -88,38 +88,6 @@ export default function StaffLoginContent() {
     setResetEmail("");
   };
 
-  useEffect(() => {
-    const checkGoogleOAuthReturn = () => {
-      // Проверяем если пользователь вернулся после Google OAuth
-      const googleLoginInProgress = sessionStorage.getItem('google_login_in_progress');
-      const urlParams = new URLSearchParams(window.location.search);
-      const code = urlParams.get('code');
-      const state = urlParams.get('state');
-      
-      // НОВОЕ: Проверяем и показываем loader сразу при возврате
-      if (googleLoginInProgress === 'true' && code && state) {
-        console.log('🔄 Обнаружен возврат после Google OAuth на staff-login - показываем loader');
-        
-        // Получаем сохраненные данные
-        const isStaff = sessionStorage.getItem('google_login_is_staff') === 'true';
-        const savedRedirect = sessionStorage.getItem('google_login_target_url') || 
-                             sessionStorage.getItem('google_login_redirect');
-        const staffRole = sessionStorage.getItem('google_login_staff_role');
-        
-        // Показываем loader немедленно
-        const { showLoader } = useLoaderStore.getState();
-        showLoader("login", {
-          userRole: isStaff ? (staffRole || "admin") : "member",
-          userName: "Завершение авторизации...",
-          dashboardUrl: savedRedirect || "/admin"
-        });
-      }
-    };
-    
-    // Проверяем сразу при загрузке
-    checkGoogleOAuthReturn();
-  }, []);
-
 
   if (showForgotPassword) {
     return (

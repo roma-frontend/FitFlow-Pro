@@ -146,16 +146,8 @@ export default function ManagerHeader() {
   }, [authUser]);
 
   const handleLogout = async () => {
-    setIsLoggingOut(true);
-    setIsOpen(false);
 
-    showLoader("logout", {
-      userRole: user?.role || "manager",
-      userName: user?.name || user?.email || "Менеджер",
-      redirectUrl: "/"
-    });
-
-    await logout(true);
+    await logout();
   };
 
   // ✅ Мемоизируем навигационные элементы

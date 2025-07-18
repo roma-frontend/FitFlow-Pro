@@ -1,4 +1,4 @@
-// hooks/useAuthForm.ts - ЕДИНОЕ РЕШЕНИЕ ДЛЯ ЛОАДЕРА
+// hooks/useAuthForm.ts - ИСПРАВЛЕННАЯ ВЕРСИЯ С ОДНИМ ЛОАДЕРОМ
 
 "use client";
 
@@ -58,13 +58,10 @@ export function useAuthForm() {
   const showLoader = useLoaderStore((state) => state.showLoader);
   const hideLoader = useLoaderStore((state) => state.hideLoader);
 
-  // ✅ НОВОЕ: Функция для определения, нужен ли полноэкранный лоадер
-  const shouldShowFullScreenLoader = useCallback((targetUrl?: string) => {
-    // Показываем полноэкранный лоадер если:
-    // 1. Есть редирект на другую страницу
-    // 2. Или происходит автоматический редирект уже авторизованного пользователя
-    return Boolean(targetUrl && targetUrl !== window.location.pathname);
-  }, []);
+  // ✅ НОВОЕ: Флаг для предотвращения множественных вызовов loader
+  const loaderShownRef = useCallback(() => {
+    return Boolean(showFullScreenLoader);
+  }, [showFullScreenLoader]);
 
   // Инициализация формы при смене режима
   useEffect(() => {
@@ -90,9 +87,9 @@ export function useAuthForm() {
     setError("");
   }, [isLogin]);
 
-  // ✅ ОБНОВЛЕНО: Обработка автоматического редиректа
+  // ✅ ОБНОВЛЕНО: Обработка автоматического редиректа для уже авторизованных
   useEffect(() => {
-    if (!authLoading && authUser && authUser.role === "member") {
+    if (!authLoading && authUser && authUser.role === "member" && !loaderShownRef()) {
       console.log("✅ Пользователь уже авторизован, обрабатываем redirect:", redirectParam);
       
       let targetUrl = "/member-dashboard";
@@ -103,31 +100,28 @@ export function useAuthForm() {
           if (decodedRedirect.startsWith('/') && !decodedRedirect.startsWith('//')) {
             targetUrl = decodedRedirect;
             console.log("🎯 Перенаправляем на запрошенную страницу:", targetUrl);
-          } else {
-            console.warn("⚠️ Неверный формат redirect, используем дашборд");
           }
         } catch (error) {
-          console.error("❌ Ошибка декодирования redirect, используем дашборд");
+          console.error("❌ Ошибка декодирования redirect");
         }
       }
       
-      // ✅ Показываем полноэкранный лоадер только если действительно происходит редирект
-      if (shouldShowFullScreenLoader(targetUrl)) {
-        setIsRedirecting(true);
-        setShowFullScreenLoader(true);
-        
-        showLoader("login", {
-          userRole: authUser.role,
-          userName: authUser.name || authUser.email?.split('@')[0],
-          dashboardUrl: targetUrl
-        });
-        
-        setTimeout(() => {
-          router.replace(targetUrl);
-        }, 100);
-      }
+      // Показываем loader один раз
+      setIsRedirecting(true);
+      setShowFullScreenLoader(true);
+      
+      showLoader("login", {
+        userRole: authUser.role,
+        userName: authUser.name || authUser.email?.split('@')[0],
+        dashboardUrl: targetUrl
+      });
+      
+      // Делаем редирект
+      setTimeout(() => {
+        router.replace(targetUrl);
+      }, 100);
     }
-  }, [authUser, authLoading, router, redirectParam, showLoader, shouldShowFullScreenLoader]);
+  }, [authUser, authLoading, router, redirectParam, showLoader, loaderShownRef]);
 
   // Валидация email с debounce
   useEffect(() => {
@@ -231,7 +225,7 @@ export function useAuthForm() {
     [error]
   );
 
-  // ✅ ОБНОВЛЕНО: Обработчик отправки формы с умным управлением лоадером
+  // ✅ ОБНОВЛЕНО: Обработчик отправки формы - показываем loader ОДИН раз
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -251,9 +245,19 @@ export function useAuthForm() {
       if (isLogin) {
         console.log("🔐 Вход участника, redirectParam:", redirectParam);
         
-        const targetUrl = redirectParam || "/member-dashboard";
-        const needsFullScreenLoader = shouldShowFullScreenLoader(targetUrl);
+        // ✅ Показываем loader ОДИН раз в начале процесса
+        setShowFullScreenLoader(true);
+        setIsRedirecting(true);
         
+        const targetUrl = redirectParam || "/member-dashboard";
+        
+        showLoader("login", {
+          userRole: "member",
+          userName: formData.email.split('@')[0],
+          dashboardUrl: targetUrl
+        });
+        
+        // Вызываем authLogin БЕЗ повторного показа loader в useAuth
         const success = await authLogin(
           formData.email.trim().toLowerCase(),
           formData.password,
@@ -266,26 +270,24 @@ export function useAuthForm() {
           sessionStorage.setItem('show_welcome_toast', 'true');
           sessionStorage.setItem('welcome_user_role', 'member');
           
-          setIsRedirecting(true);
+          // Loader остается активным до завершения редиректа
+          // НЕ вызываем hideLoader здесь!
           
           return { 
             success: true,
             message: "Перенаправление..."
           };
         } else {
-          if (needsFullScreenLoader) {
-            hideLoader();
-            setShowFullScreenLoader(false);
-          }
+          // Скрываем loader только при ошибке
+          hideLoader();
+          setShowFullScreenLoader(false);
+          setIsRedirecting(false);
           throw new Error("Неверный email или пароль");
         }
       } else {
         // РЕГИСТРАЦИЯ
         console.log("📝 Регистрация участника");
         
-        // ✅ Для регистрации всегда показываем полноэкранный лоадер
-        setShowFullScreenLoader(true);
-
         const endpoint = "/api/auth/member-register";
         const payload = {
           name: formData.name.trim(),
@@ -309,9 +311,6 @@ export function useAuthForm() {
         if (response.ok && data.success) {
           console.log("✅ Успешная регистрация");
           
-          hideLoader();
-          setShowFullScreenLoader(false);
-          
           setRegistrationSuccess(true);
           setRegistrationEmail(formData.email);
           
@@ -322,16 +321,17 @@ export function useAuthForm() {
           
           return { success: true };
         } else {
-          hideLoader();
-          setShowFullScreenLoader(false);
           throw new Error(data.error || `Ошибка ${response.status}`);
         }
       }
     } catch (error) {
       console.error("💥 Ошибка:", error);
       
-      hideLoader();
-      setShowFullScreenLoader(false);
+      // Скрываем loader при ошибке
+      if (showFullScreenLoader) {
+        hideLoader();
+        setShowFullScreenLoader(false);
+      }
       
       const errorMessage =
         error instanceof Error
@@ -347,9 +347,7 @@ export function useAuthForm() {
       
       return { success: false, error: errorMessage };
     } finally {
-      if (!isLogin) {
-        setLoading(false);
-      }
+      setLoading(false);
     }
   };
 
@@ -394,7 +392,7 @@ export function useAuthForm() {
     isValidating: Boolean(isValidating),
     isFormReady: Boolean(isFormReady),
     isRedirecting: Boolean(isRedirecting),
-    showFullScreenLoader: Boolean(showFullScreenLoader), // ✅ НОВОЕ
+    showFullScreenLoader: Boolean(showFullScreenLoader),
     
     // Состояния регистрации
     registrationSuccess: Boolean(registrationSuccess),

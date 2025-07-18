@@ -28,8 +28,7 @@ export default function ManagerActionsSection({
   onClose,
 }: ManagerActionsSectionProps) {
   
-  const { user, logout } = useAuth();
-  const showLoader = useLoaderStore((state) => state.showLoader);
+  const {  logout } = useAuth();
 
   const handleAction = (href: string) => {
     onNavigation(href);
@@ -38,13 +37,6 @@ export default function ManagerActionsSection({
 
   const handleLogout = async () => {
     onClose();
-    
-    // Показываем loader
-    showLoader("logout", {
-      userRole: user?.role || "manager",
-      userName: user?.name || user?.email || "Менеджер",
-      redirectUrl: "/"
-    });
     
     // Выполняем logout
     await logout();

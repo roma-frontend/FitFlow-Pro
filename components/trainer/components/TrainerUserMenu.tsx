@@ -58,10 +58,12 @@ const TrainerUserMenu = memo(({
   const [isOpen, setIsOpen] = useState(false);
 
   // ✅ Получаем данные пользователя напрямую из useAuth
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const { user, logout, isLoading: authLoading, refreshUser } = useAuth();
+  const { loaderType, showLoader, hideLoader } = useLoaderStore();
+
   const router = useRouter()
 
-  const showLoader = useLoaderStore((state) => state.showLoader);
 
   useEffect(() => {
     console.log('🎯 TrainerUserMenu: состояние', {
@@ -83,17 +85,9 @@ const TrainerUserMenu = memo(({
   }, [authLoading, user, refreshUser]);
 
   const handleLogout = async () => {
-    setIsOpen(false);
-
-    // Показываем loader перед logout
-    showLoader("logout", {
-      userRole: user?.role || "trainer",
-      userName: user?.name || user?.email || "Тренер",
-      redirectUrl: "/"
-    });
 
     await logout();
-  };
+  }
 
   const handleMenuItemClick = (action: () => void) => {
     setIsOpen(false);

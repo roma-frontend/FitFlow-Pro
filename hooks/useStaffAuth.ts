@@ -1,4 +1,4 @@
-// hooks/useStaffAuth.ts - ИСПРАВЛЕННАЯ ВЕРСИЯ
+// hooks/useStaffAuth.ts - ОБНОВЛЕННАЯ ВЕРСИЯ С ЕДИНЫМ LOADER
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -173,17 +173,19 @@ const handleStaffLogin = useCallback(async (formData: {
         sessionStorage.removeItem("returnUrl");
       }
 
-      // Обновляем loader с точными данными после успешного логина
+      // Показываем loader сразу после успешного логина
       showLoader("login", {
         userRole: data.user.role,
         userName: data.user.name || data.user.email,
         dashboardUrl: destination
       });
 
+      // Небольшая задержка перед редиректом для плавности
       setTimeout(() => {
         console.log('🎯 Staff login: redirect to', destination);
         router.replace(destination);
-      }, 1500);
+        // hideLoader убираем - пусть loader остается до загрузки новой страницы
+      }, 100);
 
       return {
         success: true,
@@ -197,6 +199,7 @@ const handleStaffLogin = useCallback(async (formData: {
   } catch (error) {
     console.error("💥 Staff login error:", error);
 
+    // ✅ Скрываем полноэкранный loader при ошибке
     hideLoader();
     sessionStorage.removeItem('is_redirecting');
 
@@ -210,8 +213,9 @@ const handleStaffLogin = useCallback(async (formData: {
       });
     }
 
-    setIsLoading(false);
     return { success: false };
+  } finally {
+    setIsLoading(false);
   }
 }, [toast, router, getDashboardForRole, getRoleDisplayName, redirectPath, showLoader, hideLoader]);
 
@@ -219,17 +223,18 @@ const handleStaffLogin = useCallback(async (formData: {
 const handleSuperAdminQuickLogin = useCallback(async (): Promise<StaffLoginResult> => {
   setIsLoading(true);
   
+  // ✅ Показываем loader сразу при начале входа
+  showLoader("login", {
+    userRole: "super-admin",
+    userName: "Супер Админ",
+    dashboardUrl: "/admin"
+  });
+  
   // Устанавливаем флаг редиректа
   sessionStorage.setItem('is_redirecting', 'true');
 
   try {
     console.log('🚀 Quick admin login attempt');
-
-    showLoader("login", {
-      userRole: "super-admin",
-      userName: "Супер Админ",
-      dashboardUrl: "/admin"
-    });
 
     const response = await fetch("/api/debug/auth", {
       method: "POST",
@@ -285,10 +290,12 @@ const handleSuperAdminQuickLogin = useCallback(async (): Promise<StaffLoginResul
         dashboardUrl: destination
       });
 
+      // Небольшая задержка перед редиректом для плавности
       setTimeout(() => {
         console.log('🎯 Quick login: redirect to', destination);
         router.replace(destination);
-      }, 1500);
+        // hideLoader убираем - пусть loader остается до загрузки новой страницы
+      }, 100);
 
       return {
         success: true,
@@ -302,6 +309,7 @@ const handleSuperAdminQuickLogin = useCallback(async (): Promise<StaffLoginResul
   } catch (error) {
     console.error("💥 Quick login error:", error);
 
+    // ✅ Скрываем полноэкранный loader при ошибке
     hideLoader();
     sessionStorage.removeItem('is_redirecting');
 
@@ -313,8 +321,9 @@ const handleSuperAdminQuickLogin = useCallback(async (): Promise<StaffLoginResul
       });
     }
 
-    setIsLoading(false);
     return { success: false };
+  } finally {
+    setIsLoading(false);
   }
 }, [toast, router, showLoader, hideLoader]);
 

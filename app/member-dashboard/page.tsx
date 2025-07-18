@@ -140,33 +140,6 @@ export default function MemberDashboard() {
     }
   };
 
-  const handleDisableFaceId = async () => {
-    try {
-      const data = await post("/api/face-id/disable", {});
-
-      if (data.success) {
-        setFaceIdStatus({
-          isEnabled: false,
-          lastUsed: undefined,
-          dateRegistered: undefined,
-          deviceCount: 0,
-        });
-        toast({
-          title: "✅ Face ID отключен",
-          description: "Биометрические данные удалены из системы",
-        });
-      } else {
-        throw new Error(data.error || "Ошибка отключения Face ID");
-      }
-    } catch (error) {
-      console.error("❌ Ошибка отключения Face ID:", error);
-      toast({
-        variant: "destructive",
-        title: "Ошибка",
-        description: "Не удалось отключить Face ID",
-      });
-    }
-  };
 
   const calculateStats = (workouts: Workout[]) => {
     const now = new Date();

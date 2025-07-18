@@ -36,9 +36,8 @@ export function WelcomeHeader({
   onSettings,
 }: WelcomeHeaderProps) {
   const { user, logout } = useAuth();
-  const showLoader = useLoaderStore((state) => state.showLoader); // ✅ ДОБАВИЛИ
+  const showLoader = useLoaderStore((state) => state.showLoader);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [avatarError, setAvatarError] = useState(false);
 
   // Если пользователь уже вышел, не рендерим компонент
   if (!user) return null;
@@ -52,34 +51,14 @@ export function WelcomeHeader({
   const handleLogout = async () => {
     setIsLoggingOut(true);
 
-    // ✅ ДОБАВИЛИ: Определяем роль и название для loader
-    const getUserRole = () => {
-      // Для админ дашборда может быть admin или super-admin
-      if (user?.role === "super-admin") return "super-admin";
-      if (user?.role === "admin") return "admin";
-      // Fallback для других ролей если компонент используется где-то еще
-      return user?.role || "admin";
-    };
-
-    const getUserRoleName = () => {
-      const role = getUserRole();
-      switch (role) {
-        case "super-admin": return "Супер-админ";
-        case "admin": return "Администратор";
-        case "manager": return "Менеджер";
-        case "trainer": return "Тренер";
-        default: return "Администратор";
-      }
-    };
-
     // ✅ ДОБАВИЛИ: Показываем loader
     showLoader("logout", {
-      userRole: getUserRole(),
-      userName: user?.name || user?.email || getUserRoleName(),
+      userRole: user?.role || "super-admin",
+      userName: user?.name || user?.email,
       redirectUrl: "/"
     });
 
-    await logout(true);
+    await logout();
   };
 
 

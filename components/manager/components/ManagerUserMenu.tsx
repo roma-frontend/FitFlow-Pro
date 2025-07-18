@@ -80,12 +80,6 @@ const ManagerUserMenu = memo(
     const handleLogout = async () => {
       setIsOpen(false);
       
-      showLoader("logout", {
-        userRole: user?.role || "manager",
-        userName: user?.name || user?.email || "Менеджер",
-        redirectUrl: "/"
-      });
-      
       await logout();
     };
 

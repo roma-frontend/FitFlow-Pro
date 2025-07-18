@@ -24,7 +24,7 @@ export function UserProfileDropdown({
 
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const { logout, user } = useAuth();
-  
+
   // ✅ ДОБАВИЛИ: функцию показа loader
   const showLoader = useLoaderStore((state) => state.showLoader);
 
@@ -32,18 +32,18 @@ export function UserProfileDropdown({
   const handleLogout = async () => {
     try {
       setIsLoggingOut(true);
-      
+
       showLoader("logout", {
         userRole: user?.role || "member",
         userName: user?.name || user?.email || "Участник",
         redirectUrl: "/"
       });
-      
+
       // ✅ ИСПРАВЛЕНО: Используем logout с пропуском редиректа
       if (onLogout) {
-        await onLogout();
+        onLogout();
       } else {
-        await logout(true); 
+        await logout(true);
       }
     } catch (error) {
       console.error('Ошибка выхода:', error);
@@ -52,16 +52,16 @@ export function UserProfileDropdown({
       setIsLoggingOut(false);
     }
   }
-  
-  const userInitials = user?.name 
-    ? user.name.split(' ').map(n => n[0]).join('').toUpperCase() 
+
+  const userInitials = user?.name
+    ? user.name.split(' ').map(n => n[0]).join('').toUpperCase()
     : 'JD';
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button 
-          variant="ghost" 
+        <Button
+          variant="ghost"
           className="relative h-9 w-9 rounded-full p-0 hover:bg-white/20 transition-colors"
           disabled={isLoggingOut}
         >
@@ -77,7 +77,7 @@ export function UserProfileDropdown({
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
-      
+
       <DropdownMenuContent className="w-64 p-2" align="end" forceMount>
         <div className="flex items-center space-x-3 p-3 rounded-lg bg-gradient-to-r from-blue-50 to-green-50">
           <Avatar className="h-12 w-12 ring-2 ring-white">
@@ -99,10 +99,10 @@ export function UserProfileDropdown({
             </p>
           </div>
         </div>
-        
+
         <DropdownMenuSeparator className="my-2" />
-        
-        <DropdownMenuItem 
+
+        <DropdownMenuItem
           className="flex items-center space-x-3 p-3 rounded-lg cursor-pointer"
           onClick={() => onNavigation('/profile')}
           disabled={isLoggingOut}
@@ -115,8 +115,8 @@ export function UserProfileDropdown({
             <p className="text-sm text-gray-500">Управление аккаунтом</p>
           </div>
         </DropdownMenuItem>
-        
-        <DropdownMenuItem 
+
+        <DropdownMenuItem
           className="flex items-center space-x-3 p-3 rounded-lg cursor-pointer"
           onClick={() => onNavigation('/settings')}
           disabled={isLoggingOut}
@@ -129,11 +129,11 @@ export function UserProfileDropdown({
             <p className="text-sm text-gray-500">Персонализация</p>
           </div>
         </DropdownMenuItem>
-        
+
         <DropdownMenuSeparator className="my-2" />
-        
+
         {/* ✅ ИСПРАВЛЕНО: Кнопка logout с новой логикой */}
-        <DropdownMenuItem 
+        <DropdownMenuItem
           className="flex items-center space-x-3 p-3 rounded-lg cursor-pointer text-red-600 hover:bg-red-50"
           onClick={handleLogout}
           disabled={isLoggingOut}

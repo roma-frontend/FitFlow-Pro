@@ -7,6 +7,7 @@ interface LoaderState {
     loaderType: LoaderType;
     loaderProps?: any;
     isLoaderActive: boolean;
+    isVisible: boolean; // ✅ Добавляем свойство isVisible
     showLoader: (type: LoaderType, props?: any) => void;
     hideLoader: () => void;
 }
@@ -32,14 +33,16 @@ const enableScroll = () => {
 export const useLoaderStore = create<LoaderState>((set, get) => ({
     loaderType: null,
     loaderProps: undefined,
-
-    // Computed свойство для проверки активности loader
-    get isLoaderActive() {
-        return get().loaderType !== null;
-    },
+    isLoaderActive: false,
+    isVisible: false, // ✅ Инициализируем как false
 
     showLoader: (type, props) => {
-        set({ loaderType: type, loaderProps: props });
+        set({ 
+            loaderType: type, 
+            loaderProps: props,
+            isLoaderActive: true,
+            isVisible: true // ✅ Устанавливаем isVisible в true
+        });
         
         // Отключаем скролл только для login и logout
         if (type === "login" || type === "logout") {
@@ -50,7 +53,12 @@ export const useLoaderStore = create<LoaderState>((set, get) => ({
     hideLoader: () => {
         const currentType = get().loaderType;
         
-        set({ loaderType: null, loaderProps: undefined });
+        set({ 
+            loaderType: null, 
+            loaderProps: undefined,
+            isLoaderActive: false,
+            isVisible: false // ✅ Устанавливаем isVisible в false
+        });
         
         // Включаем скролл обратно если был отключен
         if (currentType === "login" || currentType === "logout") {
