@@ -527,7 +527,8 @@ export default defineSchema({
     }))
   })
     .index("by_user", ["userId"])
-    .index("by_active", ["isActive"]),
+    .index("by_active", ["isActive"])
+    .index("by_user_and_active", ["userId", "isActive"]),
 
   notificationTemplates: defineTable({
     name: v.string(),

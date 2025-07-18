@@ -562,7 +562,7 @@ const getRouteType = (pathname: string, userRole?: string): { type: string; need
       '/create-test-user', '/admin-login', '/clear-cookies', '/make-admin',
       '/create-real-admin', '/debug-dashboard', '/debug-password',
       '/fix-password', '/demo-smart-login', '/test-qr-codes',
-      '/password-reset-success', '/mobile-scanner', '/auth/face-auth', '/body-analyze',
+      '/password-reset-success', '/mobile-scanner', '/auth/face-auth', '/body-analyze', '/test-face-id'
     ]);
 
     if (publicRoutes.has(pathname)) {

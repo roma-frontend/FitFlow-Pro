@@ -1,8 +1,10 @@
-// app/api/auth/face-register/route.ts - ИСПРАВЛЕННАЯ ВЕРСИЯ с детальным логированием
+// app/api/auth/face-register/route.ts - ИСПРАВЛЕННАЯ ВЕРСИЯ с Convex
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/simple-auth';
 import { faceIdStorage } from '@/lib/face-id-storage';
-import { jwtVerify } from 'jose';
+import { ConvexHttpClient } from "convex/browser";
+
+const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
 interface FaceRegisterRequest {
   descriptor: number[];
@@ -19,11 +21,9 @@ function getDeviceInfo(request: NextRequest) {
   const userAgent = request.headers.get('user-agent') || 'Unknown';
   const platform = request.headers.get('sec-ch-ua-platform') || 'Unknown';
 
-  // Определяем разрешение экрана из User-Agent (приблизительно)
-  let screenResolution = '1920x1080'; // По умолчанию
-
+  let screenResolution = '1920x1080';
   if (userAgent.includes('Mobile')) {
-    screenResolution = '390x844'; // iPhone 13
+    screenResolution = '390x844';
   } else if (userAgent.includes('iPad')) {
     screenResolution = '1024x768';
   }
@@ -65,93 +65,28 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // ✅ Проверяем JWT_SECRET
-    const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key-change-in-production';
-    console.log('🔐 JWT_SECRET статус:', {
-      isSet: !!process.env.JWT_SECRET,
-      usingFallback: !process.env.JWT_SECRET,
-      envMode: process.env.NODE_ENV
-    });
-
     // ✅ Получаем текущего пользователя
-    let currentUser = null;
-    let userSession = null;
-
-    // Получаем токен из cookies или параметра
     const authToken = request.cookies.get('auth_token')?.value;
     const sessionId = request.cookies.get('session_id')?.value;
     const sessionIdDebug = request.cookies.get('session_id_debug')?.value;
-    const userRole = request.cookies.get('user_role')?.value;
     const token = authToken || sessionId || sessionToken || sessionIdDebug;
-
-    console.log('🍪 Проверяем авторизацию:', {
-      hasAuthToken: !!authToken,
-      hasSessionId: !!sessionId,
-      hasSessionToken: !!sessionToken,
-      hasSessionIdDebug: !!sessionIdDebug,
-      userRole,
-      usingToken: token ? token.substring(0, 20) + '...' : 'none'
-    });
 
     if (!token) {
       return NextResponse.json({
         success: false,
-        message: 'Необходимо войти в систему для регистрации Face ID',
-        debug: {
-          cookies: request.cookies.getAll().map(c => c.name)
-        }
+        message: 'Необходимо войти в систему для регистрации Face ID'
       }, { status: 401 });
     }
 
-    // ✅ НОВОЕ: Детальная проверка JWT токена
-    console.log('🔍 Проверяем JWT токен напрямую...');
-    try {
-      const secret = new TextEncoder().encode(JWT_SECRET);
-
-      const { payload } = await jwtVerify(token, secret);
-      console.log('✅ JWT payload:', {
-        userId: payload.userId,
-        userRole: payload.userRole,
-        userEmail: payload.userEmail,
-        hasSessionData: !!payload.sessionData,
-        exp: payload.exp,
-        iat: payload.iat
-      });
-    } catch (jwtError) {
-      console.error('❌ JWT проверка провалилась:', jwtError);
-      console.log('🔍 Детали ошибки:', {
-        errorName: jwtError instanceof Error ? jwtError.name : 'Unknown',
-        errorMessage: jwtError instanceof Error ? jwtError.message : String(jwtError),
-        tokenLength: token.length,
-        tokenStart: token.substring(0, 20) + '...'
-      });
-    }
-
-    // Проверяем сессию
-    console.log('🔍 Проверяем сессию через getSession...');
-    userSession = await getSession(token);
-
+    const userSession = await getSession(token);
     if (!userSession || !userSession.user) {
-      console.log('❌ Сессия не найдена или недействительна');
-      console.log('🔍 Детали проверки сессии:', {
-        hasSession: !!userSession,
-        hasUser: userSession ? !!userSession.user : false,
-        tokenType: authToken ? 'auth_token' : sessionId ? 'session_id' : 'session_token'
-      });
-
       return NextResponse.json({
         success: false,
-        message: 'Сессия истекла. Пожалуйста, войдите заново.',
-        debug: {
-          hasJwtSecret: !!process.env.JWT_SECRET,
-          tokenType: authToken ? 'auth_token' : sessionId ? 'session_id' : 'session_token',
-          userRole: userRole,
-          tokenLength: token.length
-        }
+        message: 'Сессия истекла. Пожалуйста, войдите заново.'
       }, { status: 401 });
     }
 
-    currentUser = userSession.user;
+    const currentUser = userSession.user;
     console.log('👤 Пользователь найден:', {
       id: currentUser.id,
       email: currentUser.email,
@@ -159,28 +94,46 @@ export async function POST(request: NextRequest) {
       role: currentUser.role
     });
 
-    // ✅ Проверяем, есть ли уже активные Face ID профили у пользователя
-    const existingProfiles = await faceIdStorage.getUserProfiles(currentUser.id);
-    console.log('🔍 Существующие профили:', existingProfiles.length);
+    // ✅ Проверяем существующие профили в Convex
+    const existingProfiles = await convex.query("faceProfiles:getByUserId", {
+      userId: currentUser.id,
+      userType: "user"
+    });
 
-    // Деактивируем старые профили (оставляем только 3 последних)
-    if (existingProfiles.length >= 3) {
-      // Сортируем по дате создания
-      existingProfiles.sort((a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
+    if (existingProfiles) {
+      console.log('🔍 Найден существующий профиль, обновляем...');
+      
+      // Обновляем существующий профиль
+      await convex.mutation("faceProfiles:updateFaceDescriptor", {
+        profileId: existingProfiles._id,
+        faceDescriptor: descriptor,
+        confidence: confidence
+      });
 
-      // Деактивируем все, кроме 2 последних (так как добавим новый)
-      for (let i = 2; i < existingProfiles.length; i++) {
-        await faceIdStorage.deactivateProfile(existingProfiles[i].id);
-        console.log('🗑️ Деактивирован старый профиль:', existingProfiles[i].id);
-      }
+      console.log('✅ Face ID профиль обновлен');
+    } else {
+      // ✅ Создаем новый Face ID профиль в Convex
+      console.log('📝 Создаем новый Face ID профиль в Convex...');
+      
+      const deviceInfo = getDeviceInfo(request);
+      
+      const convexProfileId = await convex.mutation("faceProfiles:create", {
+        userId: currentUser.id,
+        faceDescriptor: descriptor,
+        confidence: confidence,
+        registeredAt: Date.now(),
+        isActive: true,
+        metadata: {
+          registrationMethod: metadata?.source || 'web_app',
+          userAgent: deviceInfo.userAgent,
+          deviceInfo: JSON.stringify(deviceInfo)
+        }
+      });
+
+      console.log('✅ Face ID профиль создан в Convex:', convexProfileId);
     }
 
-    // ✅ Получаем информацию об устройстве
-    const deviceInfo = getDeviceInfo(request);
-
-    // ✅ Создаем новый Face ID профиль
+    // ✅ Также сохраняем в локальное хранилище для быстрого доступа
     const profile = await faceIdStorage.createProfile({
       userId: currentUser.id,
       userEmail: currentUser.email,
@@ -188,10 +141,10 @@ export async function POST(request: NextRequest) {
       userRole: currentUser.role,
       descriptor,
       confidence,
-      deviceInfo
+      deviceInfo: getDeviceInfo(request)
     });
 
-    console.log('✅ Face ID профиль создан:', profile.id);
+    console.log('✅ Face ID профиль создан локально:', profile.id);
 
     // ✅ Создаем токен для Face ID
     const faceIdToken = faceIdStorage.createFaceIdToken(profile);
@@ -206,10 +159,6 @@ export async function POST(request: NextRequest) {
         name: currentUser.name,
         email: currentUser.email,
         role: currentUser.role
-      },
-      stats: {
-        totalProfiles: existingProfiles.length + 1,
-        activeProfiles: existingProfiles.filter(p => p.isActive).length + 1
       }
     });
 
@@ -222,9 +171,8 @@ export async function POST(request: NextRequest) {
       path: '/'
     });
 
-    // Также сохраняем ID профиля для быстрого доступа
     response.cookies.set('face_id_profile', profile.id, {
-      httpOnly: false, // Доступен из JS
+      httpOnly: false,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: 30 * 24 * 60 * 60,
@@ -232,19 +180,16 @@ export async function POST(request: NextRequest) {
     });
 
     console.log('✅ Face ID cookies установлены');
-
     return response;
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Неизвестная ошибка';
     console.error('❌ Face Register API: ошибка:', error);
-    console.log('🔍 Stack trace:', error instanceof Error ? error.stack : 'No stack trace');
 
     return NextResponse.json({
       success: false,
       message: 'Внутренняя ошибка сервера при регистрации Face ID',
-      error: process.env.NODE_ENV === 'development' ? errorMessage : undefined,
-      stack: process.env.NODE_ENV === 'development' && error instanceof Error ? error.stack : undefined
+      error: process.env.NODE_ENV === 'development' ? errorMessage : undefined
     }, { status: 500 });
   }
 }
@@ -252,7 +197,6 @@ export async function POST(request: NextRequest) {
 // ✅ GET метод для проверки статуса Face ID
 export async function GET(request: NextRequest) {
   try {
-    // Получаем токен из cookies
     const faceIdToken = request.cookies.get('face_id_registered')?.value;
     const profileId = request.cookies.get('face_id_profile')?.value;
 
@@ -273,7 +217,12 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Получаем статистику использования
+    // Проверяем профиль в Convex
+    const convexProfile = await convex.query("faceProfiles:getByUserId", {
+      userId: profile.userId,
+      userType: "user"
+    });
+
     const stats = await faceIdStorage.getStats();
 
     return NextResponse.json({
@@ -283,7 +232,8 @@ export async function GET(request: NextRequest) {
         createdAt: profile.createdAt,
         lastUsedAt: profile.lastUsedAt,
         usageCount: profile.usageCount,
-        deviceInfo: profile.deviceInfo
+        deviceInfo: profile.deviceInfo,
+        hasConvexProfile: !!convexProfile
       },
       user: {
         id: profile.userId,
@@ -326,12 +276,24 @@ export async function DELETE(request: NextRequest) {
       }, { status: 401 });
     }
 
-    // Деактивируем все Face ID профили пользователя
+    // Деактивируем профиль в Convex
+    const convexProfile = await convex.query("faceProfiles:getByUserId", {
+      userId: session.user.id,
+      userType: "user"
+    });
+
+    if (convexProfile) {
+      await convex.mutation("faceProfiles:deactivate", {
+        profileId: convexProfile._id
+      });
+      console.log('✅ Face ID профиль деактивирован в Convex');
+    }
+
+    // Деактивируем локальные профили
     const deactivatedCount = await faceIdStorage.deactivateUserProfiles(session.user.id);
 
     console.log(`🗑️ Деактивировано ${deactivatedCount} Face ID профилей для пользователя ${session.user.id}`);
 
-    // Очищаем cookies
     const response = NextResponse.json({
       success: true,
       message: 'Face ID профили удалены',

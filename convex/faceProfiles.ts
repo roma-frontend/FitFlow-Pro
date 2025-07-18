@@ -2,6 +2,30 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 
+// Вспомогательная функция для расчета косинусного сходства
+function calculateCosineSimilarity(desc1: number[], desc2: number[]): number {
+  if (!desc1 || !desc2 || desc1.length !== desc2.length) return 0;
+  
+  let dotProduct = 0;
+  let norm1 = 0;
+  let norm2 = 0;
+  
+  for (let i = 0; i < desc1.length; i++) {
+    dotProduct += desc1[i] * desc2[i];
+    norm1 += desc1[i] * desc1[i];
+    norm2 += desc2[i] * desc2[i];
+  }
+  
+  norm1 = Math.sqrt(norm1);
+  norm2 = Math.sqrt(norm2);
+  
+  if (norm1 === 0 || norm2 === 0) return 0;
+  
+  // Косинусное сходство в диапазоне [-1, 1], нормализуем к [0, 1]
+  const cosineSimilarity = dotProduct / (norm1 * norm2);
+  return (cosineSimilarity + 1) / 2;
+}
+
 // Создание Face ID профиля для тренера
 export const create = mutation({
   args: {
@@ -272,6 +296,65 @@ export const search = query({
     }
 
     return await query.collect();
+  }
+});
+
+// Поиск профиля по дескриптору для входа
+export const findByDescriptor = query({
+  args: {
+    descriptor: v.array(v.number()),
+    threshold: v.optional(v.number())
+  },
+  handler: async (ctx, args) => {
+    console.log('🔍 faceProfiles:findByDescriptor - поиск по дескриптору');
+    
+    const similarityThreshold = args.threshold || 0.6;
+    
+    // Получаем все активные профили
+    const profiles = await ctx.db
+      .query("faceProfiles")
+      .withIndex("by_active", (q) => q.eq("isActive", true))
+      .collect();
+    
+    console.log(`📋 Проверяем ${profiles.length} профилей`);
+    
+    let bestMatch = null;
+    let highestSimilarity = 0;
+    
+    for (const profile of profiles) {
+      if (!profile.faceDescriptor || profile.faceDescriptor.length !== args.descriptor.length) {
+        continue;
+      }
+      
+      // Рассчитываем косинусное сходство
+      const similarity = calculateCosineSimilarity(args.descriptor, profile.faceDescriptor);
+      
+      if (similarity > similarityThreshold && similarity > highestSimilarity) {
+        highestSimilarity = similarity;
+        bestMatch = profile;
+      }
+    }
+    
+    if (bestMatch) {
+      console.log(`✅ Найдено совпадение: ${(highestSimilarity * 100).toFixed(1)}% схожести`);
+      
+      // Получаем данные пользователя
+      let user;
+      if (bestMatch.userType === "user") {
+        user = await ctx.db.get(bestMatch.userId);
+      } else {
+        user = await ctx.db.get(bestMatch.userId);
+      }
+      
+      return {
+        profile: bestMatch,
+        similarity: highestSimilarity,
+        user: user
+      };
+    }
+    
+    console.log('❌ Совпадений не найдено');
+    return null;
   }
 });
 

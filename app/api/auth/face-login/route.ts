@@ -1,9 +1,11 @@
-// app/api/auth/face-login/route.ts - Полноценный вход через Face ID
+// app/api/auth/face-login/route.ts - ИСПРАВЛЕННАЯ ВЕРСИЯ с Convex
 import { NextRequest, NextResponse } from 'next/server';
 import { createSession } from '@/lib/simple-auth';
 import { faceIdStorage } from '@/lib/face-id-storage';
-import jwt from 'jsonwebtoken';
+import { ConvexHttpClient } from "convex/browser";
 import { UserRole } from '@/lib/permissions';
+
+const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
 interface FaceLoginRequest {
   descriptor: number[];
@@ -52,42 +54,71 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // ✅ Поиск соответствующего Face ID профиля по дескриптору
-    console.log('🔍 Поиск Face ID профиля по дескриптору...');
+    // ✅ Получаем все активные Face ID профили из Convex
+    console.log('🔍 Получаем Face ID профили из Convex...');
     
-    const match = await faceIdStorage.findByDescriptor(descriptor, SIMILARITY_THRESHOLD);
+    const allProfiles = await convex.query("faceProfiles:getAllForComparison");
     
-    if (!match) {
-      console.log('❌ Face ID профиль не найден (схожесть ниже порога)');
+    if (!allProfiles || allProfiles.length === 0) {
+      console.log('❌ Нет зарегистрированных Face ID профилей');
       
-      // Логируем для отладки
-      const stats = await faceIdStorage.getStats();
-      console.log('📊 Статистика Face ID:', stats);
+      return NextResponse.json({
+        success: false,
+        message: 'В системе нет зарегистрированных Face ID профилей',
+        debug: process.env.NODE_ENV === 'development' ? {
+          threshold: SIMILARITY_THRESHOLD,
+          profilesCount: 0
+        } : undefined
+      }, { status: 404 });
+    }
+
+    console.log(`📊 Найдено ${allProfiles.length} активных профилей`);
+
+    // ✅ Поиск соответствующего профиля
+    let bestMatch = null;
+    let highestSimilarity = 0;
+
+    for (const profile of allProfiles) {
+      if (!profile.faceDescriptor || profile.faceDescriptor.length !== descriptor.length) {
+        continue;
+      }
+
+      // Рассчитываем схожесть
+      const similarity = faceIdStorage.calculateSimilarity(descriptor, profile.faceDescriptor);
+      
+      console.log(`🔍 Проверка профиля ${profile.id}: схожесть ${(similarity * 100).toFixed(1)}%`);
+
+      if (similarity > SIMILARITY_THRESHOLD && similarity > highestSimilarity) {
+        highestSimilarity = similarity;
+        bestMatch = profile;
+      }
+    }
+
+    if (!bestMatch) {
+      console.log('❌ Face ID не найден (схожесть ниже порога)');
       
       return NextResponse.json({
         success: false,
         message: 'Face ID не распознан. Убедитесь, что вы зарегистрировали Face ID в системе.',
         debug: process.env.NODE_ENV === 'development' ? {
           threshold: SIMILARITY_THRESHOLD,
-          totalProfiles: stats.totalProfiles,
-          activeProfiles: stats.activeProfiles
+          checkedProfiles: allProfiles.length,
+          maxSimilarity: Math.round(highestSimilarity * 100)
         } : undefined
       }, { status: 404 });
     }
 
-    const { profile, similarity } = match;
-    
-    console.log('✅ Face ID профиль найден:', {
-      profileId: profile.id,
-      userId: profile.userId,
-      userName: profile.userName,
-      similarity: `${(similarity * 100).toFixed(1)}%`,
+    console.log('✅ Face ID найден:', {
+      profileId: bestMatch.id,
+      userId: bestMatch.userId,
+      userName: bestMatch.name,
+      similarity: `${(highestSimilarity * 100).toFixed(1)}%`,
       confidence: `${confidence}%`
     });
 
     // ✅ Дополнительная проверка качества совпадения
-    const combinedScore = (similarity + confidence / 100) / 2;
-    if (combinedScore < 0.65) { // 65% комбинированный порог
+    const combinedScore = (highestSimilarity + confidence / 100) / 2;
+    if (combinedScore < 0.65) {
       console.log('⚠️ Низкий комбинированный score:', combinedScore);
       return NextResponse.json({
         success: false,
@@ -95,23 +126,51 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // ✅ Обновляем статистику использования
-    await faceIdStorage.updateUsageStats(profile.id);
-
-    // ✅ Создаем сессию для пользователя
-    console.log('🔐 Создаем сессию для пользователя:', profile.userId);
-    
-    const sessionToken = await createSession({
-      id: profile.userId,
-      email: profile.userEmail,
-      role: profile.userRole as UserRole,
-      name: profile.userName,
-      createdAt: new Date(),
-      updatedAt: new Date()
+    // ✅ Обновляем статистику использования в Convex
+    await convex.mutation("faceProfiles:updateLastUsed", {
+      profileId: bestMatch.id,
+      timestamp: Date.now()
     });
 
-    // ✅ Создаем новый Face ID токен
-    const faceIdToken = faceIdStorage.createFaceIdToken(profile);
+    // ✅ Получаем данные пользователя из Convex
+    console.log('🔍 Получаем данные пользователя из Convex...');
+    
+    let userData;
+    if (bestMatch.userType === 'trainer') {
+      userData = await convex.query("trainers:getById", { trainerId: bestMatch.userId });
+    } else {
+      userData = await convex.query("users:getById", { userId: bestMatch.userId });
+    }
+
+    if (!userData) {
+      console.error('❌ Пользователь не найден в базе данных');
+      return NextResponse.json({
+        success: false,
+        message: 'Пользователь не найден в системе'
+      }, { status: 404 });
+    }
+
+    // ✅ Создаем сессию для пользователя
+    console.log('🔐 Создаем сессию для пользователя:', userData._id);
+    
+    const sessionToken = await createSession({
+      id: userData._id,
+      email: userData.email,
+      role: (userData.role || bestMatch.userType || 'member') as UserRole,
+      name: userData.name || bestMatch.name,
+      avatar: userData.avatar,
+      avatarUrl: userData.avatarUrl,
+      isVerified: userData.isVerified || false,
+      rating: userData.rating || 0,
+      createdAt: new Date(userData.createdAt || Date.now()),
+      updatedAt: new Date(userData.updatedAt || Date.now())
+    });
+
+    // ✅ Обновляем локальную статистику
+    const localProfile = await faceIdStorage.findByDescriptor(descriptor, SIMILARITY_THRESHOLD);
+    if (localProfile) {
+      await faceIdStorage.updateUsageStats(localProfile.profile.id);
+    }
 
     // ✅ Определяем URL дашборда по роли
     const dashboardUrls: Record<string, string> = {
@@ -124,22 +183,23 @@ export async function POST(request: NextRequest) {
       'staff': '/staff-dashboard'
     };
 
-    const dashboardUrl = dashboardUrls[profile.userRole] || '/member-dashboard';
+    const userRole = (userData.role || bestMatch.userType || 'member') as string;
+    const dashboardUrl = dashboardUrls[userRole] || '/member-dashboard';
 
     // ✅ Создаем response
     const response = NextResponse.json({
       success: true,
-      message: `Добро пожаловать, ${profile.userName}!`,
+      message: `Добро пожаловать, ${userData.name || bestMatch.name}!`,
       user: {
-        id: profile.userId,
-        name: profile.userName,
-        email: profile.userEmail,
-        role: profile.userRole as UserRole
+        id: userData._id,
+        name: userData.name || bestMatch.name,
+        email: userData.email || bestMatch.email,
+        role: userRole as UserRole
       },
       authMethod: "face_recognition",
       dashboardUrl,
       metrics: {
-        similarity: Math.round(similarity * 100),
+        similarity: Math.round(highestSimilarity * 100),
         confidence: Math.round(confidence),
         combinedScore: Math.round(combinedScore * 100),
         processingTime: Date.now() - startTime
@@ -160,25 +220,19 @@ export async function POST(request: NextRequest) {
     response.cookies.set('session_id', sessionToken, cookieOptions);
     
     // Роль пользователя (не httpOnly для доступа из JS)
-    response.cookies.set('user_role', profile.userRole, {
+    response.cookies.set('user_role', userRole, {
       ...cookieOptions,
       httpOnly: false
     });
 
-    // Обновляем Face ID токен
-    response.cookies.set('face_id_registered', faceIdToken, {
-      ...cookieOptions,
-      maxAge: 30 * 24 * 60 * 60 // 30 дней
-    });
-
-    // ID профиля
-    response.cookies.set('face_id_profile', profile.id, {
+    // Face ID профиль
+    response.cookies.set('face_id_profile', bestMatch.id, {
       ...cookieOptions,
       httpOnly: false,
       maxAge: 30 * 24 * 60 * 60
     });
 
-    console.log('✅ Face ID вход успешен для:', profile.userName);
+    console.log('✅ Face ID вход успешен для:', userData.name || bestMatch.name);
     console.log('⏱️ Время обработки:', Date.now() - startTime, 'ms');
     
     return response;
@@ -198,7 +252,8 @@ export async function POST(request: NextRequest) {
 // ✅ GET метод для проверки возможности Face ID входа
 export async function GET(request: NextRequest) {
   try {
-    const stats = await faceIdStorage.getStats();
+    // Получаем статистику из Convex
+    const stats = await convex.query("faceProfiles:getStats");
     
     return NextResponse.json({
       enabled: true,
@@ -209,9 +264,9 @@ export async function GET(request: NextRequest) {
         similarityThreshold: Math.round(SIMILARITY_THRESHOLD * 100)
       },
       stats: {
-        totalProfiles: stats.totalProfiles,
-        activeProfiles: stats.activeProfiles,
-        totalUsers: stats.totalUsers
+        totalProfiles: stats?.total || 0,
+        activeProfiles: stats?.active || 0,
+        recentlyUsed: stats?.recentlyUsed || 0
       },
       timestamp: new Date().toISOString()
     });
