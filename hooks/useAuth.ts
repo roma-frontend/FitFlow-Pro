@@ -503,7 +503,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Редирект (если не пропускаем)
       if (!skipRedirect) {
         console.log('🔄 AuthProvider: выполняем редирект на главную...');
-        window.location.href = "/";
+        router.push("/");
         // Loader скроется автоматически при загрузке новой страницы
       } else {
         console.log('⏭️ AuthProvider: пропускаем редирект');
@@ -530,7 +530,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setAuthStatus({ authenticated: false });
 
       if (!skipRedirect) {
-        window.location.href = "/";
+        router.push("/");
       }
     } finally {
       setLoading(false);

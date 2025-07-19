@@ -1,4 +1,4 @@
-// components/auth/GoogleLoginButton.tsx - С SUSPENSE BOUNDARY
+// components/auth/GoogleLoginButton.tsx - ОБНОВЛЕННАЯ ВЕРСИЯ
 "use client";
 
 import { signIn } from "next-auth/react";
@@ -7,6 +7,7 @@ import { useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useLoaderStore } from "@/stores/loaderStore";
+import { UserRole } from "@/lib/permissions";
 
 interface GoogleLoginButtonProps {
   isStaff?: boolean;
@@ -47,14 +48,19 @@ function GoogleLoginButtonInner({ isStaff = false, className = "", disabled }: G
         sessionStorage.setItem('google_login_is_staff', isStaff.toString());
         sessionStorage.setItem('google_login_target_url', targetUrl);
         
-        // НОВОЕ: Устанавливаем флаг для плавного перехода
+        // ✅ НОВОЕ: Сохраняем роль для staff
+        if (isStaff) {
+          sessionStorage.setItem('google_login_staff_role', 'admin');
+        }
+        
+        // Устанавливаем флаг для плавного перехода
         sessionStorage.setItem('is_redirecting', 'true');
       }
       
-      // НОВОЕ: Показываем минимальный индикатор загрузки перед редиректом
+      // Показываем минимальный индикатор загрузки перед редиректом
       const { showLoader } = useLoaderStore.getState();
       showLoader("login", {
-        userRole: isStaff ? "admin" : "member",
+        userRole: (isStaff ? "admin" : "member") as UserRole,
         userName: "Переход к Google...",
         dashboardUrl: targetUrl
       });
@@ -79,6 +85,7 @@ function GoogleLoginButtonInner({ isStaff = false, className = "", disabled }: G
         sessionStorage.removeItem('google_login_in_progress');
         sessionStorage.removeItem('google_login_is_staff');
         sessionStorage.removeItem('google_login_target_url');
+        sessionStorage.removeItem('google_login_staff_role');
         sessionStorage.removeItem('is_redirecting');
       }
 

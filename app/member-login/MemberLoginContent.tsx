@@ -1,7 +1,7 @@
 // app/member-login/MemberLoginContent.tsx - ПОЛНАЯ ВЕРСИЯ
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useAuthForm } from "@/hooks/useAuthForm";
 import { AuthCard } from "@/components/auth/AuthCard";
 import { ErrorAlert } from "@/components/auth/ErrorAlert";

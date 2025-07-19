@@ -1,4 +1,4 @@
-// components/auth/GoogleAuthHandler.tsx - С SUSPENSE
+// components/auth/GoogleAuthHandler.tsx - ОБНОВЛЕННАЯ ВЕРСИЯ
 "use client";
 
 import { useEffect, useState, useRef, Suspense } from 'react';
@@ -16,7 +16,7 @@ function GoogleAuthHandlerInner() {
   const [isProcessing, setIsProcessing] = useState(false);
   const processedRef = useRef(false);
 
-  // НОВОЕ: Показываем loader сразу при обнаружении возврата от Google
+  // Показываем loader сразу при обнаружении возврата от Google
   useEffect(() => {
     // Проверяем параметры возврата от Google OAuth
     const code = searchParams.get('code');
@@ -30,10 +30,11 @@ function GoogleAuthHandlerInner() {
       
       const isStaff = sessionStorage.getItem('google_login_is_staff') === 'true';
       const savedTarget = sessionStorage.getItem('google_login_target_url');
+      const staffRole = sessionStorage.getItem('google_login_staff_role');
       const isStaffLogin = pathname.includes('staff-login');
       
       // Определяем роль и цель
-      const userRole = isStaff || isStaffLogin ? "admin" : "member";
+      const userRole = isStaff || isStaffLogin ? (staffRole || "admin") : "member";
       const targetUrl = savedTarget || (isStaff || isStaffLogin ? '/admin' : '/member-dashboard');
       
       // СРАЗУ показываем loader
@@ -59,6 +60,8 @@ function GoogleAuthHandlerInner() {
       sessionStorage.removeItem('google_login_in_progress');
       sessionStorage.removeItem('google_login_is_staff');
       sessionStorage.removeItem('google_login_target_url');
+      sessionStorage.removeItem('google_login_staff_role');
+      sessionStorage.removeItem('is_redirecting');
       
       // Небольшая задержка для плавности анимации
       setTimeout(() => {
@@ -68,7 +71,7 @@ function GoogleAuthHandlerInner() {
     }
   }, [status, session, isProcessing]);
 
-  // НОВОЕ: Рендерим loader если он активен
+  // Рендерим loader если он активен
   if (loaderType === "login" && loaderProps) {
     return (
       <StaffLoginLoader

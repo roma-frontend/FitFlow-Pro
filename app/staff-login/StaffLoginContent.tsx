@@ -1,4 +1,4 @@
-// app/staff-login/StaffLoginContent.tsx
+// app/staff-login/StaffLoginContent.tsx - ФИНАЛЬНАЯ ВЕРСИЯ С ЕДИНЫМ LOADER
 "use client";
 
 import { useStaffAuth } from "@/hooks/useStaffAuth";
@@ -15,11 +15,43 @@ import { ShieldButtonV1 } from "./components/StaffLoginButton";
 import { GoogleLoginButton } from "@/components/auth/GoogleLoginButton";
 import { useLoaderStore } from "@/stores/loaderStore";
 import { FaceIdQuickAccess } from "@/components/FaceIdQuickAccess";
+import StaffLoginLoader from "./components/StaffLoginLoader";
+import { UserRole } from "@/lib/permissions";
+
+// Утилитная функция для безопасного приведения строки к UserRole
+const toUserRole = (role: string | null | undefined): UserRole => {
+  const validRoles: UserRole[] = ["super-admin", "admin", "manager", "trainer", "member", "client"];
+  if (role && validRoles.includes(role as UserRole)) {
+    return role as UserRole;
+  }
+  return "member"; // Значение по умолчанию
+};
+
+// ✅ ПРЕДВАРИТЕЛЬНАЯ ПРОВЕРКА перед хуками для мгновенного показа loader
+function shouldShowLoader() {
+  if (typeof window === 'undefined') return false;
+  
+  // Проверяем возврат от Google OAuth
+  const urlParams = new URLSearchParams(window.location.search);
+  const hasGoogleParams = urlParams.get('code') && urlParams.get('state');
+  const googleInProgress = sessionStorage.getItem('google_login_in_progress') === 'true';
+  
+  // Проверяем флаг редиректа
+  const isRedirecting = sessionStorage.getItem('is_redirecting') === 'true';
+  
+  return (hasGoogleParams && googleInProgress) || isRedirecting;
+}
 
 export default function StaffLoginContent() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  
+  // ✅ НОВОЕ: Получаем состояние loader из store
+  const { loaderType, loaderProps } = useLoaderStore();
+  
+  // ✅ ПРЕДВАРИТЕЛЬНАЯ ПРОВЕРКА для мгновенного показа loader
+  const [showLoaderImmediately] = useState(() => shouldShowLoader());
 
   let staffAuthData;
   try {
@@ -53,6 +85,43 @@ export default function StaffLoginContent() {
     handlePasswordReset,
     handleSuperAdminQuickLogin,
   } = staffAuthData;
+
+  // ✅ ЕДИНАЯ ЛОГИКА: показываем полноэкранный loader когда:
+  // 1. loaderType = "login"
+  // 2. Предварительная проверка показала необходимость
+  // 3. Возврат от Google OAuth
+  if ((loaderType === "login" && loaderProps) || showLoaderImmediately) {
+    const defaultProps = {
+      userRole: "admin" as UserRole,
+      userName: "Загрузка...",
+      dashboardUrl: "/admin"
+    };
+    
+    // Если есть данные от Google OAuth, используем их
+    if (showLoaderImmediately && !loaderProps) {
+      const isStaff = sessionStorage.getItem('google_login_is_staff') === 'true';
+      const savedTarget = sessionStorage.getItem('google_login_target_url');
+      const staffRole = sessionStorage.getItem('google_login_staff_role');
+      
+      return (
+        <StaffLoginLoader
+          userRole={toUserRole(staffRole) || (isStaff ? "admin" : "member")}
+          userName="Завершение авторизации..."
+          dashboardUrl={savedTarget || "/admin"}
+          isOpen={true}
+        />
+      );
+    }
+    
+    return (
+      <StaffLoginLoader
+        userRole={loaderProps?.userRole || defaultProps.userRole}
+        userName={loaderProps?.userName || defaultProps.userName}
+        dashboardUrl={loaderProps?.dashboardUrl || defaultProps.dashboardUrl}
+        isOpen={true}
+      />
+    );
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,6 +157,38 @@ export default function StaffLoginContent() {
     setResetEmail("");
   };
 
+  // ✅ Проверка возврата от Google OAuth
+  useEffect(() => {
+    const checkGoogleOAuthReturn = () => {
+      // Проверяем если пользователь вернулся после Google OAuth
+      const googleLoginInProgress = sessionStorage.getItem('google_login_in_progress');
+      const urlParams = new URLSearchParams(window.location.search);
+      const code = urlParams.get('code');
+      const state = urlParams.get('state');
+      
+      // Если обнаружен возврат и loader еще не показан
+      if (googleLoginInProgress === 'true' && code && state && !loaderType) {
+        console.log('🔄 Обнаружен возврат после Google OAuth на staff-login - показываем loader');
+        
+        // Получаем сохраненные данные
+        const isStaff = sessionStorage.getItem('google_login_is_staff') === 'true';
+        const savedRedirect = sessionStorage.getItem('google_login_target_url') || 
+                             sessionStorage.getItem('google_login_redirect');
+        const staffRole = sessionStorage.getItem('google_login_staff_role');
+        
+        // Показываем loader немедленно
+        const { showLoader } = useLoaderStore.getState();
+        showLoader("login", {
+          userRole: toUserRole(staffRole) || (isStaff ? "admin" : "member"),
+          userName: "Завершение авторизации...",
+          dashboardUrl: savedRedirect || "/admin"
+        });
+      }
+    };
+    
+    // Проверяем сразу при загрузке
+    checkGoogleOAuthReturn();
+  }, [loaderType]);
 
   if (showForgotPassword) {
     return (
@@ -149,7 +250,7 @@ export default function StaffLoginContent() {
                       disabled={isLoading || !email || !password}
                       className="w-full py-3 px-4 bg-gradient-to-r from-slate-600 to-blue-600 text-white font-medium rounded-2xl hover:from-slate-700 hover:to-blue-700 focus:ring-4 focus:ring-blue-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
                     >
-                      {isLoading ? (
+                      {isLoading && !(loaderType === "login") ? (
                         <div className="flex items-center justify-center">
                           <Loader2 className="h-5 w-5 animate-spin mr-2" />
                           Проверка...
