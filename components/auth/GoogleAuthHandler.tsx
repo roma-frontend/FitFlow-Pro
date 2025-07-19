@@ -6,6 +6,16 @@ import { useSession } from 'next-auth/react';
 import { useLoaderStore } from '@/stores/loaderStore';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import StaffLoginLoader from '@/app/staff-login/components/StaffLoginLoader';
+import { UserRole } from '@/lib/permissions';
+
+// Утилитная функция для безопасного приведения строки к UserRole
+const toUserRole = (role: string | null | undefined): UserRole => {
+  const validRoles: UserRole[] = ["super-admin", "admin", "manager", "trainer", "member", "client"];
+  if (role && validRoles.includes(role as UserRole)) {
+    return role as UserRole;
+  }
+  return "member"; // Значение по умолчанию
+};
 
 // Внутренний компонент который использует useSearchParams
 function GoogleAuthHandlerInner() {
@@ -34,7 +44,7 @@ function GoogleAuthHandlerInner() {
       const isStaffLogin = pathname.includes('staff-login');
       
       // Определяем роль и цель
-      const userRole = isStaff || isStaffLogin ? (staffRole || "admin") : "member";
+      const userRole = isStaff || isStaffLogin ? toUserRole(staffRole) || "admin" : "member";
       const targetUrl = savedTarget || (isStaff || isStaffLogin ? '/admin' : '/member-dashboard');
       
       // СРАЗУ показываем loader
@@ -88,18 +98,16 @@ function GoogleAuthHandlerInner() {
 
 // Основной компонент с Suspense
 export function GoogleAuthHandler() {
-  const { loaderType, loaderProps } = useLoaderStore();
-  
-  // Если loader активен, показываем его без Suspense
-  if (loaderType === "login" && loaderProps) {
-    return (
-      <StaffLoginLoader
-        userRole={loaderProps.userRole || "member"}
-        userName={loaderProps.userName || "Пользователь"}
-        dashboardUrl={loaderProps.dashboardUrl || "/"}
-        isOpen={true}
-      />
-    );
+  // Не рендерим ничего если мы на клиенте и нет признаков OAuth
+  if (typeof window !== 'undefined') {
+    const urlParams = new URLSearchParams(window.location.search);
+    const hasOAuthParams = urlParams.get('code') && urlParams.get('state');
+    const googleInProgress = sessionStorage.getItem('google_login_in_progress') === 'true';
+    
+    // Если нет признаков OAuth процесса, не рендерим компонент
+    if (!hasOAuthParams && !googleInProgress) {
+      return null;
+    }
   }
   
   return (

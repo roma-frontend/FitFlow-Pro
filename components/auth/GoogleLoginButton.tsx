@@ -1,4 +1,4 @@
-// components/auth/GoogleLoginButton.tsx - ОБНОВЛЕННАЯ ВЕРСИЯ
+// components/auth/GoogleLoginButton.tsx - БЕЗОПАСНАЯ ВЕРСИЯ
 "use client";
 
 import { signIn } from "next-auth/react";
@@ -6,8 +6,6 @@ import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useLoaderStore } from "@/stores/loaderStore";
-import { UserRole } from "@/lib/permissions";
 
 interface GoogleLoginButtonProps {
   isStaff?: boolean;
@@ -24,75 +22,63 @@ function GoogleLoginButtonInner({ isStaff = false, className = "", disabled }: G
   const redirectParam = searchParams.get('redirect');
 
   const handleGoogleLogin = async () => {
+    // Предотвращаем множественные клики
+    if (isLoading) return;
+    
+    setIsLoading(true);
+
+    // Определяем целевой URL
+    let targetUrl = isStaff ? "/admin" : "/member-dashboard";
+    if (redirectParam) {
+      try {
+        const decodedRedirect = decodeURIComponent(redirectParam);
+        if (decodedRedirect.startsWith('/') && !decodedRedirect.startsWith('//')) {
+          targetUrl = decodedRedirect;
+        }
+      } catch (error) {
+        console.error('Error decoding redirect:', error);
+      }
+    }
+
+    console.log("🔐 Google Login - начало процесса:", { isStaff, targetUrl });
+
+    // Сохраняем состояние в sessionStorage
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('google_login_in_progress', 'true');
+      sessionStorage.setItem('google_login_is_staff', isStaff.toString());
+      sessionStorage.setItem('google_login_target_url', targetUrl);
+      
+      if (isStaff) {
+        sessionStorage.setItem('google_login_staff_role', 'admin');
+      }
+    }
+    
     try {
-      setIsLoading(true);
-
-      // Определяем целевой URL
-      let targetUrl = isStaff ? "/admin" : "/member-dashboard";
-      if (redirectParam) {
-        try {
-          const decodedRedirect = decodeURIComponent(redirectParam);
-          if (decodedRedirect.startsWith('/') && !decodedRedirect.startsWith('//')) {
-            targetUrl = decodedRedirect;
-          }
-        } catch (error) {
-          console.error('Error decoding redirect:', error);
-        }
-      }
-
-      console.log("🔐 Google Login - начало процесса:", { isStaff, targetUrl });
-
-      // Сохраняем состояние в sessionStorage
-      if (typeof window !== 'undefined') {
-        sessionStorage.setItem('google_login_in_progress', 'true');
-        sessionStorage.setItem('google_login_is_staff', isStaff.toString());
-        sessionStorage.setItem('google_login_target_url', targetUrl);
-        
-        // ✅ НОВОЕ: Сохраняем роль для staff
-        if (isStaff) {
-          sessionStorage.setItem('google_login_staff_role', 'admin');
-        }
-        
-        // Устанавливаем флаг для плавного перехода
-        sessionStorage.setItem('is_redirecting', 'true');
-      }
-      
-      // Показываем минимальный индикатор загрузки перед редиректом
-      const { showLoader } = useLoaderStore.getState();
-      showLoader("login", {
-        userRole: (isStaff ? "admin" : "member") as UserRole,
-        userName: "Переход к Google...",
-        dashboardUrl: targetUrl
-      });
-      
-      // Небольшая задержка для отображения loader
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      await signIn("google", {
+      // Вызываем signIn без await, так как будет редирект
+      signIn("google", {
         callbackUrl: targetUrl,
-        redirect: true, // Серверный редирект на Google
+        redirect: true,
       });
-
+      
+      // Держим кнопку в состоянии загрузки
+      // Компонент будет размонтирован при редиректе
     } catch (error) {
-      console.error("Google login error:", error);
+      // Обработка ошибок signIn
+      console.error("Google signIn error:", error);
       setIsLoading(false);
 
-      // Очищаем loader и флаги при ошибке
-      const { hideLoader } = useLoaderStore.getState();
-      hideLoader();
-
+      // Очищаем флаги при ошибке
       if (typeof window !== 'undefined') {
         sessionStorage.removeItem('google_login_in_progress');
         sessionStorage.removeItem('google_login_is_staff');
         sessionStorage.removeItem('google_login_target_url');
         sessionStorage.removeItem('google_login_staff_role');
-        sessionStorage.removeItem('is_redirecting');
       }
 
       toast({
         variant: "destructive",
         title: "Ошибка",
-        description: "Произошла ошибка при входе через Google"
+        description: "Не удалось начать вход через Google. Попробуйте еще раз."
       });
     }
   };
@@ -118,18 +104,20 @@ function GoogleLoginButtonInner({ isStaff = false, className = "", disabled }: G
   );
 }
 
-// Основной компонент с Suspense
+// Основной компонент с Suspense и ErrorBoundary
 export function GoogleLoginButton(props: GoogleLoginButtonProps) {
   return (
-    <Suspense fallback={
-      <button
-        disabled
-        className={`w-full flex items-center justify-center gap-3 px-4 py-3 text-md border border-gray-300 rounded-2xl bg-gray-50 opacity-50 cursor-not-allowed ${props.className || ""}`}
-      >
-        <Loader2 className="h-5 w-5 animate-spin" />
-        <span className="font-medium">Загрузка...</span>
-      </button>
-    }>
+    <Suspense 
+      fallback={
+        <button
+          disabled
+          className={`w-full flex items-center justify-center gap-3 px-4 py-3 text-md border border-gray-300 rounded-2xl bg-gray-50 opacity-50 cursor-not-allowed ${props.className || ""}`}
+        >
+          <div className="w-5 h-5 bg-gray-300 rounded animate-pulse" />
+          <span className="font-medium">Войти через Google</span>
+        </button>
+      }
+    >
       <GoogleLoginButtonInner {...props} />
     </Suspense>
   );

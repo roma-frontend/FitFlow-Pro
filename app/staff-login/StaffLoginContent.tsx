@@ -1,4 +1,4 @@
-// app/staff-login/StaffLoginContent.tsx - ФИНАЛЬНАЯ ВЕРСИЯ С ЕДИНЫМ LOADER
+// app/staff-login/StaffLoginContent.tsx - ПОЛНАЯ ВЕРСИЯ
 "use client";
 
 import { useStaffAuth } from "@/hooks/useStaffAuth";
@@ -27,19 +27,17 @@ const toUserRole = (role: string | null | undefined): UserRole => {
   return "member"; // Значение по умолчанию
 };
 
-// ✅ ПРЕДВАРИТЕЛЬНАЯ ПРОВЕРКА перед хуками для мгновенного показа loader
+// Предварительная проверка для показа loader
 function shouldShowLoader() {
   if (typeof window === 'undefined') return false;
   
-  // Проверяем возврат от Google OAuth
+  // Проверяем ТОЛЬКО возврат от Google OAuth
   const urlParams = new URLSearchParams(window.location.search);
   const hasGoogleParams = urlParams.get('code') && urlParams.get('state');
   const googleInProgress = sessionStorage.getItem('google_login_in_progress') === 'true';
   
-  // Проверяем флаг редиректа
-  const isRedirecting = sessionStorage.getItem('is_redirecting') === 'true';
-  
-  return (hasGoogleParams && googleInProgress) || isRedirecting;
+  // Показываем loader ТОЛЬКО при возврате от Google
+  return hasGoogleParams && googleInProgress;
 }
 
 export default function StaffLoginContent() {
@@ -47,10 +45,10 @@ export default function StaffLoginContent() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   
-  // ✅ НОВОЕ: Получаем состояние loader из store
+  // Получаем состояние loader из store
   const { loaderType, loaderProps } = useLoaderStore();
   
-  // ✅ ПРЕДВАРИТЕЛЬНАЯ ПРОВЕРКА для мгновенного показа loader
+  // Предварительная проверка для мгновенного показа loader
   const [showLoaderImmediately] = useState(() => shouldShowLoader());
 
   let staffAuthData;
@@ -86,10 +84,7 @@ export default function StaffLoginContent() {
     handleSuperAdminQuickLogin,
   } = staffAuthData;
 
-  // ✅ ЕДИНАЯ ЛОГИКА: показываем полноэкранный loader когда:
-  // 1. loaderType = "login"
-  // 2. Предварительная проверка показала необходимость
-  // 3. Возврат от Google OAuth
+  // Единая логика показа loader
   if ((loaderType === "login" && loaderProps) || showLoaderImmediately) {
     const defaultProps = {
       userRole: "admin" as UserRole,
@@ -157,7 +152,7 @@ export default function StaffLoginContent() {
     setResetEmail("");
   };
 
-  // ✅ Проверка возврата от Google OAuth
+  // Проверка возврата от Google OAuth
   useEffect(() => {
     const checkGoogleOAuthReturn = () => {
       // Проверяем если пользователь вернулся после Google OAuth
@@ -378,7 +373,7 @@ export default function StaffLoginContent() {
         </div>
       </div>
 
-      {/* Десктопная версия (оригинальная) */}
+      {/* Десктопная версия */}
       <div className="hidden lg:block py-8 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
         <div className="max-w-6xl mx-auto">
 
@@ -395,7 +390,7 @@ export default function StaffLoginContent() {
           {/* Основной контент в виде "книги" */}
           <div className="grid lg:grid-cols-2 gap-8 items-start">
 
-            {/* Левая "страница" - Ваши компоненты */}
+            {/* Левая "страница" - формы */}
             <div className="order-1 space-y-6">
               <StaffLoginForm
                 onSubmit={handleFormSubmit}
@@ -413,7 +408,7 @@ export default function StaffLoginContent() {
               />
             </div>
 
-            {/* Правая "страница" - Информация */}
+            {/* Правая "страница" - информация */}
             <div className="order-1 lg:order-2 space-y-6">
 
               <StaffSecurityInfo />

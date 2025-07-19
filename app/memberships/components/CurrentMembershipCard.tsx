@@ -1,19 +1,18 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { 
-  Calendar, 
-  Clock, 
-  TrendingUp, 
-  RefreshCw, 
-  Sparkles, 
-  Activity,
-  Award,
-  ChevronRight,
-  Shield,
-  Zap,
-  BarChart3
+import {
+    Calendar,
+    Clock,
+    TrendingUp,
+    RefreshCw,
+    Sparkles,
+    Activity,
+    Award,
+    ChevronRight,
+    Shield,
+    Zap,
+    BarChart3
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -40,7 +39,7 @@ export function CurrentMembershipCard({
 }) {
     const daysPercentage = Math.max(0, Math.min(100, ((membership.remainingDays || 0) / 30) * 100));
     const isActive = membership.status === "active";
-    
+
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -56,7 +55,7 @@ export function CurrentMembershipCard({
 
                 {/* Верхний градиент */}
                 <div className={`h-1 bg-gradient-to-r ${planTemplate?.color || "from-gray-500 to-gray-600"}`} />
-                
+
                 <CardHeader className="relative pb-4">
                     <div className="flex items-start justify-between">
                         <div className="space-y-2">
@@ -83,12 +82,11 @@ export function CurrentMembershipCard({
                             animate={{ scale: 1 }}
                             transition={{ delay: 0.2, type: "spring" }}
                         >
-                            <Badge 
-                                className={`${
-                                    isActive 
-                                        ? "bg-gradient-to-r from-green-500 to-emerald-500 text-white border-0 shadow-lg" 
+                            <Badge
+                                className={`${isActive
+                                        ? "bg-gradient-to-r from-green-500 to-emerald-500 text-white border-0 shadow-lg"
                                         : "bg-gradient-to-r from-red-500 to-rose-500 text-white border-0 shadow-lg"
-                                } px-3 py-1.5 font-semibold`}
+                                    } px-3 py-1.5 font-semibold`}
                             >
                                 <span className="flex items-center gap-1.5">
                                     {isActive ? (
@@ -138,7 +136,7 @@ export function CurrentMembershipCard({
                                 </span>
                             </motion.div>
                         </div>
-                        
+
                         {/* Красивый прогресс-бар */}
                         <div className="relative">
                             <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
@@ -146,13 +144,12 @@ export function CurrentMembershipCard({
                                     initial={{ width: 0 }}
                                     animate={{ width: `${daysPercentage}%` }}
                                     transition={{ duration: 1, ease: "easeOut" }}
-                                    className={`h-full bg-gradient-to-r ${
-                                        membership.remainingDays > 14 
-                                            ? "from-green-400 to-emerald-500" 
-                                            : membership.remainingDays > 7 
-                                            ? "from-yellow-400 to-orange-500"
-                                            : "from-red-400 to-rose-500"
-                                    } relative`}
+                                    className={`h-full bg-gradient-to-r ${membership.remainingDays > 14
+                                            ? "from-green-400 to-emerald-500"
+                                            : membership.remainingDays > 7
+                                                ? "from-yellow-400 to-orange-500"
+                                                : "from-red-400 to-rose-500"
+                                        } relative`}
                                 >
                                     <div className="absolute inset-0 bg-white/30 animate-pulse" />
                                 </motion.div>
@@ -228,7 +225,7 @@ export function CurrentMembershipCard({
                                 <h4 className="font-bold text-gray-900">Статистика посещений</h4>
                                 <Sparkles className="h-4 w-4 text-yellow-500 ml-auto" />
                             </div>
-                            
+
                             <div className="grid md:grid-cols-3 gap-4">
                                 <div className="text-center group">
                                     <div className="bg-white rounded-xl p-3 shadow-sm group-hover:shadow-md transition-all duration-300">
@@ -243,7 +240,7 @@ export function CurrentMembershipCard({
                                         <p className="text-xs text-gray-600 mt-1">В этом месяце</p>
                                     </div>
                                 </div>
-                                
+
                                 <div className="text-center group">
                                     <div className="bg-white rounded-xl p-3 shadow-sm group-hover:shadow-md transition-all duration-300">
                                         <motion.p
@@ -257,7 +254,7 @@ export function CurrentMembershipCard({
                                         <p className="text-xs text-gray-600 mt-1">Всего визитов</p>
                                     </div>
                                 </div>
-                                
+
                                 <div className="text-center group">
                                     <div className="bg-white rounded-xl p-3 shadow-sm group-hover:shadow-md transition-all duration-300">
                                         <motion.p
@@ -305,7 +302,7 @@ export function CurrentMembershipCard({
                                 </Button>
                             </motion.div>
                         )}
-                        
+
                         <motion.div
                             initial={{ opacity: 0, scale: 0.9 }}
                             animate={{ opacity: 1, scale: 1 }}
@@ -323,7 +320,7 @@ export function CurrentMembershipCard({
                                 <ChevronRight className="h-4 w-4 ml-1 opacity-50 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
                             </Button>
                         </motion.div>
-                        
+
                         <motion.div
                             initial={{ opacity: 0, scale: 0.9 }}
                             animate={{ opacity: 1, scale: 1 }}

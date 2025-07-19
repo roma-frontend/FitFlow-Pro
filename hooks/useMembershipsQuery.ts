@@ -1,7 +1,6 @@
 // hooks/useMembershipsQuery.ts
 import { useQuery, useMutation, useQueryClient, type UseQueryOptions } from '@tanstack/react-query';
 import {
-  fetchUserMemberships,
   fetchCurrentMembership,
   fetchMembershipPlans,
   createMembership,
@@ -10,12 +9,6 @@ import {
   fetchMembershipHistory,
   fetchMembershipStats
 } from '@/lib/api/memberships';
-import type { Membership, MembershipPlan, MembershipFormData } from '@/types/membership';
-
-interface MembershipsQueryParams {
-  userId?: string;
-  includeExpired?: boolean;
-}
 
 // Хук для получения текущего абонемента пользователя
 export function useCurrentMembership(userId?: string) {
