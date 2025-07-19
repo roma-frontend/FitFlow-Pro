@@ -19,6 +19,22 @@ import { BodyPhotoUpload } from '@/components/ui/body-photo-upload';
 import { generatePersonalizedPlan } from '@/utils/generatePersonalizedPlan';
 import type { BodyAnalysisResult, PersonalizedPlan } from '@/types/bodyAnalysis';
 
+// Extended trainer type with booking links
+interface ExtendedTrainer {
+  id: string;
+  name: string;
+  specialty: string;
+  matchScore: number;
+  reason: string;
+  bookingLink?: string;
+  link?: string;
+}
+
+// Extended PersonalizedPlan type
+interface ExtendedPersonalizedPlan extends Omit<PersonalizedPlan, 'recommendedTrainer'> {
+  recommendedTrainer: ExtendedTrainer;
+}
+
 interface BodyAnalysisModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -42,14 +58,16 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [analysisResult, setAnalysisResult] = useState<BodyAnalysisResult | null>(null);
-  const [personalizedPlan, setPersonalizedPlan] = useState<PersonalizedPlan | null>(null);
+  const [personalizedPlan, setPersonalizedPlan] = useState<ExtendedPersonalizedPlan | null>(null);
   const [progress, setProgress] = useState(0);
   const [isSharing, setIsSharing] = useState(false);
+
+  // 🔧 ОПРЕДЕЛЯЕМ АВТОРИЗАЦИЮ ИЗ КОНТЕКСТА
+  const isAuthenticated = !!user;
 
   const disableScroll = () => {
     if (typeof window !== 'undefined') {
       document.body.style.overflow = 'hidden';
-      // Опционально: предотвращаем скролл на мобильных устройствах
       document.body.style.position = 'fixed';
       document.body.style.width = '100%';
     }
@@ -70,11 +88,80 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
       enableScroll();
     }
 
-    // Cleanup при размонтировании компонента
     return () => {
       enableScroll();
     };
   }, [isOpen]);
+
+  // Обработка клика на "Записаться к тренеру"
+  const handleBookTrainer = useCallback(async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!personalizedPlan?.recommendedTrainer) {
+      toast({
+        title: "Ошибка",
+        description: "Информация о тренере не найдена",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const trainer = personalizedPlan.recommendedTrainer;
+
+    // Проверяем наличие ссылки для бронирования
+    if (!trainer.bookingLink && !trainer.link) {
+      toast({
+        title: "Ошибка",
+        description: "Ссылка для записи к тренеру не найдена",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Выбираем правильную ссылку (приоритет у bookingLink)
+    const bookingUrl = trainer.bookingLink || trainer.link;
+
+    if (!isAuthenticated) {
+      // Если пользователь не авторизован, перенаправляем на страницу входа с редиректом
+      const redirectUrl = `/member-login?redirect=${encodeURIComponent(bookingUrl!)}`;
+      console.log('🔄 Переход на авторизацию с редиректом к тренеру:', {
+        trainerName: trainer.name,
+        bookingUrl,
+        redirectUrl
+      });
+
+      toast({
+        title: "Требуется авторизация",
+        description: "Войдите в систему для записи к тренеру"
+      });
+
+      router.push(redirectUrl);
+      return;
+    }
+
+    // Если пользователь авторизован, переходим напрямую
+    console.log('✅ Переход к тренеру:', {
+      trainerName: trainer.name,
+      bookingUrl,
+      userId: user.id
+    });
+
+    // Сохраняем информацию о выборе тренера (опционально)
+    try {
+      // Здесь можно добавить логику сохранения выбора тренера
+      // await saveTrainerSelection(analysisResult?._id, trainer.id);
+    } catch (error) {
+      console.error('Ошибка сохранения выбора тренера:', error);
+    }
+
+    // Переходим к тренеру
+    router.push(bookingUrl!);
+
+    // Закрываем модальное окно после успешного перехода
+    handleClose();
+
+  }, [personalizedPlan, isAuthenticated, user, router, toast]);
 
   // Обработка успешной загрузки фото
   const handlePhotoUpload = useCallback((url: string, file: File) => {
@@ -116,130 +203,138 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
 
   // Запуск анализа
   const startAnalysis = async () => {
-  if (!uploadedFile) {
-    toast({
-      title: "Ошибка",
-      description: "Сначала загрузите фото",
-      variant: "destructive"
-    });
-    return;
-  }
-
-  setStep('analyzing');
-  setProgress(0);
-
-  let progressInterval: NodeJS.Timeout | null = null;
-
-  try {
-    // Симуляция прогресса
-    progressInterval = setInterval(() => {
-      setProgress(prev => Math.min(prev + 10, 90));
-    }, 500);
-
-    // Анализируем и сохраняем в Convex
-    const result = await analyzeAndSaveBody(uploadedFile, user?.id || 'guest');
-
-    if (!result || !result.bodyType) {
-      console.error('❌ Получен пустой или некорректный результат:', result);
+    if (!uploadedFile) {
       toast({
         title: "Ошибка",
-        description: "Не удалось получить результаты анализа",
+        description: "Сначала загрузите фото",
         variant: "destructive"
       });
-      setStep('ready');
       return;
     }
 
-    const requiredFields: (keyof BodyAnalysisResult)[] = [
-      'bodyType',
-      'estimatedBodyFat',
-      'estimatedMuscleMass',
-      'recommendations',
-      'futureProjections'
-    ];
+    setStep('analyzing');
+    setProgress(0);
 
-    const missingFields = requiredFields.filter(field => {
-      const value = result[field];
-      return value === undefined || value === null;
-    });
+    let progressInterval: NodeJS.Timeout | null = null;
 
-    if (missingFields.length > 0) {
-      console.error('❌ Отсутствуют обязательные поля:', missingFields);
-      console.error('📊 Полученные данные:', result);
-    }
+    try {
+      // Симуляция прогресса
+      progressInterval = setInterval(() => {
+        setProgress(prev => Math.min(prev + 10, 90));
+      }, 500);
 
-    // Дополнительная проверка для отладки
-    console.log('🔍 DEBUG: Результат анализа после сохранения:', {
-      hasResult: !!result,
-      resultId: result._id,
-      bodyType: result.bodyType,
-      metrics: {
-        bodyFat: result.estimatedBodyFat,
-        muscleMass: result.estimatedMuscleMass,
-        fitnessScore: result.fitnessScore,
-        progressPotential: result.progressPotential
-      },
-      hasRecommendations: !!result.recommendations,
-      hasFutureProjections: !!result.futureProjections,
-      problemAreas: result.problemAreas
-    });
+      // Анализируем и сохраняем в Convex
+      const result = await analyzeAndSaveBody(uploadedFile, user?.id || 'guest');
 
-    // Генерируем персонализированный план
-    console.log('📋 Генерируем персональный план...');
-    const plan = await generatePersonalizedPlan(result);
-
-    console.log('🔍 DEBUG: Сгенерированный план:', {
-      hasPlan: !!plan,
-      planId: plan?._id,
-      trainer: plan?.recommendedTrainer,
-      program: plan?.trainingProgram,
-      hasNutrition: !!plan?.nutritionPlan,
-      productsCount: plan?.recommendedProducts?.length
-    });
-
-    // Сохраняем план в Convex (только один раз!)
-    if (result._id && plan) {
-      try {
-        await savePersonalizedPlan(result._id as any, plan);
-        console.log('✅ План сохранен в Convex');
-      } catch (saveError) {
-        console.error('❌ Ошибка сохранения плана:', saveError);
-        // Не прерываем выполнение, показываем результаты даже если план не сохранился
+      if (!result || !result.bodyType) {
+        console.error('❌ Получен пустой или некорректный результат:', result);
+        toast({
+          title: "Ошибка",
+          description: "Не удалось получить результаты анализа",
+          variant: "destructive"
+        });
+        setStep('ready');
+        return;
       }
+
+      const requiredFields: (keyof BodyAnalysisResult)[] = [
+        'bodyType',
+        'estimatedBodyFat',
+        'estimatedMuscleMass',
+        'recommendations',
+        'futureProjections'
+      ];
+
+      const missingFields = requiredFields.filter(field => {
+        const value = result[field];
+        return value === undefined || value === null;
+      });
+
+      if (missingFields.length > 0) {
+        console.error('❌ Отсутствуют обязательные поля:', missingFields);
+        console.error('📊 Полученные данные:', result);
+      }
+
+      // Дополнительная проверка для отладки
+      console.log('🔍 DEBUG: Результат анализа после сохранения:', {
+        hasResult: !!result,
+        resultId: result._id,
+        bodyType: result.bodyType,
+        metrics: {
+          bodyFat: result.estimatedBodyFat,
+          muscleMass: result.estimatedMuscleMass,
+          fitnessScore: result.fitnessScore,
+          progressPotential: result.progressPotential
+        },
+        hasRecommendations: !!result.recommendations,
+        hasFutureProjections: !!result.futureProjections,
+        problemAreas: result.problemAreas
+      });
+
+      // Генерируем персонализированный план
+      console.log('📋 Генерируем персональный план...');
+      const plan = await generatePersonalizedPlan(result);
+
+      // Extend the plan with booking links
+      const extendedPlan: ExtendedPersonalizedPlan = {
+        ...plan,
+        recommendedTrainer: {
+          ...plan.recommendedTrainer,
+          bookingLink: `/trainers/${plan.recommendedTrainer.id}/book`, // Example booking link
+          link: `/trainers/${plan.recommendedTrainer.id}` // Fallback link
+        }
+      };
+
+      console.log('🔍 DEBUG: Сгенерированный план:', {
+        hasPlan: !!extendedPlan,
+        planId: extendedPlan?._id,
+        trainer: extendedPlan?.recommendedTrainer,
+        program: extendedPlan?.trainingProgram,
+        hasNutrition: !!extendedPlan?.nutritionPlan,
+        productsCount: extendedPlan?.recommendedProducts?.length
+      });
+
+      // Сохраняем план в Convex (только один раз!)
+      if (result._id && plan) {
+        try {
+          await savePersonalizedPlan(result._id as any, plan);
+          console.log('✅ План сохранен в Convex');
+        } catch (saveError) {
+          console.error('❌ Ошибка сохранения плана:', saveError);
+        }
+      }
+
+      // Устанавливаем состояния
+      setAnalysisResult(result);
+      setPersonalizedPlan(extendedPlan);
+
+      // Завершаем прогресс
+      if (progressInterval) {
+        clearInterval(progressInterval);
+        progressInterval = null;
+      }
+      setProgress(100);
+
+      // Переходим к результатам
+      setTimeout(() => {
+        setStep('results');
+      }, 500);
+
+    } catch (error) {
+      console.error('❌ Ошибка анализа:', error);
+
+      if (progressInterval) {
+        clearInterval(progressInterval);
+      }
+
+      toast({
+        title: "Ошибка анализа",
+        description: error instanceof Error ? error.message : "Не удалось проанализировать изображение",
+        variant: "destructive"
+      });
+      setStep('ready');
     }
-
-    // Устанавливаем состояния
-    setAnalysisResult(result);
-    setPersonalizedPlan(plan);
-
-    // Завершаем прогресс
-    if (progressInterval) {
-      clearInterval(progressInterval);
-      progressInterval = null;
-    }
-    setProgress(100);
-
-    // Переходим к результатам
-    setTimeout(() => {
-      setStep('results');
-    }, 500);
-
-  } catch (error) {
-    console.error('❌ Ошибка анализа:', error);
-    
-    // Очищаем интервал при ошибке
-    if (progressInterval) {
-      clearInterval(progressInterval);
-    }
-    
-    toast({
-      title: "Ошибка анализа",
-      description: error instanceof Error ? error.message : "Не удалось проанализировать изображение",
-      variant: "destructive"
-    });
-    setStep('ready');
-  }
-};
+  };
 
   // Поделиться результатами
   const handleShare = async () => {
@@ -269,7 +364,18 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
   // Применить план
   const handleApplyPlan = () => {
     if (onAnalysisComplete && analysisResult && personalizedPlan) {
-      onAnalysisComplete(analysisResult, personalizedPlan);
+      // Convert back to original PersonalizedPlan type for the callback
+      const originalPlan: PersonalizedPlan = {
+        ...personalizedPlan,
+        recommendedTrainer: {
+          id: personalizedPlan.recommendedTrainer.id,
+          name: personalizedPlan.recommendedTrainer.name,
+          specialty: personalizedPlan.recommendedTrainer.specialty,
+          matchScore: personalizedPlan.recommendedTrainer.matchScore,
+          reason: personalizedPlan.recommendedTrainer.reason
+        }
+      };
+      onAnalysisComplete(analysisResult, originalPlan);
     }
 
     // Переходим к оформлению подписки
@@ -330,9 +436,7 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
             <div className="p-6">
               {/* Upload Step */}
               {step === 'upload' && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
+                <div
                   className="text-center py-8"
                 >
                   <div className="mb-8">
@@ -356,14 +460,12 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
                       </div>
                     </div>
                   )}
-                </motion.div>
+                </div>
               )}
 
               {/* Ready Step */}
               {step === 'ready' && uploadedImageUrl && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
+                <div
                   className="text-center py-8"
                 >
                   <div className="mb-8">
@@ -411,14 +513,12 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
                       Выбрать другое фото
                     </Button>
                   </div>
-                </motion.div>
+                </div>
               )}
 
               {/* Analyzing Step */}
               {step === 'analyzing' && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
+                <div
                   className="py-12 text-center"
                 >
                   <div className="max-w-md mx-auto">
@@ -441,49 +541,39 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
                       <Progress value={progress} className="h-2 mb-4" />
 
                       <div className="space-y-2 text-sm">
-                        <motion.div
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: progress > 20 ? 1 : 0, x: 0 }}
+                        <div
                           className="flex items-center gap-2 text-gray-600"
                         >
                           <Check className="h-4 w-4 text-green-500" />
                           Определение типа телосложения
-                        </motion.div>
-                        <motion.div
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: progress > 40 ? 1 : 0, x: 0 }}
+                        </div>
+                        <div
                           className="flex items-center gap-2 text-gray-600"
                         >
                           <Check className="h-4 w-4 text-green-500" />
                           Анализ проблемных зон
-                        </motion.div>
-                        <motion.div
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: progress > 60 ? 1 : 0, x: 0 }}
+                        </div>
+                        <div
                           className="flex items-center gap-2 text-gray-600"
                         >
                           <Check className="h-4 w-4 text-green-500" />
                           Расчет потенциала трансформации
-                        </motion.div>
-                        <motion.div
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: progress > 80 ? 1 : 0, x: 0 }}
+                        </div>
+                        <div
                           className="flex items-center gap-2 text-gray-600"
                         >
                           <Check className="h-4 w-4 text-green-500" />
                           Создание персонального плана
-                        </motion.div>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </motion.div>
+                </div>
               )}
 
               {/* Results Step */}
               {step === 'results' && analysisResult && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
+                <div
                 >
                   <div className="grid md:grid-cols-2 gap-8 mb-8">
                     {/* Текущее состояние */}
@@ -624,39 +714,37 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
                         </CardContent>
                       </Card>
                     </div>
-                  </div>
 
-                  <div className="flex gap-4">
-                    <Button
-                      size="lg"
-                      className="flex-1 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600"
-                      onClick={() => setStep('plan')}
-                    >
-                      Смотреть персональный план
-                      <ArrowRight className="h-5 w-5 ml-2" />
-                    </Button>
+                    <div className="flex gap-4">
+                      <Button
+                        size="lg"
+                        className="flex-1 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600"
+                        onClick={() => setStep('plan')}
+                      >
+                        Смотреть персональный план
+                        <ArrowRight className="h-5 w-5 ml-2" />
+                      </Button>
 
-                    <Button
-                      size="lg"
-                      variant="outline"
-                      onClick={handleShare}
-                      disabled={isSharing}
-                    >
-                      {isSharing ? (
-                        <Loader2 className="h-5 w-5 animate-spin" />
-                      ) : (
-                        <Share2 className="h-5 w-5" />
-                      )}
-                    </Button>
+                      <Button
+                        size="lg"
+                        variant="outline"
+                        onClick={handleShare}
+                        disabled={isSharing}
+                      >
+                        {isSharing ? (
+                          <Loader2 className="h-5 w-5 animate-spin" />
+                        ) : (
+                          <Share2 className="h-5 w-5" />
+                        )}
+                      </Button>
+                    </div>
                   </div>
-                </motion.div>
+                </div>
               )}
 
               {/* Plan Step */}
               {step === 'plan' && personalizedPlan && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
+                <div
                 >
                   <div className="text-center mb-8">
                     <Badge className="mb-3 bg-gradient-to-r from-blue-500 to-indigo-500">
@@ -688,7 +776,7 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
                               {personalizedPlan.recommendedTrainer.reason}
                             </p>
                           </div>
-                          <Button variant="outline">
+                          <Button variant="outline" onClick={handleBookTrainer}>
                             Записаться
                           </Button>
                         </div>
@@ -726,7 +814,7 @@ export default function BodyAnalysisModal({ isOpen, onClose, onAnalysisComplete 
                       При оформлении сегодня — бесплатная консультация нутрициолога
                     </p>
                   </div>
-                </motion.div>
+                </div>
               )}
             </div>
           </motion.div>
