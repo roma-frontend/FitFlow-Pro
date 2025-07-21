@@ -17,13 +17,14 @@ const PlanDialog = lazy(() => import("@/components/admin/plans/PlanDialog"));
 const DeleteConfirmDialog = lazy(() => import("@/components/admin/plans/DeleteConfirmDialog"));
 
 // Хуки
-import { usePlans, type MembershipPlan, type PlanUpdateData } from "@/hooks/usePlans";
+import { usePlans, type PlanUpdateData } from "@/hooks/usePlans";
 import { usePlanForm, type PlanFormData } from "@/hooks/usePlanForm";
-import { usePlansFilter, type FilterType, type SortBy } from "@/hooks/usePlansFilter";
 import { useOptimisticPlans } from "@/hooks/useOptimisticPlans";
 
 // Утилиты
 import { validatePlanForm } from "@/utils/validation";
+import { usePlansFilter } from "@/hooks/usePlansFilter";
+import { MembershipPlan } from "@/types/membership";
 
 // Error Boundary для диалогов
 class DialogErrorBoundary extends React.Component<

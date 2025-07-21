@@ -1,10 +1,8 @@
 // hooks/usePlans.ts
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from "@/hooks/use-toast";
-import type { MembershipPlan, MembershipPlanFormData } from '@/types/membership';
-
-export { type MembershipPlan } from '@/types/membership';
-export type { PlanUpdateData };
+import type { MembershipPlan } from '@/types/membership';
+import { PlanFormData } from '@/types/common';
 
 // Тип для обновления планов (включает все поля, которые можно обновлять)
 export interface PlanUpdateData {
