@@ -1,6 +1,6 @@
 // hooks/useOptimisticPlans.ts
 import { useState, useCallback } from 'react';
-import type { MembershipPlan } from './usePlans';
+import type { MembershipPlan } from '@/types/membership';
 
 export const useOptimisticPlans = (plans: MembershipPlan[], updatePlan: (id: string, data: Partial<MembershipPlan>) => Promise<boolean>) => {
   const [optimisticPlans, setOptimisticPlans] = useState<MembershipPlan[]>([]);
