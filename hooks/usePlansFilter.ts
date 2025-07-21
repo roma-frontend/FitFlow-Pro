@@ -1,7 +1,6 @@
 // hooks/usePlansFilter.ts
 import { useMemo, useState, useCallback } from 'react';
-import type { MembershipPlan } from '@/types/membership';
-import type { FilterType, SortBy } from '@/types/common';
+import type { FilterType, MembershipPlan, SortBy } from '@/types/common';
 import { useDebounce } from '@/hooks/useDebounce';
 
 export type { FilterType, SortBy } from '@/types/common';
