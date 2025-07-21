@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { PlanFormData } from '@/hooks/usePlanForm';
+import type { PlanType } from '@/types/membership';
 import { FeaturesList } from './FeasturesList';
 
 interface PlanFormProps {
@@ -17,6 +18,11 @@ interface PlanFormProps {
   onRemoveFeature: (index: number) => void;
 }
 
+// Функция для проверки типа плана
+const isPlanType = (value: string): value is PlanType => {
+  return ['basic', 'premium', 'vip', 'unlimited'].includes(value);
+};
+
 export const PlanForm = memo<PlanFormProps>(({
   formData,
   featureInput,
@@ -25,6 +31,12 @@ export const PlanForm = memo<PlanFormProps>(({
   onAddFeature,
   onRemoveFeature
 }) => {
+  const handleTypeChange = (value: string) => {
+    if (isPlanType(value)) {
+      onFieldChange('type', value);
+    }
+  };
+
   return (
     <div className="grid gap-4 py-4">
       <div className="grid grid-cols-2 gap-4">
@@ -42,7 +54,7 @@ export const PlanForm = memo<PlanFormProps>(({
           <Label htmlFor="type">Тип *</Label>
           <Select
             value={formData.type}
-            onValueChange={(value) => onFieldChange('type', value)}
+            onValueChange={handleTypeChange}
           >
             <SelectTrigger>
               <SelectValue />
