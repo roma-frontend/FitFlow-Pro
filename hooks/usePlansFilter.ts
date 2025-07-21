@@ -1,9 +1,7 @@
 // hooks/usePlansFilter.ts
 import { useMemo, useState, useCallback } from 'react';
-import type { FilterType, MembershipPlan, SortBy } from '@/types/common';
-import { useDebounce } from '@/hooks/useDebounce';
-
-export type { FilterType, SortBy } from '@/types/common';
+import type { FilterType, SortBy, MembershipPlan } from '../types/common';
+import { useDebounce } from './useDebounce';
 
 export const usePlansFilter = (plans: MembershipPlan[]) => {
   const [searchTerm, setSearchTerm] = useState('');

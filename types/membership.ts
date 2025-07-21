@@ -1,15 +1,20 @@
-// types/membership.ts
+// types/membership.ts (обновленная версия)
+
+// Базовые типы
+export type PlanType = 'basic' | 'premium' | 'vip' | 'unlimited';
+export type MembershipStatus = 'active' | 'expired' | 'cancelled';
+
 export interface Membership {
   _id: string;
   userId: string;
   trainerId?: string;
-  type: 'basic' | 'premium' | 'vip' | 'unlimited';
+  type: PlanType; // Изменено с string на PlanType
   price: number;
   startDate: number;
   expiresAt: number;
   isActive: boolean;
   remainingDays?: number;
-  status?: 'active' | 'expired' | 'cancelled';
+  status?: MembershipStatus;
   autoRenew?: boolean;
   paymentIntentId?: string;
   paymentMethod?: string;
@@ -26,13 +31,13 @@ export interface Membership {
 export interface MembershipPlan {
   _id: string;
   name: string;
-  type: string;
+  type: PlanType; // Изменено с string на PlanType для строгой типизации
   duration: number; // в днях
   price: number;
   description?: string;
   features: string[];
   isActive: boolean;
-  createdAt: number;
+  createdAt: number; // Обязательное поле
   limitations?: string[];
   color?: string;
   icon?: string;
@@ -64,7 +69,7 @@ export interface MembershipStats {
 
 export interface MembershipPlanFormData {
   name: string;
-  type: string;
+  type: PlanType; // Изменено с string на PlanType
   duration: number;
   price: number;
   description?: string;
