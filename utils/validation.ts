@@ -1,4 +1,45 @@
 // utils/validation.ts
+
+import type { PlanFormData } from '@/hooks/usePlanForm';
+
+export const validatePlanForm = (data: PlanFormData): string[] => {
+  const errors: string[] = [];
+  
+  if (!data.name.trim()) {
+    errors.push('Название плана обязательно');
+  }
+  
+  if (data.name.length > 50) {
+    errors.push('Название не должно превышать 50 символов');
+  }
+  
+  if (data.price <= 0) {
+    errors.push('Цена должна быть больше 0');
+  }
+  
+  if (data.price > 1000000) {
+    errors.push('Цена не должна превышать 1,000,000 рублей');
+  }
+  
+  if (data.duration <= 0) {
+    errors.push('Длительность должна быть больше 0');
+  }
+  
+  if (data.duration > 3650) {
+    errors.push('Длительность не должна превышать 10 лет');
+  }
+  
+  if (data.description.length > 500) {
+    errors.push('Описание не должно превышать 500 символов');
+  }
+  
+  if (data.features.length > 20) {
+    errors.push('Не более 20 особенностей плана');
+  }
+  
+  return errors;
+};
+
 export interface ValidationResult {
   isValid: boolean;
   errors: string[];
