@@ -2,7 +2,7 @@
 import React, { memo } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Package, Activity, CreditCard } from "lucide-react";
-import type { MembershipPlan } from '@/hooks/usePlans';
+import type { MembershipPlan } from '@/types/membership';
 
 interface PlansStatisticsProps {
   plans: MembershipPlan[];
