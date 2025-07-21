@@ -15,7 +15,7 @@ import {
   Infinity,
   Package
 } from "lucide-react";
-import type { MembershipPlan } from '@/hooks/usePlans';
+import type { MembershipPlan } from '@/types/membership';
 
 interface PlanCardProps {
   plan: MembershipPlan;
