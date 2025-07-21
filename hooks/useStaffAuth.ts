@@ -180,12 +180,12 @@ const handleStaffLogin = useCallback(async (formData: {
         dashboardUrl: destination
       });
 
-      // Небольшая задержка перед редиректом для плавности
+      // ✅ ИСПРАВЛЕНО: Увеличена задержка до 2 секунд для комфортного UX
       setTimeout(() => {
         console.log('🎯 Staff login: redirect to', destination);
         router.replace(destination);
-        // hideLoader убираем - пусть loader остается до загрузки новой страницы
-      }, 100);
+        // Лоадер скроется автоматически при загрузке новой страницы
+      }, 2000);
 
       return {
         success: true,
@@ -199,7 +199,6 @@ const handleStaffLogin = useCallback(async (formData: {
   } catch (error) {
     console.error("💥 Staff login error:", error);
 
-    // ✅ Скрываем полноэкранный loader при ошибке
     hideLoader();
     sessionStorage.removeItem('is_redirecting');
 
@@ -223,14 +222,12 @@ const handleStaffLogin = useCallback(async (formData: {
 const handleSuperAdminQuickLogin = useCallback(async (): Promise<StaffLoginResult> => {
   setIsLoading(true);
   
-  // ✅ Показываем loader сразу при начале входа
   showLoader("login", {
     userRole: "super-admin",
     userName: "Супер Админ",
     dashboardUrl: "/admin"
   });
   
-  // Устанавливаем флаг редиректа
   sessionStorage.setItem('is_redirecting', 'true');
 
   try {
@@ -283,19 +280,17 @@ const handleSuperAdminQuickLogin = useCallback(async (): Promise<StaffLoginResul
         sessionStorage.removeItem("returnUrl");
       }
 
-      // Обновляем loader с точными данными
       showLoader("login", {
         userRole: result.user.role,
         userName: result.user.name || result.user.email,
         dashboardUrl: destination
       });
 
-      // Небольшая задержка перед редиректом для плавности
+      // ✅ ИСПРАВЛЕНО: Увеличена задержка до 2 секунд
       setTimeout(() => {
         console.log('🎯 Quick login: redirect to', destination);
         router.replace(destination);
-        // hideLoader убираем - пусть loader остается до загрузки новой страницы
-      }, 100);
+      }, 2000);
 
       return {
         success: true,
@@ -309,7 +304,6 @@ const handleSuperAdminQuickLogin = useCallback(async (): Promise<StaffLoginResul
   } catch (error) {
     console.error("💥 Quick login error:", error);
 
-    // ✅ Скрываем полноэкранный loader при ошибке
     hideLoader();
     sessionStorage.removeItem('is_redirecting');
 
